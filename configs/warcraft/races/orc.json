@@ -1,7 +1,7 @@
 {
   "id": "orc",
   "name": "Орк",
-  "description": "Сильный боец с критическими ударами, повышенным здоровьем и цепной молнией.",
+  "description": "Сильный боец с критическими ударами, повышенным здоровьем и вампиризмом.",
   "maxLevel": 10,
   "vipOnly": false,
   "abilities": [
@@ -23,18 +23,15 @@
         "health": [10, 20, 30]
       },
       "conditions": {}
-    }
-  ],
-  "ultimate": {
-    "id": "chain_lightning",
-    "maxLevel": 1,
-    "unlockLevel": 6,
-    "config": {
-      "damage": 35,
-      "range": 500,
-      "jumps": 4,
-      "cooldown": 25
     },
-    "conditions": {}
-  }
+    {
+      "id": "vampirism",
+      "maxLevel": 3,
+      "unlockLevel": 3,
+      "config": {
+        "percent": [0.08, 0.12, 0.18]
+      },
+      "conditions": {}
+    }
+  ]
 }

@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Capabilities;
 using Microsoft.Extensions.Logging;
 using Warcraft.Api;
+using Warcraft.Api.Events;
 using Warcraft.Api.Modules;
 using Warcraft.Api.Persistence;
 using Warcraft.Core.Abilities;
@@ -21,10 +22,10 @@ namespace Warcraft.Core;
 public sealed class WarcraftCorePlugin : BasePlugin
 {
     public override string ModuleName => "Warcraft.Core";
-    public override string ModuleVersion => "0.2.0";
+    public override string ModuleVersion => "0.3.0";
     public override string ModuleAuthor => "Mellok543";
     public override string ModuleDescription =>
-        "Central runtime state and API provider for CS2Warcraft.";
+        "Central runtime state, event bridge and API provider for CS2Warcraft.";
 
     public static PluginCapability<IWarcraftApi> CoreCapability { get; } =
         new(WarcraftCapabilityNames.CoreApi);
@@ -66,18 +67,27 @@ public sealed class WarcraftCorePlugin : BasePlugin
         modules.Register(new ModuleRegistration(
             "warcraft.core",
             ModuleVersion,
-            "Central runtime and orchestration"));
+            "Central runtime, event bridge and orchestration"));
 
         Capabilities.RegisterPluginCapability(CoreCapability, () => api);
 
         RegisterListener<Listeners.OnClientPutInServer>(OnClientPutInServer);
         RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
+        RegisterListener<Listeners.OnPlayerTakeDamagePre>(OnPlayerTakeDamagePre);
+        RegisterListener<Listeners.OnPlayerTakeDamagePost>(OnPlayerTakeDamagePost);
+
+        RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
+        RegisterEventHandler<EventPlayerHurt>(OnPlayerHurt);
+        RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
+        RegisterEventHandler<EventWeaponFire>(OnWeaponFire);
+        RegisterEventHandler<EventRoundStart>(OnRoundStart);
+        RegisterEventHandler<EventRoundEnd>(OnRoundEnd);
 
         if (hotReload)
         {
             foreach (var player in Utilities.GetPlayers())
             {
-                if (player is { IsValid: true, IsBot: false } && player.SteamID != 0)
+                if (IsHuman(player))
                     players.Upsert(player.SteamID, player.PlayerName);
             }
         }
@@ -94,8 +104,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
         _lifetime?.Cancel();
 
-        if (_players is not null &&
-            _persistence is { HasProvider: true })
+        if (_players is not null && _persistence is { HasProvider: true })
         {
             foreach (var snapshot in _players.GetPersistenceSnapshots())
             {
@@ -128,10 +137,10 @@ public sealed class WarcraftCorePlugin : BasePlugin
     private void OnClientPutInServer(int playerSlot)
     {
         var player = Utilities.GetPlayerFromSlot(playerSlot);
-        if (player is not { IsValid: true, IsBot: false } || player.SteamID == 0)
+        if (!IsHuman(player))
             return;
 
-        _players?.Upsert(player.SteamID, player.PlayerName);
+        _players?.Upsert(player!.SteamID, player.PlayerName);
 
         if (_persistence is { HasProvider: true })
             _ = LoadPlayerAsync(player.SteamID, player.PlayerName);
@@ -149,6 +158,120 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
         if (snapshot is not null && _persistence is { HasProvider: true })
             _ = SavePlayerAsync(snapshot);
+    }
+
+    private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (IsHuman(player))
+            _api?.Events.Publish(new PlayerSpawnEvent(player!.SteamID));
+
+        return HookResult.Continue;
+    }
+
+    private HookResult OnPlayerHurt(EventPlayerHurt @event, GameEventInfo info)
+    {
+        var victim = @event.Userid;
+        if (!IsHuman(victim))
+            return HookResult.Continue;
+
+        var attacker = @event.Attacker;
+        var attackerSteamId = IsHuman(attacker) ? attacker!.SteamID : null;
+
+        _api?.Events.Publish(new PlayerHurtEvent(
+            victim!.SteamID,
+            attackerSteamId,
+            @event.DmgHealth));
+
+        return HookResult.Continue;
+    }
+
+    private HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
+    {
+        var victim = @event.Userid;
+        if (!IsHuman(victim))
+            return HookResult.Continue;
+
+        var attacker = @event.Attacker;
+        var killerSteamId = IsHuman(attacker) ? attacker!.SteamID : null;
+
+        _api?.Events.Publish(new PlayerDeathEvent(
+            victim!.SteamID,
+            killerSteamId));
+
+        if (killerSteamId.HasValue && killerSteamId.Value != victim.SteamID)
+        {
+            _api?.Events.Publish(new PlayerKillEvent(
+                killerSteamId.Value,
+                victim.SteamID,
+                @event.Headshot));
+        }
+
+        return HookResult.Continue;
+    }
+
+    private HookResult OnWeaponFire(EventWeaponFire @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (IsHuman(player))
+        {
+            _api?.Events.Publish(new WeaponFireEvent(
+                player!.SteamID,
+                @event.Weapon));
+        }
+
+        return HookResult.Continue;
+    }
+
+    private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
+    {
+        _api?.Events.Publish(new RoundStartEvent());
+        return HookResult.Continue;
+    }
+
+    private HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
+    {
+        _api?.Events.Publish(new RoundEndEvent(@event.Winner));
+        return HookResult.Continue;
+    }
+
+    private HookResult OnPlayerTakeDamagePre(
+        CCSPlayerPawn victimPawn,
+        CTakeDamageInfo damageInfo)
+    {
+        var victimController = victimPawn.OriginalController.Value;
+        if (!IsHuman(victimController))
+            return HookResult.Continue;
+
+        var attackerSteamId = GetAttackerSteamId(damageInfo);
+        var damageEvent = new DamagePreEvent
+        {
+            VictimSteamId = victimController!.SteamID,
+            AttackerSteamId = attackerSteamId,
+            Damage = damageInfo.Damage,
+            Weapon = GetAttackerWeapon(damageInfo)
+        };
+
+        _api?.Events.Publish(damageEvent);
+        damageInfo.Damage = Math.Max(0.0f, damageEvent.Damage);
+
+        return HookResult.Continue;
+    }
+
+    private void OnPlayerTakeDamagePost(
+        CCSPlayerPawn victimPawn,
+        CTakeDamageInfo damageInfo,
+        CTakeDamageResult result)
+    {
+        var victimController = victimPawn.OriginalController.Value;
+        if (!IsHuman(victimController))
+            return;
+
+        _api?.Events.Publish(new DamagePostEvent(
+            victimController!.SteamID,
+            GetAttackerSteamId(damageInfo),
+            result.DamageDealt,
+            GetAttackerWeapon(damageInfo)));
     }
 
     private void OnFirstPersistenceProviderRegistered()
@@ -210,4 +333,31 @@ public sealed class WarcraftCorePlugin : BasePlugin
                 snapshot.SteamId);
         }
     }
+
+    private static ulong? GetAttackerSteamId(CTakeDamageInfo damageInfo)
+    {
+        var attacker = damageInfo.Attacker.Value;
+
+        if (attacker is CCSPlayerPawn pawn)
+        {
+            var controller = pawn.OriginalController.Value;
+            return IsHuman(controller) ? controller!.SteamID : null;
+        }
+
+        if (attacker is CCSPlayerController controllerEntity)
+            return IsHuman(controllerEntity) ? controllerEntity.SteamID : null;
+
+        return null;
+    }
+
+    private static string? GetAttackerWeapon(CTakeDamageInfo damageInfo)
+    {
+        if (damageInfo.Attacker.Value is not CCSPlayerPawn pawn)
+            return null;
+
+        return pawn.WeaponServices?.ActiveWeapon.Value?.DesignerName;
+    }
+
+    private static bool IsHuman(CCSPlayerController? player)
+        => player is { IsValid: true, IsBot: false } && player.SteamID != 0;
 }
