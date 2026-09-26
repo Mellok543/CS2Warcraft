@@ -7,4 +7,7 @@
     <PackageReference Include="CounterStrikeSharp.API" />
     <ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Warcraft.Core.Tests" />
+  </ItemGroup>
 </Project>

@@ -5,5 +5,8 @@
   <ItemGroup>
     <PackageVersion Include="CounterStrikeSharp.API" Version="1.0.375" />
     <PackageVersion Include="MySqlConnector" Version="2.6.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>
 </Project>

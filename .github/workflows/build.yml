@@ -22,3 +22,6 @@ jobs:
 
       - name: Build
         run: dotnet build CS2Warcraft.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test CS2Warcraft.slnx -c Release --no-build
