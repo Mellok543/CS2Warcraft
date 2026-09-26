@@ -1,6 +1,10 @@
 {
   "killXp": 25,
   "headshotBonusXp": 10,
+  "assistXp": 10,
+  "roundWinXp": 15,
+  "bombPlantXp": 20,
+  "bombDefuseXp": 20,
   "autosaveDelayMilliseconds": 1000,
   "gameTickIntervalMilliseconds": 100
 }

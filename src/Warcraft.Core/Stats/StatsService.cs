@@ -3,8 +3,6 @@ using Warcraft.Core.Runtime;
 
 namespace Warcraft.Core.Stats;
 
-internal readonly record struct RoundParticipant(ulong SteamId, bool Won);
-
 /// <summary>
 /// Central statistics updater. Consumes Core events (never engine events) and
 /// mutates <see cref="PlayerStatsRuntime"/>; persistence is scheduled through
@@ -23,22 +21,18 @@ internal sealed class StatsService : IDisposable
         _subscriptions =
         [
             events.Subscribe<PlayerKillEvent>(OnKill),
-            events.Subscribe<PlayerDeathEvent>(OnDeath)
+            events.Subscribe<PlayerDeathEvent>(OnDeath),
+            events.Subscribe<PlayerRoundResultEvent>(OnRoundResult)
         ];
     }
 
-    public void RecordRoundEnd(IReadOnlyCollection<RoundParticipant> participants)
-    {
-        foreach (var participant in participants)
+    private void OnRoundResult(PlayerRoundResultEvent result)
+        => Update(result.SteamId, "stats:round", stats =>
         {
-            Update(participant.SteamId, "stats:round", stats =>
-            {
-                stats.RoundsPlayed++;
-                if (participant.Won)
-                    stats.RoundsWon++;
-            });
-        }
-    }
+            stats.RoundsPlayed++;
+            if (result.Won)
+                stats.RoundsWon++;
+        });
 
     public void Dispose()
     {

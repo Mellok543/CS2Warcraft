@@ -32,6 +32,7 @@ internal sealed class ProgressionService(
         if (player.ActiveRaceId is null)
         {
             events.Publish(new PlayerStateChangedEvent(steamId, reason));
+            events.Publish(new PlayerXpGainedEvent(steamId, effectiveAmount, reason, null, null, null));
             return new(true, reason, PreviousXp: previousXp, CurrentXp: player.GlobalXp);
         }
 
@@ -55,6 +56,13 @@ internal sealed class ProgressionService(
         }
 
         events.Publish(new PlayerStateChangedEvent(steamId, reason));
+        events.Publish(new PlayerXpGainedEvent(
+            steamId,
+            effectiveAmount,
+            reason,
+            race.Id,
+            previousLevel,
+            progress.Level));
 
         return new(true, reason, previousLevel, progress.Level, previousXp, player.GlobalXp);
     }

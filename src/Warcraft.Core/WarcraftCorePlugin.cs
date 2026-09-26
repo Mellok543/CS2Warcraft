@@ -40,7 +40,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
     private CancellationTokenSource? _lifetime;
     private PersistenceSaveScheduler? _saveScheduler;
     private IDisposable? _stateChangedSubscription;
-    private IDisposable? _killXpSubscription;
+    private XpRewardService? _xpRewards;
+    private PlayerNotifier? _notifier;
     private StatsService? _stats;
     private readonly IGameThreadDispatcher _gameThread = new CssGameThreadDispatcher();
     private CoreConfig _config = new();
@@ -100,17 +101,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
         _stateChangedSubscription = events.Subscribe<PlayerStateChangedEvent>(
             changed => _saveScheduler?.Schedule(changed.SteamId));
 
-        _killXpSubscription = events.Subscribe<PlayerKillEvent>(kill =>
-        {
-            if (kill.TeamKill)
-                return;
-
-            var amount = _config.KillXp +
-                         (kill.Headshot ? _config.HeadshotBonusXp : 0);
-
-            if (amount > 0)
-                progress.AddXp(kill.KillerSteamId, amount, "player-kill");
-        });
+        _xpRewards = new XpRewardService(players, progress, events, _config);
+        _notifier = new PlayerNotifier(events);
 
         persistence.FirstProviderRegistered += OnFirstPersistenceProviderRegistered;
 
@@ -136,6 +128,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
         RegisterEventHandler<EventWeaponFire>(OnWeaponFire);
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
         RegisterEventHandler<EventRoundEnd>(OnRoundEnd);
+        RegisterEventHandler<EventBombPlanted>(OnBombPlanted);
+        RegisterEventHandler<EventBombDefused>(OnBombDefused);
 
         if (hotReload)
         {
@@ -161,8 +155,11 @@ public sealed class WarcraftCorePlugin : BasePlugin
         _stateChangedSubscription?.Dispose();
         _stateChangedSubscription = null;
 
-        _killXpSubscription?.Dispose();
-        _killXpSubscription = null;
+        _xpRewards?.Dispose();
+        _xpRewards = null;
+
+        _notifier?.Dispose();
+        _notifier = null;
 
         _stats?.Dispose();
         _stats = null;
@@ -304,6 +301,17 @@ public sealed class WarcraftCorePlugin : BasePlugin
                 attacker!.TeamNum == humanVictim.TeamNum));
         }
 
+        var assister = @event.Assister;
+        if (IsHuman(assister) &&
+            assister!.SteamID != humanVictim.SteamID &&
+            assister.TeamNum != humanVictim.TeamNum)
+        {
+            _api?.Events.Publish(new PlayerAssistEvent(
+                assister.SteamID,
+                humanVictim.SteamID,
+                @event.Assistedflash));
+        }
+
         return HookResult.Continue;
     }
 
@@ -328,13 +336,31 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
     private HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
     {
-        var participants = Utilities.GetPlayers()
+        var results = Utilities.GetPlayers()
             .Where(x => IsHuman(x) && x.TeamNum is TeamTerrorist or TeamCounterTerrorist)
-            .Select(x => new RoundParticipant(x.SteamID, x.TeamNum == @event.Winner))
+            .Select(x => new PlayerRoundResultEvent(x.SteamID, x.TeamNum == @event.Winner))
             .ToArray();
 
-        _stats?.RecordRoundEnd(participants);
+        foreach (var result in results)
+            _api?.Events.Publish(result);
+
         _api?.Events.Publish(new RoundEndEvent(@event.Winner));
+        return HookResult.Continue;
+    }
+
+    private HookResult OnBombPlanted(EventBombPlanted @event, GameEventInfo info)
+    {
+        if (IsHuman(@event.Userid))
+            _api?.Events.Publish(new BombPlantedEvent(@event.Userid!.SteamID));
+
+        return HookResult.Continue;
+    }
+
+    private HookResult OnBombDefused(EventBombDefused @event, GameEventInfo info)
+    {
+        if (IsHuman(@event.Userid))
+            _api?.Events.Publish(new BombDefusedEvent(@event.Userid!.SteamID));
+
         return HookResult.Continue;
     }
 

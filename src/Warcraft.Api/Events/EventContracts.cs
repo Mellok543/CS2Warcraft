@@ -28,6 +28,25 @@ public sealed record PlayerJumpEvent(ulong SteamId) : IWarcraftEvent;
 public sealed record RoundStartEvent() : IWarcraftEvent;
 public sealed record RoundEndEvent(int WinnerTeam) : IWarcraftEvent;
 
+/// <summary>Published once per human player in a playing team when a round ends.</summary>
+public sealed record PlayerRoundResultEvent(ulong SteamId, bool Won) : IWarcraftEvent;
+
+public sealed record PlayerAssistEvent(ulong AssisterSteamId, ulong VictimSteamId, bool FlashAssist) : IWarcraftEvent;
+public sealed record BombPlantedEvent(ulong SteamId) : IWarcraftEvent;
+public sealed record BombDefusedEvent(ulong SteamId) : IWarcraftEvent;
+
+/// <summary>Published by Core after XP was added (amount already includes modifiers).</summary>
+public sealed record PlayerXpGainedEvent(
+    ulong SteamId,
+    long Amount,
+    string Reason,
+    string? RaceId,
+    int? PreviousLevel,
+    int? CurrentLevel) : IWarcraftEvent
+{
+    public bool LeveledUp => PreviousLevel is { } previous && CurrentLevel is { } current && current > previous;
+}
+
 /// <summary>
 /// Published by Core on the game thread at the interval configured in core.json
 /// (<c>gameTickIntervalMilliseconds</c>). Used by continuous passive abilities.

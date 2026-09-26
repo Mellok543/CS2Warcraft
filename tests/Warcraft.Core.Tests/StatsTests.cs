@@ -20,7 +20,8 @@ public sealed class StatsTests
         core.Events.Publish(new PlayerKillEvent(Killer, Victim, Headshot: true, TeamKill: false));
         core.Events.Publish(new PlayerDeathEvent(Victim, Killer));
         core.Events.Publish(new PlayerKillEvent(Killer, Victim, Headshot: false, TeamKill: true));
-        stats.RecordRoundEnd([new RoundParticipant(Killer, true), new RoundParticipant(Victim, false)]);
+        core.Events.Publish(new PlayerRoundResultEvent(Killer, true));
+        core.Events.Publish(new PlayerRoundResultEvent(Victim, false));
 
         var killer = core.Players.Get(Killer)!.Stats;
         var victim = core.Players.Get(Victim)!.Stats;
