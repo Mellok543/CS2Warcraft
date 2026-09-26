@@ -47,6 +47,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
     private readonly IGameThreadDispatcher _gameThread = new CssGameThreadDispatcher();
     private CoreConfig _config = new();
     private CoreGameEventBridge? _eventBridge;
+    private PlayerLifecycleCoordinator? _playerLifecycle;
 
     public override void Load(bool hotReload)
     {
@@ -100,6 +101,17 @@ public sealed class WarcraftCorePlugin : BasePlugin
             _gameThread,
             TimeSpan.FromMilliseconds(Math.Max(100, _config.AutosaveDelayMilliseconds)),
             Logger);
+
+        var playerLifecycle = new PlayerLifecycleCoordinator(
+            players,
+            persistence,
+            _saveScheduler,
+            _gameThread,
+            Logger,
+            _lifetime.Token);
+        playerLifecycle.Start();
+        _playerLifecycle = playerLifecycle;
+
         _stats = new StatsService(players, events);
 
         _stateChangedSubscription = events.Subscribe<PlayerStateChangedEvent>(
@@ -108,7 +120,6 @@ public sealed class WarcraftCorePlugin : BasePlugin
         _xpRewards = new XpRewardService(players, progress, events, _config);
         _notifier = new PlayerNotifier(events);
 
-        persistence.FirstProviderRegistered += OnFirstPersistenceProviderRegistered;
 
         modules.Register(new ModuleRegistration(
             "warcraft.core",
@@ -117,8 +128,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
         Capabilities.RegisterPluginCapability(CoreCapability, () => api);
 
-        RegisterListener<Listeners.OnClientPutInServer>(OnClientPutInServer);
-        RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
+        RegisterListener<Listeners.OnClientPutInServer>(playerLifecycle.OnClientPutInServer);
+        RegisterListener<Listeners.OnClientDisconnect>(playerLifecycle.OnClientDisconnect);
         RegisterListener<Listeners.OnPlayerTakeDamagePre>(eventBridge.OnPlayerTakeDamagePre);
         RegisterListener<Listeners.OnPlayerTakeDamagePost>(eventBridge.OnPlayerTakeDamagePost);
         RegisterListener<Listeners.OnTick>(eventBridge.OnTick);
@@ -137,13 +148,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
         RegisterEventHandler<EventBombDefused>(eventBridge.OnBombDefused);
 
         if (hotReload)
-        {
-            foreach (var player in Utilities.GetPlayers())
-            {
-                if (IsHuman(player))
-                    players.Upsert(player.SteamID, player.PlayerName);
-            }
-        }
+            playerLifecycle.AdoptConnectedPlayers();
 
         Logger.LogInformation(
             "Warcraft.Core loaded. Capability: {Capability}",
@@ -152,8 +157,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
     public override void Unload(bool hotReload)
     {
-        if (_persistence is not null)
-            _persistence.FirstProviderRegistered -= OnFirstPersistenceProviderRegistered;
+        _playerLifecycle?.Dispose();
+        _playerLifecycle = null;
 
         _lifetime?.Cancel();
 
@@ -203,80 +208,4 @@ public sealed class WarcraftCorePlugin : BasePlugin
         Logger.LogInformation("Warcraft.Core unloaded.");
     }
 
-    private void OnClientPutInServer(int playerSlot)
-    {
-        var player = Utilities.GetPlayerFromSlot(playerSlot);
-        if (!IsHuman(player))
-            return;
-
-        var human = player!;
-        _players?.Upsert(human.SteamID, human.PlayerName);
-
-        if (_persistence is { HasProvider: true })
-            _ = LoadPlayerAsync(human.SteamID, human.PlayerName);
-    }
-
-    private void OnClientDisconnect(int playerSlot)
-    {
-        var player = Utilities.GetPlayerFromSlot(playerSlot);
-        if (player is null || player.SteamID == 0 || _players is null)
-            return;
-
-        var steamId = player.SteamID;
-        var snapshot = _players.GetPersistenceSnapshot(steamId);
-        _players.Remove(steamId);
-
-        if (snapshot is not null && _saveScheduler is not null)
-            _ = _saveScheduler.SaveNowAsync(snapshot);
-    }
-
-    private void OnFirstPersistenceProviderRegistered()
-    {
-        // Raised from the storage provider's async initialization: hop to the game thread.
-        Server.NextFrame(() =>
-        {
-            if (_players is null)
-                return;
-
-            foreach (var player in _players.GetLoadedPlayers())
-                _ = LoadPlayerAsync(player.SteamId, player.Name);
-        });
-    }
-
-    private async Task LoadPlayerAsync(ulong steamId, string currentName)
-    {
-        var persistence = _persistence;
-        var players = _players;
-        var lifetime = _lifetime;
-
-        if (persistence is not { HasProvider: true } || players is null || lifetime is null)
-            return;
-
-        var cancellationToken = lifetime.Token;
-
-        try
-        {
-            var persisted = await persistence.LoadPlayerAsync(steamId, cancellationToken);
-            if (persisted is null)
-                return;
-
-            // Runtime state is game-thread affine; swap it in on the game thread.
-            await _gameThread
-                .InvokeAsync(() => players.RestoreIfLoaded(persisted, currentName))
-                .WaitAsync(cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-        }
-        catch (Exception exception)
-        {
-            Logger.LogError(
-                exception,
-                "Failed to load Warcraft state for {SteamId}.",
-                steamId);
-        }
-    }
-
-    private static bool IsHuman(CCSPlayerController? player)
-        => player is { IsValid: true, IsBot: false } && player.SteamID != 0;
 }
