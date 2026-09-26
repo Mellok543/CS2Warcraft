@@ -2,6 +2,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Capabilities;
 using Microsoft.Extensions.Logging;
+using Warcraft.Abilities.Game;
 using Warcraft.Api;
 using Warcraft.Api.Modules;
 
@@ -38,9 +39,12 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
             ModuleVersion,
             "Reusable ability handlers"));
 
+        var beams = new BeamEffects(new PluginGameScheduler(this));
+
         Register(new CriticalStrikeAbility());
         Register(new BonusHealthAbility());
         Register(new VampirismAbility());
+        Register(new ChainLightningAbility(beams));
 
         Logger.LogInformation(
             "Warcraft.Abilities registered {Count} handlers.",
@@ -63,7 +67,14 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         if (_api is null)
             throw new InvalidOperationException("Warcraft.Core API is unavailable.");
 
-        handler.Register(_api);
-        _handlers.Add(handler);
+        try
+        {
+            handler.Register(_api);
+            _handlers.Add(handler);
+        }
+        catch (InvalidOperationException exception)
+        {
+            Logger.LogError(exception, "Failed to register ability handler {AbilityId}.", handler.Id);
+        }
     }
 }

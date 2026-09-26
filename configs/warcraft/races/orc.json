@@ -33,5 +33,19 @@
       },
       "conditions": {}
     }
-  ]
+  ],
+  "ultimate": {
+    "id": "chain_lightning",
+    "name": "Цепная молния",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "damage": 35,
+      "range": 500,
+      "jumps": 4,
+      "damageFalloff": 0.85,
+      "cooldown": 25
+    },
+    "conditions": {}
+  }
 }
