@@ -271,7 +271,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
         try
         {
             await UpsertPlayerAsync(connection, transaction, player, cancellationToken);
-            await ReplaceProgressAsync(connection, transaction, player, cancellationToken);
+            await UpsertProgressAndPruneAsync(connection, transaction, player, cancellationToken);
             await UpsertStatsAsync(connection, transaction, player, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
@@ -345,60 +345,163 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    private static async Task ReplaceProgressAsync(
+    private static async Task UpsertProgressAndPruneAsync(
         MySqlConnection connection,
         MySqlTransaction transaction,
         PlayerPersistenceDto player,
         CancellationToken cancellationToken)
     {
-        await using (var delete = new MySqlCommand(
-            "DELETE FROM wc_race_progress WHERE steam_id = @steamId;",
-            connection,
-            transaction))
-        {
-            delete.Parameters.AddWithValue("@steamId", player.SteamId);
-            await delete.ExecuteNonQueryAsync(cancellationToken);
-        }
+        var races = player.Races.ToArray();
 
-        foreach (var race in player.Races)
+        foreach (var race in races)
         {
-            await using (var insertRace = new MySqlCommand(
+            await using (var upsertRace = new MySqlCommand(
                 """
                 INSERT INTO wc_race_progress
                     (steam_id, race_id, level, xp, skill_points)
                 VALUES
-                    (@steamId, @raceId, @level, @xp, @skillPoints);
+                    (@steamId, @raceId, @level, @xp, @skillPoints)
+                ON DUPLICATE KEY UPDATE
+                    level = VALUES(level),
+                    xp = VALUES(xp),
+                    skill_points = VALUES(skill_points);
                 """,
                 connection,
                 transaction))
             {
-                insertRace.Parameters.AddWithValue("@steamId", player.SteamId);
-                insertRace.Parameters.AddWithValue("@raceId", race.RaceId);
-                insertRace.Parameters.AddWithValue("@level", race.Level);
-                insertRace.Parameters.AddWithValue("@xp", race.Xp);
-                insertRace.Parameters.AddWithValue("@skillPoints", race.SkillPoints);
-                await insertRace.ExecuteNonQueryAsync(cancellationToken);
+                upsertRace.Parameters.AddWithValue("@steamId", player.SteamId);
+                upsertRace.Parameters.AddWithValue("@raceId", race.RaceId);
+                upsertRace.Parameters.AddWithValue("@level", race.Level);
+                upsertRace.Parameters.AddWithValue("@xp", race.Xp);
+                upsertRace.Parameters.AddWithValue("@skillPoints", race.SkillPoints);
+                await upsertRace.ExecuteNonQueryAsync(cancellationToken);
             }
 
-            foreach (var ability in race.AbilityLevels)
+            var abilities = race.AbilityLevels.ToArray();
+
+            foreach (var ability in abilities)
             {
-                await using var insertAbility = new MySqlCommand(
+                await using var upsertAbility = new MySqlCommand(
                     """
                     INSERT INTO wc_ability_progress
                         (steam_id, race_id, ability_id, level)
                     VALUES
-                        (@steamId, @raceId, @abilityId, @level);
+                        (@steamId, @raceId, @abilityId, @level)
+                    ON DUPLICATE KEY UPDATE
+                        level = VALUES(level);
                     """,
                     connection,
                     transaction);
 
-                insertAbility.Parameters.AddWithValue("@steamId", player.SteamId);
-                insertAbility.Parameters.AddWithValue("@raceId", race.RaceId);
-                insertAbility.Parameters.AddWithValue("@abilityId", ability.Key);
-                insertAbility.Parameters.AddWithValue("@level", ability.Value);
-                await insertAbility.ExecuteNonQueryAsync(cancellationToken);
+                upsertAbility.Parameters.AddWithValue("@steamId", player.SteamId);
+                upsertAbility.Parameters.AddWithValue("@raceId", race.RaceId);
+                upsertAbility.Parameters.AddWithValue("@abilityId", ability.Key);
+                upsertAbility.Parameters.AddWithValue("@level", ability.Value);
+                await upsertAbility.ExecuteNonQueryAsync(cancellationToken);
             }
+
+            await PruneStaleAbilitiesAsync(
+                connection,
+                transaction,
+                player.SteamId,
+                race.RaceId,
+                abilities.Select(x => x.Key).ToArray(),
+                cancellationToken);
         }
+
+        await PruneStaleRacesAsync(
+            connection,
+            transaction,
+            player.SteamId,
+            races.Select(x => x.RaceId).ToArray(),
+            cancellationToken);
+    }
+
+    private static async Task PruneStaleAbilitiesAsync(
+        MySqlConnection connection,
+        MySqlTransaction transaction,
+        ulong steamId,
+        string raceId,
+        IReadOnlyList<string> abilityIds,
+        CancellationToken cancellationToken)
+    {
+        if (abilityIds.Count == 0)
+        {
+            await using var deleteAll = new MySqlCommand(
+                """
+                DELETE FROM wc_ability_progress
+                WHERE steam_id = @steamId AND race_id = @raceId;
+                """,
+                connection,
+                transaction);
+
+            deleteAll.Parameters.AddWithValue("@steamId", steamId);
+            deleteAll.Parameters.AddWithValue("@raceId", raceId);
+            await deleteAll.ExecuteNonQueryAsync(cancellationToken);
+            return;
+        }
+
+        var names = abilityIds
+            .Select((_, index) => $"@ability{index}")
+            .ToArray();
+
+        await using var delete = new MySqlCommand(
+            $"""
+            DELETE FROM wc_ability_progress
+            WHERE steam_id = @steamId
+              AND race_id = @raceId
+              AND ability_id NOT IN ({string.Join(", ", names)});
+            """,
+            connection,
+            transaction);
+
+        delete.Parameters.AddWithValue("@steamId", steamId);
+        delete.Parameters.AddWithValue("@raceId", raceId);
+
+        for (var i = 0; i < abilityIds.Count; i++)
+            delete.Parameters.AddWithValue(names[i], abilityIds[i]);
+
+        await delete.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task PruneStaleRacesAsync(
+        MySqlConnection connection,
+        MySqlTransaction transaction,
+        ulong steamId,
+        IReadOnlyList<string> raceIds,
+        CancellationToken cancellationToken)
+    {
+        if (raceIds.Count == 0)
+        {
+            await using var deleteAll = new MySqlCommand(
+                "DELETE FROM wc_race_progress WHERE steam_id = @steamId;",
+                connection,
+                transaction);
+
+            deleteAll.Parameters.AddWithValue("@steamId", steamId);
+            await deleteAll.ExecuteNonQueryAsync(cancellationToken);
+            return;
+        }
+
+        var names = raceIds
+            .Select((_, index) => $"@race{index}")
+            .ToArray();
+
+        await using var delete = new MySqlCommand(
+            $"""
+            DELETE FROM wc_race_progress
+            WHERE steam_id = @steamId
+              AND race_id NOT IN ({string.Join(", ", names)});
+            """,
+            connection,
+            transaction);
+
+        delete.Parameters.AddWithValue("@steamId", steamId);
+
+        for (var i = 0; i < raceIds.Count; i++)
+            delete.Parameters.AddWithValue(names[i], raceIds[i]);
+
+        await delete.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private sealed class MutableRaceProgress
