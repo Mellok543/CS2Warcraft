@@ -30,6 +30,18 @@ Passive mechanics:
 | `reincarnation`    | `PlayerDeathEvent`      | `chance`, `delay` (s, default 2); once per round          |
 | `spawn_armor`      | `PlayerSpawnEvent`      | `armor`, `helmet` (1 = yes)                              |
 | `spawn_items`      | `PlayerSpawnEvent`      | `items`: `["weapon_x"]` or per level `[["a"], ["a","b"]]` |
+| `headshot_damage`  | `DamagePreEvent` (head) | `percent`                                                |
+| `backstab`         | `DamagePreEvent`        | `percent` (attacker within ±60° behind the victim)       |
+| `execute`          | `DamagePreEvent`        | `percent`, `threshold` (victim HP share, default 0.35)   |
+| `blast_resist`     | `DamagePreEvent` (blast)| `percent`                                                |
+| `cheat_death`      | `DamagePreEvent`        | `chance`; survive a lethal hit with 1 HP, once per round |
+| `money_steal`      | `DamagePostEvent`       | `chance` (default 1), `amount`                           |
+| `spawn_money`      | `PlayerSpawnEvent`      | `money`                                                  |
+| `adrenaline`       | `DamagePostEvent`       | `multiplier`, `duration` — speed after taking damage     |
+| `kill_speed`       | `PlayerKillEvent`       | `multiplier`, `duration` — speed after a kill            |
+| `jump_boost`       | `PlayerJumpEvent`       | `forward` (horizontal x), `up` (extra vertical speed)    |
+| `heal_aura`        | `GameTickEvent`         | `amount`, `radius`, `interval`                           |
+| `immolation`       | `GameTickEvent`         | `damage`, `radius`, `interval`                           |
 
 Activatable mechanics — usable both as a regular active ability
 (`css_ability <slot>`) and as the race `ultimate` (`css_ultimate`); every one
@@ -42,12 +54,22 @@ reads `cooldown`:
 | `sprint`          | temporary speed boost                            | `multiplier`, `duration`                      |
 | `heal_burst`      | heals self and allies in radius                  | `amount`, `radius` (0 = self)                 |
 | `divine_shield`   | temporary damage reduction                       | `duration`, `percent` (1 = invulnerable)      |
-| `war_stomp`       | damage + stun to all enemies around              | `radius`, `damage`, `stun`                    |
+| `war_stomp`       | damage + stun/slow to all enemies around         | `radius`, `damage`, `stun`, `slow` (0 = freeze) |
 | `entangle`        | roots nearest enemy, damage per second           | `range`, `duration`, `damage`                 |
 | `life_drain`      | damages nearest enemy and heals the caster       | `range`, `damage`, `healPercent`              |
+| `recall`          | back to the position from N seconds ago          | `seconds`                                     |
+| `swap`            | swap places with the nearest enemy               | `range`                                       |
+| `pull`            | pull the nearest enemy to you                    | `range`, `force`, `upForce`                   |
+| `repulse`         | knock back (and damage) enemies around           | `radius`, `force`, `upForce`, `damage`        |
+| `cloak`           | temporary invisibility                           | `alpha` (default 0), `duration`               |
+| `battle_cry`      | you and allies deal more damage for a while      | `percent`, `duration`, `radius`               |
+| `resurrect`       | revive a dead teammate at spawn                  | —                                             |
 
 All ability damage (`chain_lightning`, `war_stomp`, `entangle`, `life_drain`,
-`poison`, `reflect_damage`) goes through `api.Combat` and credits kills.
+`repulse`, `immolation`, `poison`, `reflect_damage`) goes through `api.Combat`
+and credits kills. `cheat_death` is registered last so it sees the final damage.
+`recall` and `swap` only move players to positions that players actually
+occupied, so they never place anyone inside geometry.
 Movement effects (`speed`, `sprint`, `bash`, `war_stomp`, `entangle`) share one
 `MovementController`, so they never overwrite each other: stun beats speed,
 and the strongest speed source wins.

@@ -1,0 +1,79 @@
+{
+  "id": "warlord",
+  "name": "Военачальник",
+  "description": "Командир: адреналин, боевой клич для отряда, броня и ледяной рёв.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "abilities": [
+    {
+      "id": "adrenaline",
+      "name": "Адреналин",
+      "maxLevel": 2,
+      "unlockLevel": 1,
+      "config": {
+        "multiplier": [
+          1.15,
+          1.25
+        ],
+        "duration": 2
+      },
+      "conditions": {}
+    },
+    {
+      "id": "battle_cry",
+      "name": "Боевой клич",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "percent": [
+          0.1,
+          0.2,
+          0.3
+        ],
+        "duration": 5,
+        "radius": 400,
+        "cooldown": 30
+      },
+      "conditions": {}
+    },
+    {
+      "id": "spawn_armor",
+      "name": "Латы командира",
+      "maxLevel": 1,
+      "unlockLevel": 3,
+      "config": {
+        "armor": 100,
+        "helmet": 1
+      },
+      "conditions": {}
+    },
+    {
+      "id": "bonus_health",
+      "name": "Закалка",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "health": [
+          20,
+          40
+        ]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "war_stomp",
+    "name": "Ледяной рёв",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "radius": 350,
+      "damage": 20,
+      "stun": 3,
+      "slow": 0.4,
+      "cooldown": 40
+    },
+    "conditions": {},
+    "description": "Урон {damage} и замедление на {stun} с всем врагам в радиусе {radius}. Перезарядка {cooldown} с."
+  }
+}

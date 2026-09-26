@@ -1,0 +1,71 @@
+{
+  "id": "shaman",
+  "name": "Шаман",
+  "description": "Поддержка отряда: аура исцеления, огненная аура, ударная волна и воскрешение.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "abilities": [
+    {
+      "id": "heal_aura",
+      "name": "Целительный тотем",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "amount": [
+          1,
+          2,
+          3
+        ],
+        "radius": 350,
+        "interval": 2
+      },
+      "conditions": {}
+    },
+    {
+      "id": "immolation",
+      "name": "Огненный тотем",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "damage": [
+          2,
+          3,
+          4
+        ],
+        "radius": 200,
+        "interval": 1
+      },
+      "conditions": {}
+    },
+    {
+      "id": "repulse",
+      "name": "Ударная волна",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "radius": 300,
+        "force": 700,
+        "upForce": 300,
+        "damage": [
+          0,
+          10
+        ],
+        "cooldown": [
+          20,
+          16
+        ]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "resurrect",
+    "name": "Воскрешение",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "cooldown": 60
+    },
+    "conditions": {}
+  }
+}

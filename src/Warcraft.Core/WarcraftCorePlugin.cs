@@ -414,7 +414,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
             AttackerIsPlayer = damageInfo.Attacker.Value is CCSPlayerPawn,
             Damage = damageInfo.Damage,
             Weapon = GetAttackerWeapon(damageInfo),
-            Kind = ToDamageKind(damageInfo.BitsDamageType)
+            Kind = ToDamageKind(damageInfo)
         };
 
         var originalDamage = damageInfo.Damage;
@@ -441,12 +441,13 @@ public sealed class WarcraftCorePlugin : BasePlugin
             GetAttackerSteamId(damageInfo),
             result.DamageDealt > 0 ? result.DamageDealt : result.HealthLost,
             GetAttackerWeapon(damageInfo),
-            ToDamageKind(damageInfo.BitsDamageType)));
+            ToDamageKind(damageInfo)));
     }
 
-    private static DamageKind ToDamageKind(DamageTypes_t bits)
+    private static DamageKind ToDamageKind(CTakeDamageInfo damageInfo)
     {
-        var kind = DamageKind.None;
+        var bits = damageInfo.BitsDamageType;
+        var kind = damageInfo.GetHitGroup() == HitGroup_t.HITGROUP_HEAD ? DamageKind.Headshot : DamageKind.None;
 
         if ((bits & (DamageTypes_t.DMG_BULLET | DamageTypes_t.DMG_BUCKSHOT)) != 0)
             kind |= DamageKind.Bullet;

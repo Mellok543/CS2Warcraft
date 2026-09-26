@@ -10,7 +10,7 @@ namespace Warcraft.Abilities.Actives;
 
 /// <summary>
 /// Active: damages and stuns every enemy around the caster.
-/// Config: radius, damage, stun (seconds), cooldown.
+/// Config: radius, damage, stun (seconds), slow (movement while stunned, 0 = frozen), cooldown.
 /// </summary>
 internal sealed class WarStompAbility(MovementController movement) : ActiveAbilityHandler
 {
@@ -24,6 +24,7 @@ internal sealed class WarStompAbility(MovementController movement) : ActiveAbili
         var radius = (float)Math.Max(0, AbilityConfigReader.GetLevelDouble(activation.Ability, "radius", 300));
         var damage = AbilityConfigReader.GetLevelInt(activation.Ability, "damage");
         var stun = Math.Clamp(AbilityConfigReader.GetLevelDouble(activation.Ability, "stun", 1.0), 0, 5);
+        var slow = (float)Math.Clamp(AbilityConfigReader.GetLevelDouble(activation.Ability, "slow", 0.0), 0, 1);
 
         var targets = GamePlayers.EnemiesAround(caster, caster.Position, radius).ToArray();
         if (targets.Length == 0)
@@ -36,7 +37,7 @@ internal sealed class WarStompAbility(MovementController movement) : ActiveAbili
         foreach (var target in targets)
         {
             if (stun > 0)
-                movement.Stun(target, 0f, until);
+                movement.Stun(target, slow, until);
 
             Api?.Combat.DealAbilityDamage(
                 new AbilityDamageRequest(activation.SteamId, target.Controller.Slot, damage, Id));

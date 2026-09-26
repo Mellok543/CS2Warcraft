@@ -44,6 +44,7 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         var beams = new BeamEffects(scheduler);
         var movement = new MovementController();
         var dots = new DamageOverTime(_api);
+        var history = new PositionHistory();
 
         // Passives
         Register(new CriticalStrikeAbility());
@@ -65,6 +66,17 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new ReincarnationAbility(scheduler));
         Register(new SpawnArmorAbility(scheduler));
         Register(new SpawnItemsAbility(scheduler));
+        Register(new HeadshotDamageAbility());
+        Register(new BackstabAbility());
+        Register(new ExecuteAbility());
+        Register(new BlastResistAbility());
+        Register(new MoneyStealAbility());
+        Register(new SpawnMoneyAbility());
+        Register(new AdrenalineAbility(movement));
+        Register(new KillSpeedAbility(movement));
+        Register(new JumpBoostAbility());
+        Register(new HealAuraAbility());
+        Register(new ImmolationAbility());
 
         // Activatable (ability slot or ultimate)
         Register(new ChainLightningAbility(beams));
@@ -75,17 +87,29 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new WarStompAbility(movement));
         Register(new EntangleAbility(movement, dots, beams));
         Register(new LifeDrainAbility(beams));
+        Register(new RecallAbility(history));
+        Register(new SwapAbility());
+        Register(new PullAbility());
+        Register(new RepulseAbility());
+        Register(new CloakAbility());
+        Register(new BattleCryAbility());
+        Register(new ResurrectAbility());
+
+        // Must be the last DamagePreEvent subscriber: it needs the final damage.
+        Register(new CheatDeathAbility());
 
         // Shared systems run after the handlers have updated their state for this tick.
         _systems.Add(_api.Events.Subscribe<GameTickEvent>(tick =>
         {
             movement.Update(tick.ServerTime);
             dots.Update(tick.ServerTime);
+            history.Record(tick.ServerTime);
         }));
         _systems.Add(_api.Events.Subscribe<RoundStartEvent>(_ =>
         {
             movement.Clear();
             dots.Clear();
+            history.Clear();
         }));
 
         Logger.LogInformation(

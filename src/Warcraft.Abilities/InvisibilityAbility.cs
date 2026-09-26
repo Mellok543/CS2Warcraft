@@ -1,6 +1,5 @@
-using System.Drawing;
-using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using Warcraft.Abilities.Game;
 using Warcraft.Api.Abilities;
 
 namespace Warcraft.Abilities;
@@ -12,8 +11,6 @@ namespace Warcraft.Abilities;
 /// </summary>
 internal sealed class InvisibilityAbility : PawnAttributeAbility
 {
-    private const int Opaque = 255;
-
     public override string Id => "invisibility";
     protected override string Description =>
         "Делает модель полупрозрачной: видимость {alpha} из 255.";
@@ -21,27 +18,15 @@ internal sealed class InvisibilityAbility : PawnAttributeAbility
 
     protected override float? ReadValue(PlayerAbilitySnapshot ability)
     {
-        var alpha = Math.Clamp(AbilityConfigReader.GetLevelInt(ability, "alpha", Opaque), 0, Opaque);
-        return alpha < Opaque ? alpha : null;
+        var alpha = Math.Clamp(AbilityConfigReader.GetLevelInt(ability, "alpha", PlayerRender.Opaque), 0, PlayerRender.Opaque);
+        return alpha < PlayerRender.Opaque ? alpha : null;
     }
 
-    protected override void Apply(CCSPlayerPawn pawn, float value)
-        => SetAlpha(pawn, (int)value, RenderMode_t.kRenderTransAlpha);
+    protected override void Apply(CCSPlayerPawn pawn, float value) => PlayerRender.SetAlpha(pawn, (int)value);
 
     protected override void Reset(CCSPlayerPawn pawn)
     {
         if (pawn.IsValid)
-            SetAlpha(pawn, Opaque, RenderMode_t.kRenderNormal);
-    }
-
-    private static void SetAlpha(CCSPlayerPawn pawn, int alpha, RenderMode_t mode)
-    {
-        if (pawn.Render.A == alpha && pawn.RenderMode == mode)
-            return;
-
-        pawn.RenderMode = mode;
-        pawn.Render = Color.FromArgb(alpha, pawn.Render.R, pawn.Render.G, pawn.Render.B);
-        Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_nRenderMode");
-        Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_clrRender");
+            PlayerRender.SetAlpha(pawn, PlayerRender.Opaque);
     }
 }

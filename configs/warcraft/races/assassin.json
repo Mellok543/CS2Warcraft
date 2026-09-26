@@ -1,0 +1,71 @@
+{
+  "id": "assassin",
+  "name": "Ассасин",
+  "description": "Убийца из тени: удары в спину, меткость, маскировка и подмена.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "abilities": [
+    {
+      "id": "backstab",
+      "name": "Удар в спину",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "percent": [
+          0.3,
+          0.5,
+          0.7
+        ]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "headshot_damage",
+      "name": "Точность",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "percent": [
+          0.1,
+          0.2,
+          0.3
+        ]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "kill_speed",
+      "name": "Уход в тень",
+      "maxLevel": 1,
+      "unlockLevel": 3,
+      "config": {
+        "multiplier": 1.25,
+        "duration": 3
+      },
+      "conditions": {}
+    },
+    {
+      "id": "cloak",
+      "name": "Маскировка",
+      "maxLevel": 1,
+      "unlockLevel": 4,
+      "config": {
+        "alpha": 0,
+        "duration": 4,
+        "cooldown": 30
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "swap",
+    "name": "Подмена",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "range": 800,
+      "cooldown": 35
+    },
+    "conditions": {}
+  }
+}

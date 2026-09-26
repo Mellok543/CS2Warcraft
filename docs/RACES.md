@@ -50,7 +50,7 @@ Core validation covers ids, levels, the Core-owned `cooldown` key and every
 ```
 
 Shipped examples: `orc`, `human`, `undead`, `night_elf`, `paladin`, `shadow` (VIP),
-`tauren`, `troll`, `druid`, `goblin`. They reuse the same
+`tauren`, `troll`, `druid`, `goblin`, `assassin`, `shaman`, `butcher`, `trickster`, `warlord`. They reuse the same
 handlers with different values and conditions — no race has C# code.
 
 Other modules can request a reload without referencing `Warcraft.Races`:
