@@ -1,3 +1,4 @@
+using Warcraft.Api.Persistence;
 using Warcraft.Api.Players;
 
 namespace Warcraft.Core.Runtime;
@@ -44,6 +45,46 @@ internal sealed class PlayerStateStore : IPlayersApi
             _players[steamId] = created;
             return created;
         }
+    }
+
+    internal void Restore(PlayerPersistenceDto persisted, string currentName)
+    {
+        lock (_sync)
+        {
+            var player = new PlayerRuntimeState
+            {
+                SteamId = persisted.SteamId,
+                Name = currentName,
+                GlobalXp = persisted.GlobalXp,
+                ActiveRaceId = persisted.ActiveRaceId
+            };
+
+            foreach (var race in persisted.Races)
+            {
+                var runtime = new RaceProgressRuntime
+                {
+                    RaceId = race.RaceId,
+                    Level = race.Level,
+                    Xp = race.Xp,
+                    SkillPoints = race.SkillPoints
+                };
+
+                foreach (var ability in race.AbilityLevels)
+                    runtime.AbilityLevels[ability.Key] = ability.Value;
+
+                player.Races[race.RaceId] = runtime;
+            }
+
+            _players[persisted.SteamId] = player;
+        }
+    }
+
+    internal PlayerPersistenceDto? GetPersistenceSnapshot(ulong steamId)
+    {
+        lock (_sync)
+            return _players.TryGetValue(steamId, out var player)
+                ? player.ToPersistence()
+                : null;
     }
 
     internal bool Remove(ulong steamId)

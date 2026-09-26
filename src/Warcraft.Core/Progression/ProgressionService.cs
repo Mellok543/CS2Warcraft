@@ -1,3 +1,4 @@
+using Warcraft.Api.Modifiers;
 using Warcraft.Api.Progression;
 using Warcraft.Core.Races;
 using Warcraft.Core.Runtime;
@@ -6,7 +7,8 @@ namespace Warcraft.Core.Progression;
 
 internal sealed class ProgressionService(
     PlayerStateStore players,
-    RaceCatalogService races) : IProgressApi
+    RaceCatalogService races,
+    IModifiersApi modifiers) : IProgressApi
 {
     public ProgressMutationResult AddXp(ulong steamId, long amount, string reason)
     {
@@ -14,8 +16,13 @@ internal sealed class ProgressionService(
             return new(false, "XP amount must not be zero.");
 
         var player = players.GetRequired(steamId);
+        var modifier = modifiers.GetCombined(steamId);
+        var effectiveAmount = amount > 0
+            ? checked((long)Math.Round(amount * modifier.XpMultiplier))
+            : amount;
+
         var previousXp = player.GlobalXp;
-        player.GlobalXp = Math.Max(0, player.GlobalXp + amount);
+        player.GlobalXp = Math.Max(0, player.GlobalXp + effectiveAmount);
 
         if (player.ActiveRaceId is null)
             return new(true, reason, PreviousXp: previousXp, CurrentXp: player.GlobalXp);
@@ -26,7 +33,7 @@ internal sealed class ProgressionService(
 
         var progress = GetOrCreateRace(player, race.Id);
         var previousLevel = progress.Level;
-        progress.Xp = Math.Max(0, progress.Xp + amount);
+        progress.Xp = Math.Max(0, progress.Xp + effectiveAmount);
 
         while (progress.Level < race.MaxLevel)
         {
@@ -36,7 +43,7 @@ internal sealed class ProgressionService(
 
             progress.Xp -= required;
             progress.Level++;
-            progress.SkillPoints++;
+            progress.SkillPoints += 1 + Math.Max(0, modifier.BonusSkillPointsPerLevel);
         }
 
         return new(true, reason, previousLevel, progress.Level, previousXp, player.GlobalXp);
@@ -77,9 +84,12 @@ internal sealed class ProgressionService(
             return new(false, "Player has no active race.");
 
         var race = races.Get(player.ActiveRaceId);
-        var definitions = race is null
-            ? []
-            : race.Abilities.Concat(race.Ultimate is null ? [] : [race.Ultimate]);
+        if (race is null)
+            return new(false, $"Active race '{player.ActiveRaceId}' is not registered.");
+
+        IEnumerable<Warcraft.Api.Races.RaceAbilityDefinition> definitions = race.Abilities;
+        if (race.Ultimate is not null)
+            definitions = definitions.Append(race.Ultimate);
 
         var definition = definitions.FirstOrDefault(x =>
             string.Equals(x.Id, abilityId, StringComparison.OrdinalIgnoreCase));

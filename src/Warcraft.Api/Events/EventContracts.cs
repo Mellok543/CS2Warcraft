@@ -1,6 +1,8 @@
 namespace Warcraft.Api.Events;
 
-public interface IWarcraftEvent;
+public interface IWarcraftEvent
+{
+}
 
 public interface IWarcraftEventBus
 {

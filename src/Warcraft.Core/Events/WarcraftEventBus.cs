@@ -2,7 +2,7 @@ using Warcraft.Api.Events;
 
 namespace Warcraft.Core.Events;
 
-internal sealed class WarcraftEventBus : IWarcraftEventBus
+internal sealed class WarcraftEventBus(Action<Exception>? errorHandler = null) : IWarcraftEventBus
 {
     private readonly Dictionary<Type, List<Delegate>> _handlers = [];
     private readonly object _sync = new();
@@ -37,7 +37,16 @@ internal sealed class WarcraftEventBus : IWarcraftEventBus
                 : [];
 
         foreach (var handler in snapshot.Cast<Action<TEvent>>())
-            handler(@event);
+        {
+            try
+            {
+                handler(@event);
+            }
+            catch (Exception exception)
+            {
+                errorHandler?.Invoke(exception);
+            }
+        }
     }
 
     private void Unsubscribe<TEvent>(Action<TEvent> handler)

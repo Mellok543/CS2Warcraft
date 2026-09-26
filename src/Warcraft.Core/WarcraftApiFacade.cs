@@ -1,6 +1,8 @@
 using Warcraft.Api;
 using Warcraft.Api.Abilities;
 using Warcraft.Api.Events;
+using Warcraft.Api.Modifiers;
+using Warcraft.Api.Modules;
 using Warcraft.Api.Persistence;
 using Warcraft.Api.Players;
 using Warcraft.Api.Progression;
@@ -14,7 +16,9 @@ internal sealed class WarcraftApiFacade(
     IRacesApi races,
     IAbilitiesApi abilities,
     IWarcraftEventBus events,
-    IPersistenceApi persistence) : IWarcraftApi
+    IPersistenceApi persistence,
+    IModifiersApi modifiers,
+    IModulesApi modules) : IWarcraftApi
 {
     public IPlayersApi Players { get; } = players;
     public IProgressApi Progress { get; } = progress;
@@ -22,4 +26,6 @@ internal sealed class WarcraftApiFacade(
     public IAbilitiesApi Abilities { get; } = abilities;
     public IWarcraftEventBus Events { get; } = events;
     public IPersistenceApi Persistence { get; } = persistence;
+    public IModifiersApi Modifiers { get; } = modifiers;
+    public IModulesApi Modules { get; } = modules;
 }

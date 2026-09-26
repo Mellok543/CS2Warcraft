@@ -1,5 +1,7 @@
 using Warcraft.Api.Abilities;
 using Warcraft.Api.Events;
+using Warcraft.Api.Modifiers;
+using Warcraft.Api.Modules;
 using Warcraft.Api.Persistence;
 using Warcraft.Api.Players;
 using Warcraft.Api.Progression;
@@ -15,4 +17,6 @@ public interface IWarcraftApi
     IAbilitiesApi Abilities { get; }
     IWarcraftEventBus Events { get; }
     IPersistenceApi Persistence { get; }
+    IModifiersApi Modifiers { get; }
+    IModulesApi Modules { get; }
 }

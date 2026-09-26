@@ -1,4 +1,5 @@
 using Warcraft.Api.Abilities;
+using Warcraft.Api.Races;
 using Warcraft.Core.Races;
 using Warcraft.Core.Runtime;
 
@@ -57,7 +58,10 @@ internal sealed class AbilityRegistryService(
         if (race is null)
             return null;
 
-        var definitions = race.Abilities.Concat(race.Ultimate is null ? [] : [race.Ultimate]);
+        IEnumerable<RaceAbilityDefinition> definitions = race.Abilities;
+        if (race.Ultimate is not null)
+            definitions = definitions.Append(race.Ultimate);
+
         var definition = definitions.FirstOrDefault(x =>
             string.Equals(x.Id, abilityId, StringComparison.OrdinalIgnoreCase));
 
