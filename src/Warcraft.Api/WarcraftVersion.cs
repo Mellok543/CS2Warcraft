@@ -2,5 +2,7 @@ namespace Warcraft.Api;
 
 public static class WarcraftVersion
 {
-    public const string Current = "0.6.0";
+    public static string Current { get; } =
+        typeof(WarcraftVersion).Assembly.GetName().Version?.ToString(3)
+        ?? "0.0.0";
 }
