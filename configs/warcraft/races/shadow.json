@@ -1,0 +1,55 @@
+{
+  "id": "shadow",
+  "name": "Тень",
+  "description": "VIP-раса. Убийца с ножом: невидимость, уклонение, скорость и рывки.",
+  "maxLevel": 10,
+  "vipOnly": true,
+  "abilities": [
+    {
+      "id": "invisibility",
+      "name": "Покров тьмы",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "alpha": [150, 90, 40]
+      },
+      "conditions": {
+        "weaponTypes": ["knife"]
+      }
+    },
+    {
+      "id": "evasion",
+      "name": "Ускользание",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "chance": [0.05, 0.09, 0.13]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "speed",
+      "name": "Бег тени",
+      "maxLevel": 3,
+      "unlockLevel": 3,
+      "config": {
+        "multiplier": [1.05, 1.10, 1.15]
+      },
+      "conditions": {
+        "weaponTypes": ["knife", "pistol"]
+      }
+    },
+    {
+      "id": "dash",
+      "name": "Шаг сквозь тьму",
+      "maxLevel": 3,
+      "unlockLevel": 4,
+      "config": {
+        "force": [600, 700, 800],
+        "upForce": 250,
+        "cooldown": [10, 8, 6]
+      },
+      "conditions": {}
+    }
+  ]
+}

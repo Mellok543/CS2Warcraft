@@ -1,0 +1,70 @@
+{
+  "id": "paladin",
+  "name": "Паладин",
+  "description": "Бронированный воин: щит, оглушающие удары, исцеление и рывок в бой.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "abilities": [
+    {
+      "id": "damage_reduction",
+      "name": "Божественный щит",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "percent": [0.06, 0.10, 0.15]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "bash",
+      "name": "Оглушающий удар",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "chance": [0.07, 0.12, 0.17],
+        "duration": [0.4, 0.6, 0.8],
+        "slow": 0.0
+      },
+      "conditions": {}
+    },
+    {
+      "id": "regeneration",
+      "name": "Свет исцеления",
+      "maxLevel": 3,
+      "unlockLevel": 3,
+      "config": {
+        "amount": [1, 2, 2],
+        "interval": [2, 2, 1.5]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "dash",
+      "name": "Натиск",
+      "maxLevel": 3,
+      "unlockLevel": 4,
+      "config": {
+        "force": [550, 650, 750],
+        "upForce": 220,
+        "cooldown": [12, 10, 8]
+      },
+      "conditions": {
+        "requiresGrounded": true
+      }
+    }
+  ],
+  "ultimate": {
+    "id": "chain_lightning",
+    "name": "Молот правосудия",
+    "description": "Удар света наносит {damage} урона ближайшему врагу в радиусе {range} и ещё {jumps} целям рядом. Перезарядка {cooldown} с.",
+    "maxLevel": 2,
+    "unlockLevel": 6,
+    "config": {
+      "damage": [40, 55],
+      "range": 350,
+      "jumps": [1, 2],
+      "cooldown": [35, 28]
+    },
+    "conditions": {}
+  }
+}

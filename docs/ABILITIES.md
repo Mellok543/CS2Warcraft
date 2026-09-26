@@ -18,6 +18,10 @@ and returns the effective `PlayerAbilitySnapshot`.
 | `regeneration`    | passive  | `GameTickEvent`          | `amount`, `interval` (seconds, default 1)            |
 | `evasion`         | passive  | `DamagePreEvent`         | `chance`                                             |
 | `reflect_damage`  | passive  | `DamagePostEvent`        | `percent`, `maxDamage` (optional cap per hit)        |
+| `dash`            | active   | `AbilityPressedEvent`    | `force`, `upForce`, `cooldown`                     |
+| `bash`            | passive  | `DamagePostEvent` + tick | `chance`, `duration` (s), `slow` (0 = freeze)      |
+| `invisibility`    | passive  | `GameTickEvent`          | `alpha` (0 invisible .. 255 normal)                 |
+| `damage_reduction`| passive  | `DamagePreEvent`         | `percent` (max 0.9)                                 |
 
 `speed` and `low_gravity` keep the pawn attribute at the configured value while
 the ability is usable and restore the default when it stops being usable (for
@@ -29,6 +33,9 @@ and, like chain lightning, deals damage through `api.Combat` (kills are credited
 
 `GameTickEvent` is published by Core every `gameTickIntervalMilliseconds`
 (core.json, default 100 ms).
+
+`dash` changes velocity (not position), so it cannot put a player inside a wall.
+`invisibility` affects the player model; held weapons stay visible.
 
 The same mechanic is configured differently per race — for example `speed`:
 

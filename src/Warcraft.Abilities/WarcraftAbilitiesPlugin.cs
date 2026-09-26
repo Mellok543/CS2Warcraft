@@ -47,6 +47,10 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new RegenerationAbility());
         Register(new EvasionAbility());
         Register(new ReflectDamageAbility());
+        Register(new DashAbility());
+        Register(new BashAbility());
+        Register(new InvisibilityAbility());
+        Register(new DamageReductionAbility());
 
         Logger.LogInformation(
             "Warcraft.Abilities registered {Count} handlers.",

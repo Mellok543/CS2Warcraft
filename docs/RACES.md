@@ -6,6 +6,9 @@ Runtime race directory:
 csgo/configs/warcraft/races/*.json
 ```
 
+Default races are copied only when the directory is empty; copy new shipped
+JSON files manually on existing servers.
+
 A new race requires only a new JSON file as long as every referenced ability ID
 has an implementation in `Warcraft.Abilities`.
 
@@ -46,7 +49,7 @@ Core validation covers ids, levels, the Core-owned `cooldown` key and every
 }
 ```
 
-Shipped examples: `orc`, `human`, `undead`, `night_elf`. They reuse the same
+Shipped examples: `orc`, `human`, `undead`, `night_elf`, `paladin`, `shadow` (VIP). They reuse the same
 handlers with different values and conditions — no race has C# code.
 
 Other modules can request a reload without referencing `Warcraft.Races`:
