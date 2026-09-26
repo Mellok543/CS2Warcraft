@@ -95,6 +95,14 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             (_, _) => OpenCurrentRaceMenu(player),
             race is null);
 
+        if (race is not null)
+        {
+            var ultimate = api.Abilities.GetPlayerAbilities(player.SteamID)
+                .FirstOrDefault(x => x.IsUltimate);
+
+            menu.AddMenuOption(AbilityStatusText.UltimateSummary(ultimate), (_, _) => { }, true);
+        }
+
         menu.AddMenuOption(
             "Выбор расы",
             (_, _) => OpenRaceMenu(player));
@@ -192,9 +200,6 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             return;
         }
 
-        var registrations = api.Abilities.GetRegistered()
-            .ToDictionary(x => x.Id, StringComparer.OrdinalIgnoreCase);
-
         var menu = new CenterHtmlMenu(
             $"Навыки | Очки: {progress.SkillPoints}",
             this)
@@ -202,39 +207,24 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             ExitButton = true
         };
 
-        IEnumerable<RaceAbilityDefinition> definitions = race.Abilities;
-        if (race.Ultimate is not null)
-            definitions = definitions.Append(race.Ultimate);
-
-        foreach (var ability in definitions)
+        foreach (var status in api.Abilities.GetPlayerAbilities(player.SteamID))
         {
-            var definition = ability;
-            var currentLevel = progress.AbilityLevels.GetValueOrDefault(definition.Id);
-            var maxed = currentLevel >= definition.MaxLevel;
-            var locked = progress.Level < definition.UnlockLevel;
-            var noPoints = progress.SkillPoints <= 0;
-            var handlerMissing = !registrations.ContainsKey(definition.Id);
-
-            var display =
-                $"{definition.Id} [{currentLevel}/{definition.MaxLevel}]" +
-                (locked ? $" | LVL {definition.UnlockLevel}" : string.Empty) +
-                (handlerMissing ? " | handler missing" : string.Empty);
+            var abilityId = status.AbilityId;
+            var displayName = status.DisplayName;
 
             menu.AddMenuOption(
-                display,
+                AbilityStatusText.UpgradeLine(status),
                 (_, _) =>
                 {
-                    var result = api.Progress.UpgradeAbility(
-                        player.SteamID,
-                        definition.Id);
+                    var result = api.Progress.UpgradeAbility(player.SteamID, abilityId);
 
                     player.PrintToChat(
                         $" [Warcraft] {result.Message} " +
-                        $"{result.AbilityId}: {result.PreviousLevel}->{result.CurrentLevel}");
+                        $"{displayName}: {result.PreviousLevel}->{result.CurrentLevel}");
 
                     OpenAbilityMenu(player);
                 },
-                maxed || locked || noPoints || handlerMissing);
+                !status.CanUpgrade || !status.HandlerRegistered);
         }
 
         MenuManager.OpenCenterHtmlMenu(this, player, menu);
@@ -277,9 +267,20 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             (_, _) => { },
             true);
 
+        foreach (var status in api.Abilities.GetPlayerAbilities(player.SteamID))
+            menu.AddMenuOption(AbilityStatusText.InfoLine(status), (_, _) => { }, true);
+
         menu.AddMenuOption(
             "Прокачка способностей",
             (_, _) => OpenAbilityMenu(player));
+
+        menu.AddMenuOption(
+            "Как использовать способности",
+            (_, _) =>
+            {
+                player.PrintToChat(" [Warcraft] Ультимейт: bind x css_ultimate  (или !ultimate)");
+                player.PrintToChat(" [Warcraft] Активная способность: bind c \"css_ability 1\"  (или !ability 1)");
+            });
 
         MenuManager.OpenCenterHtmlMenu(this, player, menu);
     }
