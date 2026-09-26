@@ -35,7 +35,7 @@
       "maxLevel": 3,
       "unlockLevel": 3,
       "config": {
-        "percent": [0.10, 0.18, 0.25],
+        "percent": [0.1, 0.18, 0.25],
         "maxDamage": 20
       },
       "conditions": {}
@@ -46,7 +46,7 @@
       "maxLevel": 3,
       "unlockLevel": 4,
       "config": {
-        "multiplier": [1.05, 1.10, 1.15]
+        "multiplier": [1.05, 1.1, 1.15]
       },
       "conditions": {}
     }

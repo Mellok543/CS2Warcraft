@@ -4,6 +4,12 @@
   "description": "Неуловимый стрелок: уклонение, шипы и меткие выстрелы из винтовок.",
   "maxLevel": 10,
   "vipOnly": false,
+  "requirements": {
+    "totalLevel": 6,
+    "races": {
+      "undead": 3
+    }
+  },
   "abilities": [
     {
       "id": "evasion",
@@ -21,7 +27,7 @@
       "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
-        "percent": [0.08, 0.14, 0.20]
+        "percent": [0.08, 0.14, 0.2]
       },
       "conditions": {}
     },
@@ -31,8 +37,8 @@
       "maxLevel": 3,
       "unlockLevel": 3,
       "config": {
-        "chance": [0.10, 0.15, 0.20],
-        "damageMultiplier": [1.20, 1.35, 1.50]
+        "chance": [0.1, 0.15, 0.2],
+        "damageMultiplier": [1.2, 1.35, 1.5]
       },
       "conditions": {
         "weaponTypes": ["rifle", "sniper"],

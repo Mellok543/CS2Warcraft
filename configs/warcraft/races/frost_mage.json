@@ -1,0 +1,65 @@
+{
+  "id": "frost_mage",
+  "name": "Ледяной маг",
+  "description": "Замедляет всё вокруг: аура холода, ледяной тотем и кольцо льда.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 24,
+    "races": {
+      "undead": 6
+    }
+  },
+  "abilities": [
+    {
+      "id": "slow_aura",
+      "name": "Аура холода",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "slow": [0.9, 0.8, 0.7],
+        "radius": 250
+      },
+      "conditions": {}
+    },
+    {
+      "id": "blast_resist",
+      "name": "Ледяной доспех",
+      "maxLevel": 2,
+      "unlockLevel": 2,
+      "config": {
+        "percent": [0.25, 0.5]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "frost_totem",
+      "name": "Ледяной тотем",
+      "maxLevel": 2,
+      "unlockLevel": 3,
+      "config": {
+        "slow": [0.6, 0.45],
+        "radius": 300,
+        "duration": [6, 9],
+        "interval": 1,
+        "cooldown": [25, 20]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "war_stomp",
+    "name": "Кольцо льда",
+    "description": "Все враги в радиусе {radius} получают {damage} урона и замедляются на {stun} с. Перезарядка {cooldown} с.",
+    "maxLevel": 2,
+    "unlockLevel": 6,
+    "config": {
+      "radius": [300, 400],
+      "damage": [15, 25],
+      "stun": [2, 3],
+      "slow": 0.3,
+      "cooldown": [40, 32]
+    },
+    "conditions": {}
+  }
+}

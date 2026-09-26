@@ -1,0 +1,71 @@
+{
+  "id": "wind_walker",
+  "name": "Странник ветра",
+  "description": "Самый быстрый: аура скорости, длинные прыжки, рывки и попутный ветер.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 24,
+    "races": {
+      "night_elf": 5
+    }
+  },
+  "abilities": [
+    {
+      "id": "speed_aura",
+      "name": "Аура ветра",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "multiplier": [1.05, 1.1, 1.15],
+        "radius": 350
+      },
+      "conditions": {}
+    },
+    {
+      "id": "jump_boost",
+      "name": "Порыв",
+      "maxLevel": 2,
+      "unlockLevel": 2,
+      "config": {
+        "forward": [1.15, 1.3],
+        "up": [50, 100]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "fall_immunity",
+      "name": "Парение",
+      "maxLevel": 1,
+      "unlockLevel": 3,
+      "config": {
+        "percent": 1.0
+      },
+      "conditions": {}
+    },
+    {
+      "id": "dash",
+      "name": "Рывок ветра",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "force": [650, 800],
+        "upForce": 250,
+        "cooldown": [10, 7]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "sprint",
+    "name": "Попутный ветер",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "multiplier": 1.6,
+      "duration": 5,
+      "cooldown": 30
+    },
+    "conditions": {}
+  }
+}

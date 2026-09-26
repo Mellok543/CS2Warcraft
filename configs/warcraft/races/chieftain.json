@@ -1,0 +1,63 @@
+{
+  "id": "chieftain",
+  "name": "Вождь орды",
+  "description": "Ведёт отряд в бой: командная аура, тотем войны и клич орды.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 24,
+    "races": {
+      "warlord": 5
+    }
+  },
+  "abilities": [
+    {
+      "id": "command_aura",
+      "name": "Командная аура",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "percent": [0.05, 0.1, 0.15],
+        "radius": 400
+      },
+      "conditions": {}
+    },
+    {
+      "id": "bonus_health",
+      "name": "Закалка вождя",
+      "maxLevel": 2,
+      "unlockLevel": 2,
+      "config": {
+        "health": [20, 35]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "war_totem",
+      "name": "Тотем войны",
+      "maxLevel": 2,
+      "unlockLevel": 3,
+      "config": {
+        "percent": [0.15, 0.25],
+        "radius": 300,
+        "duration": 8,
+        "interval": 1,
+        "cooldown": [30, 24]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "battle_cry",
+    "name": "Клич орды",
+    "maxLevel": 2,
+    "unlockLevel": 6,
+    "config": {
+      "percent": [0.25, 0.4],
+      "duration": 6,
+      "radius": 500,
+      "cooldown": [40, 32]
+    },
+    "conditions": {}
+  }
+}

@@ -4,6 +4,12 @@
   "description": "Живучий вождь: много здоровья, перерождение и громовая поступь.",
   "maxLevel": 10,
   "vipOnly": false,
+  "requirements": {
+    "totalLevel": 14,
+    "races": {
+      "orc": 6
+    }
+  },
   "abilities": [
     {
       "id": "bonus_health",
@@ -11,11 +17,7 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "health": [
-          15,
-          30,
-          45
-        ]
+        "health": [15, 30, 45]
       },
       "conditions": {}
     },
@@ -25,11 +27,7 @@
       "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
-        "chance": [
-          0.25,
-          0.4,
-          0.55
-        ],
+        "chance": [0.25, 0.4, 0.55],
         "delay": 2
       },
       "conditions": {}
@@ -40,22 +38,10 @@
       "maxLevel": 2,
       "unlockLevel": 4,
       "config": {
-        "radius": [
-          250,
-          300
-        ],
-        "damage": [
-          15,
-          25
-        ],
-        "stun": [
-          0.8,
-          1.2
-        ],
-        "cooldown": [
-          20,
-          16
-        ]
+        "radius": [250, 300],
+        "damage": [15, 25],
+        "stun": [0.8, 1.2],
+        "cooldown": [20, 16]
       },
       "conditions": {}
     }

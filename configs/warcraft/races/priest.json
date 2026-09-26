@@ -1,0 +1,62 @@
+{
+  "id": "priest",
+  "name": "Жрец",
+  "description": "Главный лекарь: аура исцеления, тотем, второе дыхание и воскрешение.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 24,
+    "races": {
+      "paladin": 6
+    }
+  },
+  "abilities": [
+    {
+      "id": "heal_aura",
+      "name": "Аура благодати",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "amount": [1, 2, 3],
+        "radius": 400,
+        "interval": 2
+      },
+      "conditions": {}
+    },
+    {
+      "id": "second_wind",
+      "name": "Молитва",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "threshold": 0.3,
+        "amount": [20, 35, 50]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "healing_totem",
+      "name": "Тотем исцеления",
+      "maxLevel": 2,
+      "unlockLevel": 3,
+      "config": {
+        "amount": [4, 7],
+        "radius": 300,
+        "duration": 10,
+        "interval": 1,
+        "cooldown": [30, 24]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "resurrect",
+    "name": "Воскрешение",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "cooldown": 50
+    },
+    "conditions": {}
+  }
+}

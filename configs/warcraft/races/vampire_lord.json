@@ -1,0 +1,61 @@
+{
+  "id": "vampire_lord",
+  "name": "Лорд-вампир",
+  "description": "Пьёт кровь сам и делится ею с союзниками, растворяется во тьме.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 24,
+    "races": {
+      "undead": 8
+    }
+  },
+  "abilities": [
+    {
+      "id": "vampirism",
+      "name": "Жажда",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "percent": [0.06, 0.1, 0.14]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "vampiric_aura",
+      "name": "Кровавая аура",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "percent": [0.05, 0.1, 0.15],
+        "radius": 350
+      },
+      "conditions": {}
+    },
+    {
+      "id": "cloak",
+      "name": "Туман",
+      "maxLevel": 1,
+      "unlockLevel": 4,
+      "config": {
+        "alpha": 40,
+        "duration": 3,
+        "cooldown": 30
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "life_drain",
+    "name": "Кровавый поцелуй",
+    "maxLevel": 2,
+    "unlockLevel": 6,
+    "config": {
+      "range": [500, 700],
+      "damage": [30, 45],
+      "healPercent": 1.0,
+      "cooldown": [30, 24]
+    },
+    "conditions": {}
+  }
+}

@@ -4,6 +4,12 @@
   "description": "Бронированный воин: щит, оглушающие удары, исцеление и рывок в бой.",
   "maxLevel": 10,
   "vipOnly": false,
+  "requirements": {
+    "totalLevel": 6,
+    "races": {
+      "human": 4
+    }
+  },
   "abilities": [
     {
       "id": "damage_reduction",
@@ -11,7 +17,7 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "percent": [0.06, 0.10, 0.15]
+        "percent": [0.06, 0.1, 0.15]
       },
       "conditions": {}
     },

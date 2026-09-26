@@ -1,0 +1,60 @@
+{
+  "id": "necromancer",
+  "name": "Некромант",
+  "description": "Повелевает жизнью и смертью: похищение жизни, перерождение, воскрешение.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 36,
+    "races": {
+      "vampire_lord": 5
+    }
+  },
+  "abilities": [
+    {
+      "id": "life_drain",
+      "name": "Вытягивание души",
+      "maxLevel": 2,
+      "unlockLevel": 1,
+      "config": {
+        "range": [500, 650],
+        "damage": [20, 30],
+        "healPercent": 1.0,
+        "cooldown": [18, 14]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "vampiric_aura",
+      "name": "Аура нежизни",
+      "maxLevel": 2,
+      "unlockLevel": 2,
+      "config": {
+        "percent": [0.06, 0.12],
+        "radius": 350
+      },
+      "conditions": {}
+    },
+    {
+      "id": "reincarnation",
+      "name": "Бессмертие",
+      "maxLevel": 3,
+      "unlockLevel": 3,
+      "config": {
+        "chance": [0.2, 0.3, 0.4],
+        "delay": 3
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "resurrect",
+    "name": "Поднятие мёртвых",
+    "maxLevel": 2,
+    "unlockLevel": 6,
+    "config": {
+      "cooldown": [60, 45]
+    },
+    "conditions": {}
+  }
+}

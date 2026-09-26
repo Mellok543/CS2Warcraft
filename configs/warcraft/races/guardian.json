@@ -1,0 +1,70 @@
+{
+  "id": "guardian",
+  "name": "Страж",
+  "description": "Танк: снижение урона, вызов врага на себя и несокрушимость.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 36,
+    "races": {
+      "crusader": 5
+    }
+  },
+  "abilities": [
+    {
+      "id": "damage_reduction",
+      "name": "Щит стража",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "percent": [0.06, 0.1, 0.15]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "bonus_health",
+      "name": "Стойкость",
+      "maxLevel": 2,
+      "unlockLevel": 2,
+      "config": {
+        "health": [20, 40]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "cheat_death",
+      "name": "Последний рубеж",
+      "maxLevel": 1,
+      "unlockLevel": 3,
+      "config": {
+        "chance": 0.5
+      },
+      "conditions": {}
+    },
+    {
+      "id": "pull",
+      "name": "Вызов",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "range": [600, 800],
+        "force": 750,
+        "upForce": 250,
+        "cooldown": [18, 14]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "divine_shield",
+    "name": "Несокрушимость",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "duration": 5,
+      "percent": 0.7,
+      "cooldown": 40
+    },
+    "conditions": {}
+  }
+}

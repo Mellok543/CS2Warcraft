@@ -1,0 +1,60 @@
+{
+  "id": "storm_spirit",
+  "name": "Дух бури",
+  "description": "Неуловимая молния: скорость, уклонение и разряды.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 36,
+    "races": {
+      "frost_mage": 5
+    }
+  },
+  "abilities": [
+    {
+      "id": "speed",
+      "name": "Буря",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "multiplier": [1.05, 1.1, 1.15]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "evasion",
+      "name": "Порыв",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "chance": [0.05, 0.09, 0.13]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "chain_lightning",
+      "name": "Шаровая молния",
+      "maxLevel": 2,
+      "unlockLevel": 3,
+      "config": {
+        "damage": [18, 25],
+        "range": 450,
+        "jumps": [1, 2],
+        "cooldown": [15, 12]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "smite",
+    "name": "Удар грома",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "range": 900,
+      "damage": 55,
+      "cooldown": 30
+    },
+    "conditions": {}
+  }
+}

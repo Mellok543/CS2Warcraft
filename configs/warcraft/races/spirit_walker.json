@@ -1,0 +1,74 @@
+{
+  "id": "spirit_walker",
+  "name": "Ходящий с духами",
+  "description": "Мистик: аура исцеления, невидимость с ножом, обмен местами и тотем предков.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 36,
+    "races": {
+      "druid": 6
+    }
+  },
+  "abilities": [
+    {
+      "id": "heal_aura",
+      "name": "Духи-хранители",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "amount": [1, 2, 3],
+        "radius": 350,
+        "interval": 2
+      },
+      "conditions": {}
+    },
+    {
+      "id": "evasion",
+      "name": "Бестелесность",
+      "maxLevel": 2,
+      "unlockLevel": 2,
+      "config": {
+        "chance": [0.06, 0.12]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "invisibility",
+      "name": "Призрачный облик",
+      "maxLevel": 2,
+      "unlockLevel": 3,
+      "config": {
+        "alpha": [140, 90]
+      },
+      "conditions": {
+        "weaponTypes": ["knife"]
+      }
+    },
+    {
+      "id": "swap",
+      "name": "Обмен духами",
+      "maxLevel": 1,
+      "unlockLevel": 4,
+      "config": {
+        "range": 900,
+        "cooldown": 25
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "shield_totem",
+    "name": "Тотем предков",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "percent": 0.3,
+      "radius": 350,
+      "duration": 10,
+      "interval": 1,
+      "cooldown": 40
+    },
+    "conditions": {}
+  }
+}

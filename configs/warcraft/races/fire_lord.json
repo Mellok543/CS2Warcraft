@@ -1,0 +1,63 @@
+{
+  "id": "fire_lord",
+  "name": "Повелитель огня",
+  "description": "Сжигает врагов вокруг себя, ставит тотем пламени и швыряет огненный шар.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 24,
+    "races": {
+      "orc": 6
+    }
+  },
+  "abilities": [
+    {
+      "id": "immolation",
+      "name": "Огненная аура",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "damage": [2, 3, 4],
+        "radius": 220,
+        "interval": 1
+      },
+      "conditions": {}
+    },
+    {
+      "id": "bonus_damage",
+      "name": "Жар",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "percent": [0.05, 0.1, 0.15]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "flame_totem",
+      "name": "Тотем пламени",
+      "maxLevel": 2,
+      "unlockLevel": 3,
+      "config": {
+        "damage": [4, 7],
+        "radius": 280,
+        "duration": 8,
+        "interval": 1,
+        "cooldown": [25, 20]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "smite",
+    "name": "Огненный шар",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "range": 800,
+      "damage": 60,
+      "cooldown": 30
+    },
+    "conditions": {}
+  }
+}

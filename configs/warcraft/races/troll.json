@@ -4,6 +4,12 @@
   "description": "Чем меньше здоровья, тем сильнее бьёт. Отравленные клинки и пожирание врагов.",
   "maxLevel": 10,
   "vipOnly": false,
+  "requirements": {
+    "totalLevel": 6,
+    "races": {
+      "orc": 4
+    }
+  },
   "abilities": [
     {
       "id": "bonus_damage",
@@ -11,11 +17,7 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "percent": [
-          0.15,
-          0.25,
-          0.35
-        ]
+        "percent": [0.15, 0.25, 0.35]
       },
       "conditions": {
         "maxHealthPercent": 0.5
@@ -27,11 +29,7 @@
       "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
-        "chance": [
-          0.2,
-          0.3,
-          0.4
-        ],
+        "chance": [0.2, 0.3, 0.4],
         "damage": 3,
         "ticks": 4,
         "interval": 1
@@ -44,10 +42,7 @@
       "maxLevel": 2,
       "unlockLevel": 3,
       "config": {
-        "amount": [
-          15,
-          30
-        ]
+        "amount": [15, 30]
       },
       "conditions": {}
     }

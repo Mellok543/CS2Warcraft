@@ -1,0 +1,70 @@
+{
+  "id": "dwarf",
+  "name": "Дворф-подрывник",
+  "description": "Не боится взрывов, приходит с гранатами и взрывает всё динамитом.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 36,
+    "races": {
+      "goblin": 6
+    }
+  },
+  "abilities": [
+    {
+      "id": "blast_resist",
+      "name": "Каменная кожа",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "percent": [0.3, 0.5, 0.7]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "spawn_items",
+      "name": "Ящик гранат",
+      "maxLevel": 2,
+      "unlockLevel": 2,
+      "config": {
+        "items": [["weapon_hegrenade"], ["weapon_hegrenade", "weapon_molotov"]]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "spawn_armor",
+      "name": "Кольчуга",
+      "maxLevel": 2,
+      "unlockLevel": 3,
+      "config": {
+        "armor": [50, 100],
+        "helmet": [0, 1]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "bonus_health",
+      "name": "Крепость гор",
+      "maxLevel": 1,
+      "unlockLevel": 4,
+      "config": {
+        "health": 25
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "repulse",
+    "name": "Динамит",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "radius": 350,
+      "force": 900,
+      "upForce": 400,
+      "damage": 30,
+      "cooldown": 35
+    },
+    "conditions": {}
+  }
+}
