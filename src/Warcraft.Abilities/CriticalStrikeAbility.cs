@@ -40,7 +40,7 @@ internal sealed class CriticalStrikeAbility : IAbilityHandler
         if (_api is null || !@event.AttackerSteamId.HasValue)
             return;
 
-        var ability = _api.Abilities.GetPlayerAbility(
+        var ability = _api.Abilities.GetUsableAbility(
             @event.AttackerSteamId.Value,
             Id);
 

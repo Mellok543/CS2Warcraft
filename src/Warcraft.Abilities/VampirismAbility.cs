@@ -46,7 +46,7 @@ internal sealed class VampirismAbility : IAbilityHandler
             return;
         }
 
-        var ability = _api.Abilities.GetPlayerAbility(
+        var ability = _api.Abilities.GetUsableAbility(
             @event.AttackerSteamId.Value,
             Id);
 

@@ -33,6 +33,12 @@ internal sealed class PlayerStateStore : IPlayersApi
         }
     }
 
+    internal PlayerRuntimeState? TryGetRuntime(ulong steamId)
+    {
+        lock (_sync)
+            return _players.GetValueOrDefault(steamId);
+    }
+
     internal PlayerRuntimeState Upsert(ulong steamId, string name)
     {
         lock (_sync)

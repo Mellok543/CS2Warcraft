@@ -8,6 +8,7 @@ internal sealed record CoreConfig
     public int KillXp { get; init; } = 25;
     public int HeadshotBonusXp { get; init; } = 10;
     public int AutosaveDelayMilliseconds { get; init; } = 1000;
+    public int GameTickIntervalMilliseconds { get; init; } = 100;
 
     public static string ConfigPath =>
         Path.Combine(Server.GameDirectory, "configs", "warcraft", "core.json");

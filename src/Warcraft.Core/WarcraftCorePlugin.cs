@@ -8,7 +8,9 @@ using Warcraft.Api.Events;
 using Warcraft.Api.Modules;
 using Warcraft.Api.Persistence;
 using Warcraft.Core.Abilities;
+using Warcraft.Core.Conditions;
 using Warcraft.Core.Events;
+using Warcraft.Core.Game;
 using Warcraft.Core.Menu;
 using Warcraft.Core.Modifiers;
 using Warcraft.Core.Modules;
@@ -39,6 +41,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
     private IDisposable? _stateChangedSubscription;
     private IDisposable? _killXpSubscription;
     private CoreConfig _config = new();
+    private int _ticksSinceGameTick;
 
     public override void Load(bool hotReload)
     {
@@ -48,12 +51,25 @@ public sealed class WarcraftCorePlugin : BasePlugin
         var modifiers = new ModifierService();
         var events = new WarcraftEventBus(exception =>
             Logger.LogError(exception, "Unhandled Warcraft event subscriber exception."));
-        var races = new RaceCatalogService(players, events, modifiers);
+        var races = new RaceCatalogService(
+            players,
+            events,
+            modifiers,
+            new RaceCatalogCompiler(AbilityConditionRegistry.CreateDefault()));
         var persistence = new PersistenceCoordinator();
         var modules = new ModuleRegistryService();
         var menu = new MenuExtensionRegistry();
         var progress = new ProgressionService(players, races, modifiers, events);
-        var abilities = new AbilityRegistryService(players, races);
+        var registrations = new AbilityRegistrationStore();
+        var cooldowns = new CooldownService(players, TimeProvider.System);
+        var resolver = new AbilityResolver(
+            players,
+            races,
+            registrations,
+            cooldowns,
+            new CssPlayerCombatStateProvider());
+        var abilities = new AbilitiesApiService(registrations, resolver, cooldowns);
+        var activation = new AbilityActivationService(resolver, registrations, cooldowns, events);
 
         IWarcraftApi api = new WarcraftApiFacade(
             players,
@@ -104,8 +120,12 @@ public sealed class WarcraftCorePlugin : BasePlugin
         RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
         RegisterListener<Listeners.OnPlayerTakeDamagePre>(OnPlayerTakeDamagePre);
         RegisterListener<Listeners.OnPlayerTakeDamagePost>(OnPlayerTakeDamagePost);
+        RegisterListener<Listeners.OnTick>(OnTick);
+
+        new AbilityInputCommands(activation).Register(this);
 
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
+        RegisterEventHandler<EventPlayerJump>(OnPlayerJump);
         RegisterEventHandler<EventPlayerHurt>(OnPlayerHurt);
         RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
         RegisterEventHandler<EventWeaponFire>(OnWeaponFire);
@@ -208,6 +228,33 @@ public sealed class WarcraftCorePlugin : BasePlugin
         return HookResult.Continue;
     }
 
+    private HookResult OnPlayerJump(EventPlayerJump @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (IsHuman(player))
+            _api?.Events.Publish(new PlayerJumpEvent(player!.SteamID));
+
+        return HookResult.Continue;
+    }
+
+    private void OnTick()
+    {
+        var api = _api;
+        if (api is null)
+            return;
+
+        var interval = TimeSpan.FromMilliseconds(Math.Max(15, _config.GameTickIntervalMilliseconds));
+        var ticksPerEvent = Math.Max(
+            1,
+            (int)Math.Round(interval.TotalSeconds / Math.Max(Server.TickInterval, 0.001f)));
+
+        if (++_ticksSinceGameTick < ticksPerEvent)
+            return;
+
+        _ticksSinceGameTick = 0;
+        api.Events.Publish(new GameTickEvent(Server.CurrentTime, interval));
+    }
+
     private HookResult OnPlayerHurt(EventPlayerHurt @event, GameEventInfo info)
     {
         var victim = @event.Userid;
@@ -290,6 +337,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
         {
             VictimSteamId = victimController!.SteamID,
             AttackerSteamId = attackerSteamId,
+            AttackerIsPlayer = damageInfo.Attacker.Value is CCSPlayerPawn,
             Damage = damageInfo.Damage,
             Weapon = GetAttackerWeapon(damageInfo)
         };

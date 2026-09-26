@@ -41,7 +41,7 @@ internal sealed class BonusHealthAbility : IAbilityHandler
         if (_api is null)
             return;
 
-        var ability = _api.Abilities.GetPlayerAbility(@event.SteamId, Id);
+        var ability = _api.Abilities.GetUsableAbility(@event.SteamId, Id);
         if (ability is null || ability.Level <= 0)
             return;
 

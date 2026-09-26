@@ -16,6 +16,7 @@ public sealed record RaceDefinition
 public sealed record RaceAbilityDefinition
 {
     public required string Id { get; init; }
+    public string? Name { get; init; }
     public int MaxLevel { get; init; } = 1;
     public int UnlockLevel { get; init; } = 1;
     public JsonElement Config { get; init; }

@@ -1,7 +1,9 @@
+using Warcraft.Api.Abilities;
 using Warcraft.Api.Events;
 using Warcraft.Api.Modifiers;
 using Warcraft.Api.Progression;
 using Warcraft.Api.Races;
+using Warcraft.Core.Abilities;
 using Warcraft.Core.Races;
 using Warcraft.Core.Runtime;
 
@@ -119,7 +121,7 @@ internal sealed class ProgressionService(
             return new(false, $"Ability level must be between 0 and {definition.MaxLevel}.");
 
         var progress = GetOrCreateRace(player, player.ActiveRaceId);
-        progress.AbilityLevels[abilityId] = level;
+        progress.AbilityLevels[definition.Id] = level;
 
         events.Publish(new PlayerStateChangedEvent(steamId, reason));
 
@@ -142,50 +144,29 @@ internal sealed class ProgressionService(
             return new(false, "Способность отсутствует у активной расы.", abilityId, 0, 0, 0);
 
         var progress = GetOrCreateRace(player, race.Id);
-        var currentLevel = progress.AbilityLevels.GetValueOrDefault(abilityId);
+        var currentLevel = progress.AbilityLevels.GetValueOrDefault(definition.Id);
+        var block = AbilityUpgradeRules.Check(progress, definition);
 
-        if (progress.Level < definition.UnlockLevel)
+        if (block != AbilityUpgradeBlock.None)
         {
             return new(
                 false,
-                $"Способность откроется на уровне расы {definition.UnlockLevel}.",
-                abilityId,
-                currentLevel,
-                currentLevel,
-                progress.SkillPoints);
-        }
-
-        if (currentLevel >= definition.MaxLevel)
-        {
-            return new(
-                false,
-                "Способность уже прокачана до максимума.",
-                abilityId,
-                currentLevel,
-                currentLevel,
-                progress.SkillPoints);
-        }
-
-        if (progress.SkillPoints <= 0)
-        {
-            return new(
-                false,
-                "Нет свободных очков навыков.",
-                abilityId,
+                AbilityUpgradeRules.Describe(block, definition),
+                definition.Id,
                 currentLevel,
                 currentLevel,
                 progress.SkillPoints);
         }
 
         progress.SkillPoints--;
-        progress.AbilityLevels[abilityId] = currentLevel + 1;
+        progress.AbilityLevels[definition.Id] = currentLevel + 1;
 
-        events.Publish(new PlayerStateChangedEvent(steamId, $"upgrade:{abilityId}"));
+        events.Publish(new PlayerStateChangedEvent(steamId, $"upgrade:{definition.Id}"));
 
         return new(
             true,
             "Способность улучшена.",
-            abilityId,
+            definition.Id,
             currentLevel,
             currentLevel + 1,
             progress.SkillPoints);
@@ -206,24 +187,10 @@ internal sealed class ProgressionService(
         return new(true, reason, PreviousXp: previousXp, CurrentXp: 0);
     }
 
-    private static RaceAbilityDefinition? FindAbility(
+    private RaceAbilityDefinition? FindAbility(
         RaceDefinition race,
         string abilityId)
-    {
-        var definition = race.Abilities.FirstOrDefault(x =>
-            string.Equals(x.Id, abilityId, StringComparison.OrdinalIgnoreCase));
-
-        if (definition is not null)
-            return definition;
-
-        return race.Ultimate is not null &&
-               string.Equals(
-                   race.Ultimate.Id,
-                   abilityId,
-                   StringComparison.OrdinalIgnoreCase)
-            ? race.Ultimate
-            : null;
-    }
+        => races.GetCompiled(race.Id)?.Find(abilityId)?.Definition;
 
     private static RaceProgressRuntime GetOrCreateRace(
         PlayerRuntimeState player,
