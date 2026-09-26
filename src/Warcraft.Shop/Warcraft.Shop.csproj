@@ -1,1 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>Warcraft.Shop</AssemblyName><RootNamespace>Warcraft.Shop</RootNamespace><!-- No plugin class yet: not deployed. --><WarcraftDeploy>false</WarcraftDeploy></PropertyGroup><ItemGroup><PackageReference Include="CounterStrikeSharp.API" /><ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" Private="false" /></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Warcraft.Shop</AssemblyName>
+    <RootNamespace>Warcraft.Shop</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CounterStrikeSharp.API" />
+    <ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Shared/WarcraftCoreCapability.cs" Link="Shared/WarcraftCoreCapability.cs" />
+    <Content Include="../../configs/warcraft/shop.json">
+      <Link>defaults/shop.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

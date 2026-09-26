@@ -38,12 +38,14 @@ plugins/Warcraft.Races/                     ← includes defaults/races/*.json
 plugins/Warcraft.Abilities/
 plugins/Warcraft.Menu/
 plugins/Warcraft.Admin/
+plugins/Warcraft.Vip/                       ← VIP modifiers (docs/VIP.md)
+plugins/Warcraft.Shop/                      ← item shop (docs/SHOP.md)
 ```
 
 Do not copy `bin/` folders directly: `Warcraft.Api.dll` must exist only in
 `shared/`, otherwise each plugin gets its own copy of `IWarcraftApi` and the
-`warcraft:core` capability cannot be resolved. `Warcraft.Vip` and
-`Warcraft.Shop` have no plugin yet and are not staged; remove old
-`plugins/Warcraft.Vip` and `plugins/Warcraft.Shop` folders from the server.
+`warcraft:core` capability cannot be resolved.
 
-Player binds: `bind x css_ultimate`, `bind c "css_ability 1"`; menu: `!wc`.
+Player commands: `!wc` (menu), `!shop`, `!vip`; binds: `bind x css_ultimate`,
+`bind c "css_ability 1"`. New shipped race JSON files are copied only into an
+empty races directory; copy them manually on existing servers.

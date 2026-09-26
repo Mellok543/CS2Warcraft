@@ -1,0 +1,37 @@
+{
+  "items": [
+    {
+      "id": "health_potion",
+      "name": "Зелье здоровья",
+      "description": "Восстанавливает 40 HP.",
+      "price": 800,
+      "maxPerRound": 2,
+      "effect": { "type": "heal", "amount": 40 }
+    },
+    {
+      "id": "armor_kit",
+      "name": "Броня и шлем",
+      "description": "100 брони и шлем.",
+      "price": 1000,
+      "maxPerRound": 1,
+      "effect": { "type": "armor", "amount": 100, "helmet": true }
+    },
+    {
+      "id": "he_grenade",
+      "name": "Осколочная граната",
+      "description": "Выдаёт HE-гранату.",
+      "price": 300,
+      "maxPerRound": 1,
+      "effect": { "type": "give_item", "item": "weapon_hegrenade" }
+    },
+    {
+      "id": "tome_of_experience",
+      "name": "Том опыта",
+      "description": "+50 XP активной расе.",
+      "price": 3000,
+      "maxPerRound": 1,
+      "requiresAlive": false,
+      "effect": { "type": "xp", "amount": 50 }
+    }
+  ]
+}
