@@ -12,6 +12,9 @@ internal abstract class AuraAbility : AbilityHandler
 
     protected override AbilityKind Kind => AbilityKind.Passive;
 
+    /// <summary>Pulse period when the race config has no <c>interval</c>.</summary>
+    protected virtual double DefaultInterval => 1.0;
+
     protected override void Subscribe(IWarcraftEventBus events)
     {
         Track(events.Subscribe<GameTickEvent>(OnGameTick));
@@ -33,7 +36,7 @@ internal abstract class AuraAbility : AbilityHandler
                 continue;
             }
 
-            var interval = Math.Max(0.2, AbilityConfigReader.GetLevelDouble(ability, "interval", 1.0));
+            var interval = Math.Max(0.2, AbilityConfigReader.GetLevelDouble(ability, "interval", DefaultInterval));
             if (!_nextPulseAt.TryGetValue(steamId, out var nextAt) || nextAt - tick.ServerTime > interval)
             {
                 _nextPulseAt[steamId] = tick.ServerTime + interval;

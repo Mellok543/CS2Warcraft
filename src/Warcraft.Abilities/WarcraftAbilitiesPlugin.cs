@@ -1,3 +1,4 @@
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using Microsoft.Extensions.Logging;
@@ -45,6 +46,11 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         var movement = new MovementController();
         var dots = new DamageOverTime(_api);
         var history = new PositionHistory();
+        var buffs = new TeamBuffs();
+        var totems = new TotemSystem(beams);
+
+        // Buff modifiers must run before ability handlers (cheat_death needs the final damage).
+        _systems.AddRange(buffs.Attach(_api.Events, () => Server.CurrentTime));
 
         // Passives
         Register(new CriticalStrikeAbility());
@@ -77,6 +83,12 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new JumpBoostAbility());
         Register(new HealAuraAbility());
         Register(new ImmolationAbility());
+        Register(new SlowAuraAbility(movement));
+        Register(new SpeedAuraAbility(movement));
+        Register(new CommandAuraAbility(buffs));
+        Register(new DevotionAuraAbility(buffs));
+        Register(new VampiricAuraAbility(buffs));
+        Register(new SecondWindAbility());
 
         // Activatable (ability slot or ultimate)
         Register(new ChainLightningAbility(beams));
@@ -94,6 +106,13 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new CloakAbility());
         Register(new BattleCryAbility());
         Register(new ResurrectAbility());
+        Register(new HealingTotemAbility(totems));
+        Register(new FlameTotemAbility(totems));
+        Register(new FrostTotemAbility(totems, movement));
+        Register(new WarTotemAbility(totems, buffs));
+        Register(new ShieldTotemAbility(totems, buffs));
+        Register(new SmiteAbility(beams));
+        Register(new RageAbility(buffs, movement));
 
         // Must be the last DamagePreEvent subscriber: it needs the final damage.
         Register(new CheatDeathAbility());
@@ -104,12 +123,15 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
             movement.Update(tick.ServerTime);
             dots.Update(tick.ServerTime);
             history.Record(tick.ServerTime);
+            totems.Update(tick.ServerTime);
         }));
         _systems.Add(_api.Events.Subscribe<RoundStartEvent>(_ =>
         {
             movement.Clear();
             dots.Clear();
             history.Clear();
+            buffs.Clear();
+            totems.Clear();
         }));
 
         Logger.LogInformation(

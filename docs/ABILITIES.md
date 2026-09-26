@@ -42,6 +42,12 @@ Passive mechanics:
 | `jump_boost`       | `PlayerJumpEvent`       | `forward` (horizontal x), `up` (extra vertical speed)    |
 | `heal_aura`        | `GameTickEvent`         | `amount`, `radius`, `interval`                           |
 | `immolation`       | `GameTickEvent`         | `damage`, `radius`, `interval`                           |
+| `slow_aura`        | aura (0.5 s pulse)      | `slow` (movement x), `radius` — enemies                  |
+| `speed_aura`       | aura                    | `multiplier`, `radius` — allies                          |
+| `command_aura`     | aura                    | `percent`, `radius` — allies deal more damage            |
+| `devotion_aura`    | aura                    | `percent`, `radius` — allies take less damage            |
+| `vampiric_aura`    | aura                    | `percent`, `radius` — allies heal from damage dealt      |
+| `second_wind`      | `DamagePostEvent`       | `threshold` (default 0.3), `amount`; once per round      |
 
 Activatable mechanics — usable both as a regular active ability
 (`css_ability <slot>`) and as the race `ultimate` (`css_ultimate`); every one
@@ -64,6 +70,22 @@ reads `cooldown`:
 | `cloak`           | temporary invisibility                           | `alpha` (default 0), `duration`               |
 | `battle_cry`      | you and allies deal more damage for a while      | `percent`, `duration`, `radius`               |
 | `resurrect`       | revive a dead teammate at spawn                  | —                                             |
+| `smite`           | heavy strike on the nearest enemy                | `range`, `damage`                             |
+| `rage`            | self buff: damage and speed                      | `percent`, `multiplier`, `duration`           |
+| `healing_totem`   | totem: heals allies                              | `amount` + totem keys                         |
+| `flame_totem`     | totem: damages enemies                           | `damage` + totem keys                         |
+| `frost_totem`     | totem: slows enemies                             | `slow` + totem keys                           |
+| `war_totem`       | totem: allies deal more damage                   | `percent` + totem keys                        |
+| `shield_totem`    | totem: allies take less damage                   | `percent` + totem keys                        |
+
+Totems are placed at the caster's feet and pulse every `interval` seconds
+(default 1) for `duration` seconds (default 10) within `radius` (default 300);
+one totem of each type per player, re-casting moves it. They are drawn as a
+coloured pillar with a ring showing the radius.
+
+Team buffs (`command_aura`, `devotion_aura`, `vampiric_aura`, `war_totem`,
+`shield_totem`, `rage`) share one `TeamBuffs` store: the strongest active buff
+of each kind applies; they do not stack with each other.
 
 All ability damage (`chain_lightning`, `war_stomp`, `entangle`, `life_drain`,
 `repulse`, `immolation`, `poison`, `reflect_damage`) goes through `api.Combat`
