@@ -1,9 +1,9 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
-using CounterStrikeSharp.API.Core.Capabilities;
 using Microsoft.Extensions.Logging;
 using Warcraft.Api;
+using Warcraft.Shared;
 using Warcraft.Api.Events;
 using Warcraft.Api.Modules;
 
@@ -18,9 +18,6 @@ public sealed class WarcraftRacesPlugin : BasePlugin
     public override string ModuleDescription =>
         "JSON race catalog loader and hot reload for CS2Warcraft.";
 
-    private static PluginCapability<IWarcraftApi> CoreCapability { get; } =
-        new(WarcraftCapabilityNames.CoreApi);
-
     private readonly RaceConfigLoader _loader = new();
 
     private IWarcraftApi? _api;
@@ -31,11 +28,11 @@ public sealed class WarcraftRacesPlugin : BasePlugin
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        _api = CoreCapability.Get();
+        _api = WarcraftCoreCapability.TryGet();
         if (_api is null)
         {
             Logger.LogError(
-                "Warcraft.Core capability '{Capability}' is unavailable.",
+                WarcraftCoreCapability.UnavailableMessage,
                 WarcraftCapabilityNames.CoreApi);
             return;
         }

@@ -19,3 +19,31 @@ The project uses a contract-first modular architecture:
 - `Warcraft.Shop` — shop integration through Core API.
 
 No feature module may directly mutate another module or player persistence.
+
+## Installation
+
+```bash
+dotnet build CS2Warcraft.slnx -c Release
+```
+
+The Release build stages a drop-in layout in `artifacts/addons/counterstrikesharp/`
+(CI publishes the same folder as the `cs2warcraft-counterstrikesharp` artifact).
+Copy its contents into `game/csgo/addons/counterstrikesharp/` on the server:
+
+```text
+shared/Warcraft.Api/Warcraft.Api.dll        ← shared contracts, loaded once for all plugins
+plugins/Warcraft.Core/
+plugins/Warcraft.Database/                  ← includes MySqlConnector.dll
+plugins/Warcraft.Races/                     ← includes defaults/races/*.json
+plugins/Warcraft.Abilities/
+plugins/Warcraft.Menu/
+plugins/Warcraft.Admin/
+```
+
+Do not copy `bin/` folders directly: `Warcraft.Api.dll` must exist only in
+`shared/`, otherwise each plugin gets its own copy of `IWarcraftApi` and the
+`warcraft:core` capability cannot be resolved. `Warcraft.Vip` and
+`Warcraft.Shop` have no plugin yet and are not staged; remove old
+`plugins/Warcraft.Vip` and `plugins/Warcraft.Shop` folders from the server.
+
+Player binds: `bind x css_ultimate`, `bind c "css_ability 1"`; menu: `!wc`.

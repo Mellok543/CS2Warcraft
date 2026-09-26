@@ -25,3 +25,18 @@ jobs:
 
       - name: Test
         run: dotnet test CS2Warcraft.slnx -c Release --no-build
+
+      - name: Verify server layout
+        run: |
+          test -f artifacts/addons/counterstrikesharp/shared/Warcraft.Api/Warcraft.Api.dll
+          test -f artifacts/addons/counterstrikesharp/plugins/Warcraft.Database/MySqlConnector.dll
+          if find artifacts/addons/counterstrikesharp/plugins -name 'Warcraft.Api.dll' -o -name 'CounterStrikeSharp.API.dll' | grep -q .; then
+            echo "Plugin folders must not contain Warcraft.Api.dll or CounterStrikeSharp.API.dll" >&2
+            exit 1
+          fi
+
+      - name: Upload server layout
+        uses: actions/upload-artifact@v4
+        with:
+          name: cs2warcraft-counterstrikesharp
+          path: artifacts/addons/counterstrikesharp/

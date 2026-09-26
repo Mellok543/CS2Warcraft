@@ -1,8 +1,8 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
-using CounterStrikeSharp.API.Core.Capabilities;
 using Microsoft.Extensions.Logging;
 using Warcraft.Api;
+using Warcraft.Shared;
 using Warcraft.Api.Modules;
 
 namespace Warcraft.Database;
@@ -16,9 +16,6 @@ public sealed class WarcraftDatabasePlugin : BasePlugin
     public override string ModuleDescription =>
         "MySQL persistence provider for CS2Warcraft.";
 
-    private static PluginCapability<IWarcraftApi> CoreCapability { get; } =
-        new(WarcraftCapabilityNames.CoreApi);
-
     private IWarcraftApi? _api;
     private CancellationTokenSource? _lifetime;
     private Task? _initializationTask;
@@ -30,11 +27,11 @@ public sealed class WarcraftDatabasePlugin : BasePlugin
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        _api = CoreCapability.Get();
+        _api = WarcraftCoreCapability.TryGet();
         if (_api is null)
         {
             Logger.LogError(
-                "Warcraft.Core capability '{Capability}' is unavailable.",
+                WarcraftCoreCapability.UnavailableMessage,
                 WarcraftCapabilityNames.CoreApi);
             return;
         }

@@ -7,6 +7,14 @@
   <ItemGroup>
     <PackageReference Include="CounterStrikeSharp.API" />
     <PackageReference Include="MySqlConnector" />
-    <ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" />
+    <ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Not provided by the CounterStrikeSharp host: ship it next to Warcraft.Database.dll. -->
+    <PluginDependency Include="MySqlConnector" NuGetPackageId="MySqlConnector" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/WarcraftCoreCapability.cs" Link="Shared/WarcraftCoreCapability.cs" />
   </ItemGroup>
 </Project>

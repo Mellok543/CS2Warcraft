@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="CounterStrikeSharp.API" />
-    <ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" />
+    <ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -14,5 +14,8 @@
       <Link>defaults/races/%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/WarcraftCoreCapability.cs" Link="Shared/WarcraftCoreCapability.cs" />
   </ItemGroup>
 </Project>

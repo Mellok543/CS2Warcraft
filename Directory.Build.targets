@@ -1,0 +1,52 @@
+<Project>
+  <!--
+    CounterStrikeSharp loads every plugin from its own folder. NuGet dependencies of
+    a class library are not copied by `dotnet build` unless CopyLocalLockFileAssemblies
+    is set, and the host already provides CounterStrikeSharp.API and Microsoft.Extensions.*.
+
+    So plugin projects copy only packages they explicitly declare, e.g.
+      <PluginDependency Include="MySqlConnector" NuGetPackageId="MySqlConnector" />
+    Everything else from NuGet stays out of the plugin folder.
+  -->
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true'">
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <Target Name="WarcraftCopyOnlyPluginDependencies"
+          AfterTargets="ResolveLockFileCopyLocalFiles"
+          Condition="'$(IsTestProject)' != 'true'">
+    <ItemGroup>
+      <_WarcraftHostProvided Include="@(ReferenceCopyLocalPaths)"
+                             Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)' != ''" />
+      <_WarcraftHostProvided Remove="@(PluginDependency)" MatchOnMetadata="NuGetPackageId" />
+      <ReferenceCopyLocalPaths Remove="@(_WarcraftHostProvided)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Release builds stage a drop-in server layout:
+      artifacts/addons/counterstrikesharp/shared/Warcraft.Api/Warcraft.Api.dll
+      artifacts/addons/counterstrikesharp/plugins/Warcraft.<Module>/...
+    Warcraft.Api must live in shared/ so every plugin sees the same IWarcraftApi type;
+    plugin projects reference it with Private="false" and never ship their own copy.
+  -->
+  <PropertyGroup>
+    <WarcraftArtifactsRoot>$(MSBuildThisFileDirectory)artifacts/addons/counterstrikesharp/</WarcraftArtifactsRoot>
+  </PropertyGroup>
+
+  <Target Name="WarcraftStageServerLayout"
+          AfterTargets="Build"
+          Condition="'$(Configuration)' == 'Release' and '$(IsTestProject)' != 'true' and '$(WarcraftDeploy)' != 'false'">
+    <PropertyGroup>
+      <_WarcraftDeployKind Condition="'$(AssemblyName)' == 'Warcraft.Api'">shared</_WarcraftDeployKind>
+      <_WarcraftDeployKind Condition="'$(_WarcraftDeployKind)' == ''">plugins</_WarcraftDeployKind>
+      <_WarcraftDeployDir>$(WarcraftArtifactsRoot)$(_WarcraftDeployKind)/$(AssemblyName)/</_WarcraftDeployDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_WarcraftDeployFiles Include="$(OutDir)**/*" />
+    </ItemGroup>
+    <RemoveDir Directories="$(_WarcraftDeployDir)" />
+    <Copy SourceFiles="@(_WarcraftDeployFiles)"
+          DestinationFiles="@(_WarcraftDeployFiles->'$(_WarcraftDeployDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+</Project>

@@ -1,9 +1,9 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
-using CounterStrikeSharp.API.Core.Capabilities;
 using Microsoft.Extensions.Logging;
 using Warcraft.Abilities.Game;
 using Warcraft.Api;
+using Warcraft.Shared;
 using Warcraft.Api.Modules;
 
 namespace Warcraft.Abilities;
@@ -17,19 +17,16 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
     public override string ModuleDescription =>
         "Reusable event-driven ability handlers for CS2Warcraft.";
 
-    private static PluginCapability<IWarcraftApi> CoreCapability { get; } =
-        new(WarcraftCapabilityNames.CoreApi);
-
     private IWarcraftApi? _api;
     private readonly List<IAbilityHandler> _handlers = [];
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        _api = CoreCapability.Get();
+        _api = WarcraftCoreCapability.TryGet();
         if (_api is null)
         {
             Logger.LogError(
-                "Warcraft.Core capability '{Capability}' is unavailable.",
+                WarcraftCoreCapability.UnavailableMessage,
                 WarcraftCapabilityNames.CoreApi);
             return;
         }

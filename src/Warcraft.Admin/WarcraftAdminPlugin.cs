@@ -1,11 +1,11 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
-using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 using Microsoft.Extensions.Logging;
 using Warcraft.Api;
+using Warcraft.Shared;
 using Warcraft.Api.Events;
 using Warcraft.Api.Modules;
 
@@ -22,9 +22,6 @@ public sealed class WarcraftAdminPlugin : BasePlugin
     public override string ModuleDescription =>
         "Administrative commands for CS2Warcraft through Warcraft.Api.";
 
-    private static PluginCapability<IWarcraftApi> CoreCapability { get; } =
-        new(WarcraftCapabilityNames.CoreApi);
-
     private IWarcraftApi? _api;
 
     public override void Load(bool hotReload)
@@ -39,12 +36,12 @@ public sealed class WarcraftAdminPlugin : BasePlugin
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        _api = CoreCapability.Get();
+        _api = WarcraftCoreCapability.TryGet();
 
         if (_api is null)
         {
             Logger.LogError(
-                "Warcraft.Core capability '{Capability}' is unavailable.",
+                WarcraftCoreCapability.UnavailableMessage,
                 WarcraftCapabilityNames.CoreApi);
             return;
         }

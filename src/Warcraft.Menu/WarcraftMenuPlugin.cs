@@ -1,10 +1,10 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
-using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Menu;
 using Microsoft.Extensions.Logging;
 using Warcraft.Api;
+using Warcraft.Shared;
 using Warcraft.Api.Abilities;
 using Warcraft.Api.Modules;
 using Warcraft.Api.Races;
@@ -20,9 +20,6 @@ public sealed class WarcraftMenuPlugin : BasePlugin
     public override string ModuleDescription =>
         "Main UI shell and race/ability menus for CS2Warcraft.";
 
-    private static PluginCapability<IWarcraftApi> CoreCapability { get; } =
-        new(WarcraftCapabilityNames.CoreApi);
-
     private IWarcraftApi? _api;
 
     public override void Load(bool hotReload)
@@ -33,11 +30,11 @@ public sealed class WarcraftMenuPlugin : BasePlugin
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        _api = CoreCapability.Get();
+        _api = WarcraftCoreCapability.TryGet();
         if (_api is null)
         {
             Logger.LogError(
-                "Warcraft.Core capability '{Capability}' is unavailable.",
+                WarcraftCoreCapability.UnavailableMessage,
                 WarcraftCapabilityNames.CoreApi);
             return;
         }
