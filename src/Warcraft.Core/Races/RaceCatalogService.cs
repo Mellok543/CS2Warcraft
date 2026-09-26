@@ -36,24 +36,60 @@ internal sealed class RaceCatalogService(
         return new(true, next.Races.Count, []);
     }
 
+    public RaceAvailability GetAvailability(ulong steamId, string raceId)
+    {
+        var race = Get(raceId);
+        var player = players.TryGetRuntime(steamId);
+        if (race is null || player is null)
+            return new RaceAvailability(false, false, false, []);
+
+        var vipLocked = race.VipOnly && !modifiers.GetCombined(steamId).CanAccessVipRaces;
+        var unlocked = player.Races.ContainsKey(race.Id);
+        var requirements = RaceRequirementEvaluator.Evaluate(player, race.Requirements, Get);
+
+        return new RaceAvailability(
+            !vipLocked && (unlocked || requirements.All(x => x.IsMet)),
+            vipLocked,
+            unlocked,
+            requirements);
+    }
+
     public RaceSelectionResult SelectRace(
         ulong steamId,
         string raceId,
-        string reason)
+        string reason,
+        bool force = false)
     {
         var race = Get(raceId);
 
         if (race is null)
             return new(false, $"Race '{raceId}' is not registered.", null, null);
 
-        if (race.VipOnly &&
-            !modifiers.GetCombined(steamId).CanAccessVipRaces)
+        if (!force)
         {
-            return new(
-                false,
-                $"Race '{race.Name}' requires VIP access.",
-                players.Get(steamId)?.ActiveRaceId,
-                null);
+            var availability = GetAvailability(steamId, race.Id);
+
+            if (availability.VipLocked)
+            {
+                return new(
+                    false,
+                    $"Раса «{race.Name}» доступна только VIP.",
+                    players.Get(steamId)?.ActiveRaceId,
+                    null);
+            }
+
+            if (!availability.IsAvailable)
+            {
+                var missing = availability.Requirements
+                    .Where(x => !x.IsMet)
+                    .Select(x => $"{x.Description}: {x.Current}/{x.Required}");
+
+                return new(
+                    false,
+                    $"Раса «{race.Name}» ещё закрыта. Нужно: {string.Join("; ", missing)}.",
+                    players.Get(steamId)?.ActiveRaceId,
+                    null);
+            }
         }
 
         var player = players.GetRequired(steamId);

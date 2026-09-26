@@ -56,6 +56,10 @@ internal sealed class RaceCatalogCompiler(AbilityConditionRegistry conditions)
             compiled[race.Id] = new CompiledRace(race, abilities);
         }
 
+        var definitions = compiled.ToDictionary(x => x.Key, x => x.Value.Definition, StringComparer.OrdinalIgnoreCase);
+        foreach (var race in definitions.Values)
+            RaceRequirementEvaluator.Validate(race, definitions, errors);
+
         return errors.Count == 0 ? new CompiledRaceCatalog(compiled) : null;
     }
 

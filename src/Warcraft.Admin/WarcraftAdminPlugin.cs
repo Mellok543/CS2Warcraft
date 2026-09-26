@@ -150,7 +150,8 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         var result = _api.Races.SelectRace(
             target.SteamID,
             raceId,
-            $"admin:{CallerIdentity(caller)}");
+            $"admin:{CallerIdentity(caller)}",
+            force: true);
 
         command.ReplyToCommand(
             result.Success

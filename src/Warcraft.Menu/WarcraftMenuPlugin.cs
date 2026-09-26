@@ -131,33 +131,105 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         if (api is null)
             return;
 
-        var modifiers = api.Modifiers.GetCombined(player.SteamID);
         var current = api.Players.Get(player.SteamID)?.ActiveRaceId;
+        var races = api.Races.GetAll()
+            .Select(x => (Race: x, Availability: api.Races.GetAvailability(player.SteamID, x.Id)))
+            .OrderByDescending(x => x.Availability.IsAvailable)
+            .ThenBy(x => x.Race.Requirements?.TotalLevel ?? 0)
+            .ThenBy(x => x.Race.Name)
+            .ToArray();
 
-        var menu = new CenterHtmlMenu("Выбор расы", this)
+        var open = races.Count(x => x.Availability.IsAvailable);
+        var menu = new CenterHtmlMenu($"Выбор расы | открыто {open}/{races.Length}", this)
         {
             ExitButton = true
         };
 
-        foreach (var race in api.Races.GetAll().OrderBy(x => x.Name))
+        foreach (var (race, availability) in races)
         {
-            var definition = race;
-            var vipBlocked = definition.VipOnly && !modifiers.CanAccessVipRaces;
-            var selected = string.Equals(
-                definition.Id,
-                current,
-                StringComparison.OrdinalIgnoreCase);
-
-            var suffix = selected
+            var raceId = race.Id;
+            var suffix = string.Equals(race.Id, current, StringComparison.OrdinalIgnoreCase)
                 ? " [выбрана]"
-                : vipBlocked
+                : availability.VipLocked
                     ? " [VIP]"
-                    : string.Empty;
+                    : !availability.IsAvailable
+                        ? " [закрыта]"
+                        : string.Empty;
 
-            menu.AddMenuOption(
-                definition.Name + suffix,
-                (_, _) => OpenRacePreview(player, definition.Id));
+            menu.AddMenuOption(race.Name + suffix, (_, _) => OpenRacePreview(player, raceId));
         }
+
+        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+    }
+
+    private void OpenRacePreview(CCSPlayerController player, string raceId)
+    {
+        var api = _api;
+        var race = api?.Races.Get(raceId);
+        if (api is null || race is null)
+            return;
+
+        var availability = api.Races.GetAvailability(player.SteamID, race.Id);
+        var selected = string.Equals(
+            api.Players.Get(player.SteamID)?.ActiveRaceId,
+            race.Id,
+            StringComparison.OrdinalIgnoreCase);
+        var abilities = api.Abilities.GetRaceAbilities(race.Id);
+
+        Print(player, $"{race.Name}: {race.Description}");
+        foreach (var ability in abilities)
+        {
+            foreach (var line in AbilityStatusText.PreviewLines(ability))
+                Print(player, line);
+        }
+
+        if (!availability.AlreadyUnlocked)
+        {
+            foreach (var requirement in availability.Requirements)
+            {
+                Print(player, $"{(requirement.IsMet ? "[+]" : "[-]")} {requirement.Description}: " +
+                              $"{requirement.Current}/{requirement.Required}");
+            }
+        }
+
+        var menu = new CenterHtmlMenu(race.Name, this)
+        {
+            ExitButton = true
+        };
+
+        var selectText = selected
+            ? "Уже выбрана"
+            : availability.VipLocked
+                ? "Только для VIP"
+                : !availability.IsAvailable
+                    ? "Закрыта (условия в чате)"
+                    : "Выбрать расу";
+
+        menu.AddMenuOption(
+            selectText,
+            (_, _) =>
+            {
+                var result = api.Races.SelectRace(player.SteamID, race.Id, "menu");
+                Print(player, result.Success ? $"Вы выбрали расу {race.Name}." : result.Message);
+                OpenMainMenu(player);
+            },
+            selected || !availability.IsAvailable);
+
+        if (!availability.AlreadyUnlocked)
+        {
+            foreach (var requirement in availability.Requirements)
+            {
+                menu.AddMenuOption(
+                    $"{(requirement.IsMet ? "✔" : "✘")} {requirement.Description}: {requirement.Current}/{requirement.Required}",
+                    (_, _) => { },
+                    true);
+            }
+        }
+
+        foreach (var ability in abilities)
+            menu.AddMenuOption(AbilityStatusText.PreviewTitle(ability), (_, _) => { }, true);
+
+        menu.AddMenuOption("Назад", (_, _) => OpenRaceMenu(player));
 
         MenuManager.OpenCenterHtmlMenu(this, player, menu);
     }
@@ -198,50 +270,6 @@ public sealed class WarcraftMenuPlugin : BasePlugin
                 AbilityStatusText.UpgradeLine(status),
                 (_, _) => OpenAbilityDetails(player, abilityId));
         }
-
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
-    }
-
-    private void OpenRacePreview(CCSPlayerController player, string raceId)
-    {
-        var api = _api;
-        var race = api?.Races.Get(raceId);
-        if (api is null || race is null)
-            return;
-
-        var vipBlocked = race.VipOnly && !api.Modifiers.GetCombined(player.SteamID).CanAccessVipRaces;
-        var selected = string.Equals(
-            api.Players.Get(player.SteamID)?.ActiveRaceId,
-            race.Id,
-            StringComparison.OrdinalIgnoreCase);
-        var abilities = api.Abilities.GetRaceAbilities(race.Id);
-
-        Print(player, $"{race.Name}: {race.Description}");
-        foreach (var ability in abilities)
-        {
-            foreach (var line in AbilityStatusText.PreviewLines(ability))
-                Print(player, line);
-        }
-
-        var menu = new CenterHtmlMenu(race.Name, this)
-        {
-            ExitButton = true
-        };
-
-        menu.AddMenuOption(
-            selected ? "Уже выбрана" : vipBlocked ? "Только для VIP" : "Выбрать расу",
-            (_, _) =>
-            {
-                var result = api.Races.SelectRace(player.SteamID, race.Id, "menu");
-                Print(player, result.Success ? $"Вы выбрали расу {race.Name}." : result.Message);
-                OpenMainMenu(player);
-            },
-            selected || vipBlocked);
-
-        foreach (var ability in abilities)
-            menu.AddMenuOption(AbilityStatusText.PreviewTitle(ability), (_, _) => { }, true);
-
-        menu.AddMenuOption("Назад", (_, _) => OpenRaceMenu(player));
 
         MenuManager.OpenCenterHtmlMenu(this, player, menu);
     }
