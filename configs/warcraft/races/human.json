@@ -1,0 +1,53 @@
+{
+  "id": "human",
+  "name": "Человек",
+  "description": "Стойкий защитник: аура защиты, регенерация и отражение урона.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "abilities": [
+    {
+      "id": "bonus_health",
+      "name": "Аура защиты",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "health": [15, 25, 40]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "regeneration",
+      "name": "Исцеление",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "amount": [1, 2, 3],
+        "interval": 1.5
+      },
+      "conditions": {
+        "maxHealthPercent": 0.99
+      }
+    },
+    {
+      "id": "reflect_damage",
+      "name": "Шипы",
+      "maxLevel": 3,
+      "unlockLevel": 3,
+      "config": {
+        "percent": [0.10, 0.18, 0.25],
+        "maxDamage": 20
+      },
+      "conditions": {}
+    },
+    {
+      "id": "speed",
+      "name": "Марш",
+      "maxLevel": 3,
+      "unlockLevel": 4,
+      "config": {
+        "multiplier": [1.05, 1.10, 1.15]
+      },
+      "conditions": {}
+    }
+  ]
+}

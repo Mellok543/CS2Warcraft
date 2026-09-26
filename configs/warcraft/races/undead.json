@@ -1,0 +1,55 @@
+{
+  "id": "undead",
+  "name": "Нежить",
+  "description": "Быстрый и лёгкий охотник: аура скорости, левитация и вампиризм.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "abilities": [
+    {
+      "id": "speed",
+      "name": "Нечестивая аура",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "multiplier": [1.10, 1.20, 1.30]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "low_gravity",
+      "name": "Левитация",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "gravity": [0.85, 0.72, 0.60]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "vampirism",
+      "name": "Вампирская аура",
+      "maxLevel": 3,
+      "unlockLevel": 3,
+      "config": {
+        "percent": [0.05, 0.10, 0.15]
+      },
+      "conditions": {
+        "weaponTypes": ["knife", "pistol", "smg"]
+      }
+    }
+  ],
+  "ultimate": {
+    "id": "chain_lightning",
+    "name": "Проклятая молния",
+    "maxLevel": 2,
+    "unlockLevel": 6,
+    "config": {
+      "damage": [25, 35],
+      "range": 400,
+      "jumps": [2, 3],
+      "damageFalloff": 0.8,
+      "cooldown": [30, 22]
+    },
+    "conditions": {}
+  }
+}

@@ -342,10 +342,14 @@ public sealed class WarcraftCorePlugin : BasePlugin
             Weapon = GetAttackerWeapon(damageInfo)
         };
 
+        var originalDamage = damageInfo.Damage;
         _api?.Events.Publish(damageEvent);
         damageInfo.Damage = Math.Max(0.0f, damageEvent.Damage);
 
-        return HookResult.Continue;
+        // A handler fully negated the hit (e.g. evasion): block it entirely.
+        return originalDamage > 0 && damageInfo.Damage <= 0
+            ? HookResult.Handled
+            : HookResult.Continue;
     }
 
     private void OnPlayerTakeDamagePost(

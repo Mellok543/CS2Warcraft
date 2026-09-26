@@ -43,6 +43,10 @@ internal static class GamePlayers
         }
     }
 
+    /// <summary>Alive human players — the only players that own Warcraft progress.</summary>
+    public static IEnumerable<LivePlayer> AllAliveHumans()
+        => AllAlive().Where(x => !x.Controller.IsBot && x.Controller.SteamID != 0);
+
     public static bool AreEnemies(in LivePlayer first, in LivePlayer second)
         => first.Team != second.Team &&
            first.Team is TeamTerrorist or TeamCounterTerrorist &&

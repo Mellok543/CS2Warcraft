@@ -1,5 +1,6 @@
 {
   "killXp": 25,
   "headshotBonusXp": 10,
-  "autosaveDelayMilliseconds": 1000
+  "autosaveDelayMilliseconds": 1000,
+  "gameTickIntervalMilliseconds": 100
 }

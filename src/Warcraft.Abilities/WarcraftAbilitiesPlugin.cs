@@ -45,6 +45,11 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new BonusHealthAbility());
         Register(new VampirismAbility());
         Register(new ChainLightningAbility(beams));
+        Register(new SpeedAbility());
+        Register(new LowGravityAbility());
+        Register(new RegenerationAbility());
+        Register(new EvasionAbility());
+        Register(new ReflectDamageAbility());
 
         Logger.LogInformation(
             "Warcraft.Abilities registered {Count} handlers.",

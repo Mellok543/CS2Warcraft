@@ -13,6 +13,29 @@ and returns the effective `PlayerAbilitySnapshot`.
 | `bonus_health`    | passive  | `PlayerSpawnEvent`       | `health`                                             |
 | `vampirism`       | passive  | `DamagePostEvent`        | `percent`                                            |
 | `chain_lightning` | ultimate | `UltimatePressedEvent`   | `damage`, `range`, `jumps`, `damageFalloff`, `cooldown` |
+| `speed`           | passive  | `GameTickEvent`          | `multiplier` (> 1.0)                                 |
+| `low_gravity`     | passive  | `GameTickEvent`          | `gravity` (0.05 .. 1.0)                              |
+| `regeneration`    | passive  | `GameTickEvent`          | `amount`, `interval` (seconds, default 1)            |
+| `evasion`         | passive  | `DamagePreEvent`         | `chance`                                             |
+| `reflect_damage`  | passive  | `DamagePostEvent`        | `percent`, `maxDamage` (optional cap per hit)        |
+
+`speed` and `low_gravity` keep the pawn attribute at the configured value while
+the ability is usable and restore the default when it stops being usable (for
+example when a `weaponTypes` condition fails after a weapon switch). The engine
+damage slowdown is respected: speed is re-applied once it has recovered.
+`evasion` only negates damage dealt by players (not fall/world damage); a fully
+negated hit is blocked by Core. `reflect_damage` applies to human attackers
+and, like chain lightning, bypasses the weapon damage pipeline.
+
+`GameTickEvent` is published by Core every `gameTickIntervalMilliseconds`
+(core.json, default 100 ms).
+
+The same mechanic is configured differently per race — for example `speed`:
+
+```json
+// human.json                         // undead.json
+"multiplier": [1.05, 1.10, 1.15]      "multiplier": [1.10, 1.20, 1.30]
+```
 
 Every numeric value is either a scalar or an array indexed by ability level:
 
