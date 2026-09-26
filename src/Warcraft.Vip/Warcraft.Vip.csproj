@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>Warcraft.Vip</AssemblyName><RootNamespace>Warcraft.Vip</RootNamespace></PropertyGroup><ItemGroup><PackageReference Include="CounterStrikeSharp.API" /><ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" /></ItemGroup></Project>

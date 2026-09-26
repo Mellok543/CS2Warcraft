@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Warcraft.Api/Warcraft.Api.csproj" />
+    <Project Path="src/Warcraft.Core/Warcraft.Core.csproj" />
+    <Project Path="src/Warcraft.Database/Warcraft.Database.csproj" />
+    <Project Path="src/Warcraft.Races/Warcraft.Races.csproj" />
+    <Project Path="src/Warcraft.Abilities/Warcraft.Abilities.csproj" />
+    <Project Path="src/Warcraft.Menu/Warcraft.Menu.csproj" />
+    <Project Path="src/Warcraft.Vip/Warcraft.Vip.csproj" />
+    <Project Path="src/Warcraft.Admin/Warcraft.Admin.csproj" />
+    <Project Path="src/Warcraft.Shop/Warcraft.Shop.csproj" />
+  </Folder>
+</Solution>

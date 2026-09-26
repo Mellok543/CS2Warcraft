@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Warcraft.Core</AssemblyName>
+    <RootNamespace>Warcraft.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CounterStrikeSharp.API" />
+    <ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" />
+  </ItemGroup>
+</Project>

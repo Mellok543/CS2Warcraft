@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Warcraft.Api</AssemblyName>
+    <RootNamespace>Warcraft.Api</RootNamespace>
+  </PropertyGroup>
+</Project>
