@@ -1,5 +1,6 @@
 using Warcraft.Api.Abilities;
 using Warcraft.Api.Events;
+using Warcraft.Api.Menu;
 using Warcraft.Api.Modifiers;
 using Warcraft.Api.Modules;
 using Warcraft.Api.Persistence;
@@ -19,4 +20,5 @@ public interface IWarcraftApi
     IPersistenceApi Persistence { get; }
     IModifiersApi Modifiers { get; }
     IModulesApi Modules { get; }
+    IMenuExtensionsApi Menu { get; }
 }

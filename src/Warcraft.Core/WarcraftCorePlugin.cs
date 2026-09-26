@@ -9,6 +9,7 @@ using Warcraft.Api.Modules;
 using Warcraft.Api.Persistence;
 using Warcraft.Core.Abilities;
 using Warcraft.Core.Events;
+using Warcraft.Core.Menu;
 using Warcraft.Core.Modifiers;
 using Warcraft.Core.Modules;
 using Warcraft.Core.Persistence;
@@ -44,6 +45,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
             Logger.LogError(exception, "Unhandled Warcraft event subscriber exception."));
         var persistence = new PersistenceCoordinator();
         var modules = new ModuleRegistryService();
+        var menu = new MenuExtensionRegistry();
         var progress = new ProgressionService(players, races, modifiers);
         var abilities = new AbilityRegistryService(players, races);
 
@@ -55,7 +57,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
             events,
             persistence,
             modifiers,
-            modules);
+            modules,
+            menu);
 
         _players = players;
         _persistence = persistence;
