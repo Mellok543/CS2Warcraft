@@ -25,6 +25,7 @@ public sealed class WarcraftRacesPlugin : BasePlugin
     private Timer? _reloadTimer;
     private IDisposable? _reloadSubscription;
     private readonly object _reloadSync = new();
+    private bool _unloaded;
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
@@ -57,13 +58,23 @@ public sealed class WarcraftRacesPlugin : BasePlugin
 
     public override void Unload(bool hotReload)
     {
-        _watcher?.Dispose();
-        _watcher = null;
-
         lock (_reloadSync)
         {
+            // A watcher callback racing with unload must not create a new timer afterwards.
+            _unloaded = true;
             _reloadTimer?.Dispose();
             _reloadTimer = null;
+        }
+
+        if (_watcher is not null)
+        {
+            _watcher.EnableRaisingEvents = false;
+            _watcher.Changed -= OnRaceFileChanged;
+            _watcher.Created -= OnRaceFileChanged;
+            _watcher.Deleted -= OnRaceFileChanged;
+            _watcher.Renamed -= OnRaceFileChanged;
+            _watcher.Dispose();
+            _watcher = null;
         }
 
         _reloadSubscription?.Dispose();
@@ -96,6 +107,9 @@ public sealed class WarcraftRacesPlugin : BasePlugin
     {
         lock (_reloadSync)
         {
+            if (_unloaded)
+                return;
+
             _reloadTimer?.Dispose();
             // Timer callbacks run on the thread pool; Core APIs and events belong on the game thread.
             _reloadTimer = new Timer(

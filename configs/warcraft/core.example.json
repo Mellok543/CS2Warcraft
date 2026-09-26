@@ -6,5 +6,6 @@
   "bombPlantXp": 20,
   "bombDefuseXp": 20,
   "autosaveDelayMilliseconds": 1000,
-  "gameTickIntervalMilliseconds": 100
+  "gameTickIntervalMilliseconds": 100,
+  "unloadSaveTimeoutSeconds": 5
 }

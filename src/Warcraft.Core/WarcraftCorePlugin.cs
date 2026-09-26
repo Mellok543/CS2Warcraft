@@ -176,29 +176,10 @@ public sealed class WarcraftCorePlugin : BasePlugin
         _stats?.Dispose();
         _stats = null;
 
+        FlushPlayersOnUnload();
+
         _saveScheduler?.Dispose();
         _saveScheduler = null;
-
-        if (_players is not null && _persistence is { HasProvider: true })
-        {
-            foreach (var snapshot in _players.GetPersistenceSnapshots())
-            {
-                try
-                {
-                    _persistence.SavePlayerAsync(snapshot)
-                        .AsTask()
-                        .GetAwaiter()
-                        .GetResult();
-                }
-                catch (Exception exception)
-                {
-                    Logger.LogError(
-                        exception,
-                        "Failed to save Warcraft state for {SteamId} during unload.",
-                        snapshot.SteamId);
-                }
-            }
-        }
 
         _lifetime?.Dispose();
         _lifetime = null;
@@ -207,7 +188,36 @@ public sealed class WarcraftCorePlugin : BasePlugin
         _players = null;
         _persistence = null;
 
-        Logger.LogInformation("Warcraft.Core unloaded.");
+        Logger.LogInformation(
+            "Warcraft.Core unloaded. Reload every Warcraft.* plugin after reloading Core: " +
+            "they hold the previous Core API instance.");
+    }
+
+    /// <summary>
+    /// Saves every connected player through the scheduler's per-player gates with a
+    /// hard time budget, so an unreachable database cannot hang a map change or shutdown.
+    /// </summary>
+    private void FlushPlayersOnUnload()
+    {
+        if (_saveScheduler is null || _players is null || _persistence is not { HasProvider: true })
+            return;
+
+        var snapshots = _players.GetPersistenceSnapshots();
+        if (snapshots.Count == 0)
+            return;
+
+        var budget = TimeSpan.FromSeconds(Math.Clamp(_config.UnloadSaveTimeoutSeconds, 1, 60));
+        using var timeout = new CancellationTokenSource(budget);
+
+        try
+        {
+            if (!_saveScheduler.FlushAsync(snapshots, timeout.Token).Wait(budget + TimeSpan.FromSeconds(1)))
+                Logger.LogWarning("Warcraft unload save did not finish within {Budget}.", budget);
+        }
+        catch (AggregateException exception)
+        {
+            Logger.LogError(exception, "Warcraft unload save failed.");
+        }
     }
 
 }

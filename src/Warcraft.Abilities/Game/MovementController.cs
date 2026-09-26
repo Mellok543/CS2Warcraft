@@ -70,6 +70,18 @@ internal sealed class MovementController
         }
     }
 
+    /// <summary>Restores normal movement for everyone this controller touched (plugin unload).</summary>
+    public void ResetAll()
+    {
+        foreach (var slot in _boosts.Keys.Concat(_stuns.Keys).Concat(_raised).Distinct().ToArray())
+        {
+            if (GamePlayers.FindAliveBySlot(slot) is { } player)
+                Set(player.Pawn, Normal);
+        }
+
+        Clear();
+    }
+
     public void Clear()
     {
         _passive.Clear();

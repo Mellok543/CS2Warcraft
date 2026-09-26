@@ -127,4 +127,39 @@ public sealed class PersistenceSaveSchedulerTests
         Assert.False(provider.OverlapDetected);
         Assert.Equal(99, provider.Saved.Last().GlobalXp);
     }
+
+    [Fact]
+    public async Task FlushSupersedesPendingSavesAndWritesLatestSnapshotOnce()
+    {
+        var (core, provider, scheduler) = Create(TimeSpan.FromSeconds(30));
+        using var _ = scheduler;
+
+        core.Players.GetRequired(Player).GlobalXp = 5;
+        scheduler.Schedule(Player);
+        core.Players.GetRequired(Player).GlobalXp = 7;
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await scheduler.FlushAsync(core.Players.GetPersistenceSnapshots(), timeout.Token);
+        await Task.Delay(100);
+
+        var saved = Assert.Single(provider.Saved);
+        Assert.Equal(7, saved.GlobalXp);
+    }
+
+    [Fact]
+    public async Task FlushWaitsForInFlightSaveOfTheSamePlayer()
+    {
+        var (core, provider, scheduler) = Create(TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(100));
+        using var _ = scheduler;
+
+        scheduler.Schedule(Player);
+        await Task.Delay(40);
+        core.Players.GetRequired(Player).GlobalXp = 42;
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await scheduler.FlushAsync(core.Players.GetPersistenceSnapshots(), timeout.Token);
+
+        Assert.False(provider.OverlapDetected);
+        Assert.Equal(42, provider.Saved.Last().GlobalXp);
+    }
 }

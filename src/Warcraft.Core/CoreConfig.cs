@@ -14,6 +14,9 @@ internal sealed record CoreConfig
     public int AutosaveDelayMilliseconds { get; init; } = 1000;
     public int GameTickIntervalMilliseconds { get; init; } = 100;
 
+    /// <summary>Hard budget for the final save of all players when Core unloads.</summary>
+    public int UnloadSaveTimeoutSeconds { get; init; } = 5;
+
     public static string ConfigPath =>
         Path.Combine(Server.GameDirectory, "configs", "warcraft", "core.json");
 

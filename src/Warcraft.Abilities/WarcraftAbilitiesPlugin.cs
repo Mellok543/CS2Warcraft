@@ -24,6 +24,8 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
     private IWarcraftApi? _api;
     private readonly List<IAbilityHandler> _handlers = [];
     private readonly List<IDisposable> _systems = [];
+    private BeamEffects? _beams;
+    private MovementController? _movement;
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
@@ -44,6 +46,8 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         var scheduler = new PluginGameScheduler(this);
         var beams = new BeamEffects(scheduler);
         var movement = new MovementController();
+        _beams = beams;
+        _movement = movement;
         var dots = new DamageOverTime(_api);
         var history = new PositionHistory();
         var buffs = new TeamBuffs();
@@ -132,6 +136,7 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
             history.Clear();
             buffs.Clear();
             totems.Clear();
+            beams.PruneInvalid();
         }));
 
         Logger.LogInformation(
@@ -150,6 +155,12 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
             _handlers[i].Dispose();
 
         _handlers.Clear();
+
+        // Unload runs on the game thread: restore entities touched by shared systems.
+        _movement?.ResetAll();
+        _movement = null;
+        _beams?.Dispose();
+        _beams = null;
 
         _api?.Modules.Unregister("warcraft.abilities");
         _api = null;

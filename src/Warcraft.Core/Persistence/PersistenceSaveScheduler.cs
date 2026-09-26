@@ -70,6 +70,41 @@ internal sealed class PersistenceSaveScheduler(
         }
     }
 
+    /// <summary>
+    /// Final save on unload/shutdown. Cancels every pending debounced save (so none
+    /// can wait for the game thread while it is blocked) and saves the given
+    /// snapshots through the per-player gates, so an in-flight older save always
+    /// finishes (or rolls back) before the newest snapshot is written.
+    /// </summary>
+    public Task FlushAsync(IReadOnlyCollection<PlayerPersistenceDto> snapshots, CancellationToken cancellationToken)
+    {
+        foreach (var tokenSource in _pending.Values)
+            TryCancel(tokenSource);
+
+        _pending.Clear();
+
+        return Task.WhenAll(snapshots.Select(snapshot => SaveGuardedAsync(snapshot, cancellationToken)));
+    }
+
+    private async Task SaveGuardedAsync(PlayerPersistenceDto snapshot, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await SaveSerializedAsync(
+                snapshot.SteamId,
+                () => Task.FromResult<PlayerPersistenceDto?>(snapshot),
+                cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            logger.LogWarning("Final Warcraft save for {SteamId} timed out.", snapshot.SteamId);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Failed to save Warcraft state for {SteamId}.", snapshot.SteamId);
+        }
+    }
+
     public void Dispose()
     {
         _lifetime.Cancel();
