@@ -28,15 +28,25 @@ jobs:
 
       - name: Verify server layout
         run: |
-          test -f artifacts/addons/counterstrikesharp/shared/Warcraft.Api/Warcraft.Api.dll
-          test -f artifacts/addons/counterstrikesharp/plugins/Warcraft.Database/MySqlConnector.dll
-          if find artifacts/addons/counterstrikesharp/plugins -name 'Warcraft.Api.dll' -o -name 'CounterStrikeSharp.API.dll' | grep -q .; then
+          root=artifacts/addons/counterstrikesharp
+          test -f $root/shared/Warcraft.Api/Warcraft.Api.dll
+          for module in Core Database Races Abilities Menu Admin Vip Shop; do
+            test -f $root/plugins/Warcraft.$module/Warcraft.$module.dll || { echo "Missing Warcraft.$module" >&2; exit 1; }
+          done
+          test -f $root/plugins/Warcraft.Database/MySqlConnector.dll
+          test -f $root/plugins/Warcraft.Shop/defaults/shop.json
+          test "$(ls $root/plugins/Warcraft.Races/defaults/races/*.json | wc -l)" -ge 3
+          if find $root/plugins -name 'Warcraft.Api.dll' -o -name 'CounterStrikeSharp.API.dll' | grep -q .; then
             echo "Plugin folders must not contain Warcraft.Api.dll or CounterStrikeSharp.API.dll" >&2
             exit 1
           fi
 
+      - name: Read version
+        id: version
+        run: echo "value=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props)" >> "$GITHUB_OUTPUT"
+
       - name: Upload server layout
         uses: actions/upload-artifact@v4
         with:
-          name: cs2warcraft-counterstrikesharp
+          name: cs2warcraft-${{ steps.version.outputs.value }}
           path: artifacts/addons/counterstrikesharp/

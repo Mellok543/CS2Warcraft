@@ -20,32 +20,26 @@ The project uses a contract-first modular architecture:
 
 No feature module may directly mutate another module or player persistence.
 
-## Installation
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [INSTALL.md](docs/INSTALL.md) | server requirements, drop-in layout, database, admins, verification |
+| [CONFIGURATION.md](docs/CONFIGURATION.md) | every config file and key |
+| [ADMIN_COMMANDS.md](docs/ADMIN_COMMANDS.md) | admin commands and `css_wc_status` |
+| [UPGRADE.md](docs/UPGRADE.md) | upgrades, config/race updates, hot reload rules, rollback |
+| [SERVER_TEST_CHECKLIST.md](docs/SERVER_TEST_CHECKLIST.md) | release smoke test on a real server |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | module rules, threading, event flow |
+| [RACES.md](docs/RACES.md) / [ABILITIES.md](docs/ABILITIES.md) | race JSON, unlock tree, mechanics |
+| [DATABASE.md](docs/DATABASE.md), [VIP.md](docs/VIP.md), [SHOP.md](docs/SHOP.md) | module details |
+
+## Quick start
 
 ```bash
 dotnet build CS2Warcraft.slnx -c Release
 ```
 
-The Release build stages a drop-in layout in `artifacts/addons/counterstrikesharp/`
-(CI publishes the same folder as the `cs2warcraft-counterstrikesharp` artifact).
-Copy its contents into `game/csgo/addons/counterstrikesharp/` on the server:
-
-```text
-shared/Warcraft.Api/Warcraft.Api.dll        ← shared contracts, loaded once for all plugins
-plugins/Warcraft.Core/
-plugins/Warcraft.Database/                  ← includes MySqlConnector.dll
-plugins/Warcraft.Races/                     ← includes defaults/races/*.json
-plugins/Warcraft.Abilities/
-plugins/Warcraft.Menu/
-plugins/Warcraft.Admin/
-plugins/Warcraft.Vip/                       ← VIP modifiers (docs/VIP.md)
-plugins/Warcraft.Shop/                      ← item shop (docs/SHOP.md)
-```
-
-Do not copy `bin/` folders directly: `Warcraft.Api.dll` must exist only in
-`shared/`, otherwise each plugin gets its own copy of `IWarcraftApi` and the
-`warcraft:core` capability cannot be resolved.
-
-Player commands: `!wc` (menu), `!shop`, `!vip`; binds: `bind x css_ultimate`,
-`bind c "css_ability 1"`. New shipped race JSON files are copied only into an
-empty races directory; copy them manually on existing servers.
+Copy the contents of `artifacts/addons/counterstrikesharp/` (or the
+`cs2warcraft-<version>` CI artifact) into `game/csgo/addons/counterstrikesharp/`.
+`Warcraft.Api.dll` lives only in `shared/Warcraft.Api/`. Details:
+[docs/INSTALL.md](docs/INSTALL.md).
