@@ -48,7 +48,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
         var modifiers = new ModifierService();
         var events = new WarcraftEventBus(exception =>
             Logger.LogError(exception, "Unhandled Warcraft event subscriber exception."));
-        var races = new RaceCatalogService(players, events);
+        var races = new RaceCatalogService(players, events, modifiers);
         var persistence = new PersistenceCoordinator();
         var modules = new ModuleRegistryService();
         var menu = new MenuExtensionRegistry();

@@ -1,4 +1,5 @@
 using Warcraft.Api.Events;
+using Warcraft.Api.Modifiers;
 using Warcraft.Api.Races;
 using Warcraft.Core.Runtime;
 
@@ -6,7 +7,8 @@ namespace Warcraft.Core.Races;
 
 internal sealed class RaceCatalogService(
     PlayerStateStore players,
-    IWarcraftEventBus events) : IRacesApi
+    IWarcraftEventBus events,
+    IModifiersApi modifiers) : IRacesApi
 {
     private IReadOnlyDictionary<string, RaceDefinition> _catalog =
         new Dictionary<string, RaceDefinition>(StringComparer.OrdinalIgnoreCase);
@@ -30,6 +32,7 @@ internal sealed class RaceCatalogService(
         string source)
     {
         var errors = Validate(races);
+
         if (errors.Count > 0)
             return new(false, _catalog.Count, errors);
 
@@ -56,6 +59,16 @@ internal sealed class RaceCatalogService(
 
         if (race is null)
             return new(false, $"Race '{raceId}' is not registered.", null, null);
+
+        if (race.VipOnly &&
+            !modifiers.GetCombined(steamId).CanAccessVipRaces)
+        {
+            return new(
+                false,
+                $"Race '{race.Name}' requires VIP access.",
+                players.Get(steamId)?.ActiveRaceId,
+                null);
+        }
 
         var player = players.GetRequired(steamId);
         var previous = player.ActiveRaceId;
@@ -91,7 +104,9 @@ internal sealed class RaceCatalogService(
 
             foreach (var ability in race.Abilities)
             {
-                if (!abilityIds.Add(ability.Id))
+                if (string.IsNullOrWhiteSpace(ability.Id))
+                    errors.Add($"Race '{race.Id}' contains an ability without id.");
+                else if (!abilityIds.Add(ability.Id))
                     errors.Add($"Race '{race.Id}' contains duplicate ability '{ability.Id}'.");
 
                 if (ability.MaxLevel < 1)
@@ -101,10 +116,27 @@ internal sealed class RaceCatalogService(
                     errors.Add($"Ability '{race.Id}/{ability.Id}' has invalid unlockLevel.");
             }
 
-            if (race.Ultimate is not null &&
-                !abilityIds.Add(race.Ultimate.Id))
+            if (race.Ultimate is not null)
             {
-                errors.Add($"Race '{race.Id}' reuses ability '{race.Ultimate.Id}' as ultimate.");
+                if (string.IsNullOrWhiteSpace(race.Ultimate.Id))
+                {
+                    errors.Add($"Race '{race.Id}' contains an ultimate without id.");
+                }
+                else if (!abilityIds.Add(race.Ultimate.Id))
+                {
+                    errors.Add(
+                        $"Race '{race.Id}' reuses ability '{race.Ultimate.Id}' as ultimate.");
+                }
+
+                if (race.Ultimate.MaxLevel < 1)
+                    errors.Add($"Ultimate '{race.Id}/{race.Ultimate.Id}' maxLevel must be >= 1.");
+
+                if (race.Ultimate.UnlockLevel < 1 ||
+                    race.Ultimate.UnlockLevel > race.MaxLevel)
+                {
+                    errors.Add(
+                        $"Ultimate '{race.Id}/{race.Ultimate.Id}' has invalid unlockLevel.");
+                }
             }
         }
 
