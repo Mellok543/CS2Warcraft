@@ -42,12 +42,11 @@ public sealed class WarcraftCorePlugin : BasePlugin
     private IDisposable? _stateChangedSubscription;
     private XpRewardService? _xpRewards;
     private readonly AbilityDamageService _abilityDamage = new();
-    private readonly Dictionary<int, ulong> _creditedKills = [];
     private PlayerNotifier? _notifier;
     private StatsService? _stats;
     private readonly IGameThreadDispatcher _gameThread = new CssGameThreadDispatcher();
     private CoreConfig _config = new();
-    private int _ticksSinceGameTick;
+    private CoreGameEventBridge? _eventBridge;
 
     public override void Load(bool hotReload)
     {
@@ -92,6 +91,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
         _players = players;
         _persistence = persistence;
         _api = api;
+        var eventBridge = new CoreGameEventBridge(() => _api, _abilityDamage, _config);
+        _eventBridge = eventBridge;
         _lifetime = new CancellationTokenSource();
         _saveScheduler = new PersistenceSaveScheduler(
             players,
@@ -118,22 +119,22 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
         RegisterListener<Listeners.OnClientPutInServer>(OnClientPutInServer);
         RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
-        RegisterListener<Listeners.OnPlayerTakeDamagePre>(OnPlayerTakeDamagePre);
-        RegisterListener<Listeners.OnPlayerTakeDamagePost>(OnPlayerTakeDamagePost);
-        RegisterListener<Listeners.OnTick>(OnTick);
+        RegisterListener<Listeners.OnPlayerTakeDamagePre>(eventBridge.OnPlayerTakeDamagePre);
+        RegisterListener<Listeners.OnPlayerTakeDamagePost>(eventBridge.OnPlayerTakeDamagePost);
+        RegisterListener<Listeners.OnTick>(eventBridge.OnTick);
 
         new AbilityInputCommands(activation).Register(this);
 
-        RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
-        RegisterEventHandler<EventPlayerJump>(OnPlayerJump);
-        RegisterEventHandler<EventPlayerHurt>(OnPlayerHurt);
-        RegisterEventHandler<EventPlayerDeath>(OnPlayerDeathPre, HookMode.Pre);
-        RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
-        RegisterEventHandler<EventWeaponFire>(OnWeaponFire);
-        RegisterEventHandler<EventRoundStart>(OnRoundStart);
-        RegisterEventHandler<EventRoundEnd>(OnRoundEnd);
-        RegisterEventHandler<EventBombPlanted>(OnBombPlanted);
-        RegisterEventHandler<EventBombDefused>(OnBombDefused);
+        RegisterEventHandler<EventPlayerSpawn>(eventBridge.OnPlayerSpawn);
+        RegisterEventHandler<EventPlayerJump>(eventBridge.OnPlayerJump);
+        RegisterEventHandler<EventPlayerHurt>(eventBridge.OnPlayerHurt);
+        RegisterEventHandler<EventPlayerDeath>(eventBridge.OnPlayerDeathPre, HookMode.Pre);
+        RegisterEventHandler<EventPlayerDeath>(eventBridge.OnPlayerDeath);
+        RegisterEventHandler<EventWeaponFire>(eventBridge.OnWeaponFire);
+        RegisterEventHandler<EventRoundStart>(eventBridge.OnRoundStart);
+        RegisterEventHandler<EventRoundEnd>(eventBridge.OnRoundEnd);
+        RegisterEventHandler<EventBombPlanted>(eventBridge.OnBombPlanted);
+        RegisterEventHandler<EventBombDefused>(eventBridge.OnBombDefused);
 
         if (hotReload)
         {
@@ -194,6 +195,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
         _lifetime?.Dispose();
         _lifetime = null;
+        _eventBridge = null;
         _api = null;
         _players = null;
         _persistence = null;
@@ -226,243 +228,6 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
         if (snapshot is not null && _saveScheduler is not null)
             _ = _saveScheduler.SaveNowAsync(snapshot);
-    }
-
-    private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
-    {
-        var player = @event.Userid;
-        if (IsHuman(player))
-            _api?.Events.Publish(new PlayerSpawnEvent(player!.SteamID));
-
-        return HookResult.Continue;
-    }
-
-    private HookResult OnPlayerJump(EventPlayerJump @event, GameEventInfo info)
-    {
-        var player = @event.Userid;
-        if (IsHuman(player))
-            _api?.Events.Publish(new PlayerJumpEvent(player!.SteamID));
-
-        return HookResult.Continue;
-    }
-
-    private void OnTick()
-    {
-        var api = _api;
-        if (api is null)
-            return;
-
-        var interval = TimeSpan.FromMilliseconds(Math.Max(15, _config.GameTickIntervalMilliseconds));
-        var ticksPerEvent = Math.Max(
-            1,
-            (int)Math.Round(interval.TotalSeconds / Math.Max(Server.TickInterval, 0.001f)));
-
-        if (++_ticksSinceGameTick < ticksPerEvent)
-            return;
-
-        _ticksSinceGameTick = 0;
-        api.Events.Publish(new GameTickEvent(Server.CurrentTime, interval));
-    }
-
-    private HookResult OnPlayerHurt(EventPlayerHurt @event, GameEventInfo info)
-    {
-        var victim = @event.Userid;
-        if (!IsHuman(victim))
-            return HookResult.Continue;
-
-        var humanVictim = victim!;
-        var attacker = @event.Attacker;
-        ulong? attackerSteamId = IsHuman(attacker) ? attacker!.SteamID : null;
-
-        _api?.Events.Publish(new PlayerHurtEvent(
-            humanVictim.SteamID,
-            attackerSteamId,
-            @event.DmgHealth));
-
-        return HookResult.Continue;
-    }
-
-    /// <summary>
-    /// A lethal ability hit is executed as a forced suicide. Before the death event
-    /// is broadcast, credit it to the ability owner so the kill feed, kill XP and
-    /// statistics treat it as a regular kill.
-    /// </summary>
-    private HookResult OnPlayerDeathPre(EventPlayerDeath @event, GameEventInfo info)
-    {
-        var victim = @event.Userid;
-        if (victim is not { IsValid: true } || !_abilityDamage.TryTakeCredit(victim.Slot, out var credit))
-            return HookResult.Continue;
-
-        var attacker = @event.Attacker;
-        if (attacker is { IsValid: true } && attacker.Slot != victim.Slot)
-            return HookResult.Continue;
-
-        var killer = Utilities.GetPlayerFromSteamId(credit.AttackerSteamId);
-        if (killer is not { IsValid: true })
-            return HookResult.Continue;
-
-        _creditedKills[victim.Slot] = killer.SteamID;
-        @event.Attacker = killer;
-        return HookResult.Changed;
-    }
-
-    private HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
-    {
-        var victim = @event.Userid;
-        var creditedKiller = victim is { IsValid: true } && _creditedKills.Remove(victim.Slot, out var credited)
-            ? Utilities.GetPlayerFromSteamId(credited)
-            : null;
-
-        if (!IsHuman(victim))
-            return HookResult.Continue;
-
-        var humanVictim = victim!;
-        var attacker = creditedKiller ?? @event.Attacker;
-        ulong? killerSteamId = IsHuman(attacker) ? attacker!.SteamID : null;
-
-        _api?.Events.Publish(new PlayerDeathEvent(
-            humanVictim.SteamID,
-            killerSteamId));
-
-        if (killerSteamId.HasValue && killerSteamId.Value != humanVictim.SteamID)
-        {
-            _api?.Events.Publish(new PlayerKillEvent(
-                killerSteamId.Value,
-                humanVictim.SteamID,
-                @event.Headshot,
-                attacker!.TeamNum == humanVictim.TeamNum));
-        }
-
-        var assister = @event.Assister;
-        if (IsHuman(assister) &&
-            assister!.SteamID != humanVictim.SteamID &&
-            assister.TeamNum != humanVictim.TeamNum)
-        {
-            _api?.Events.Publish(new PlayerAssistEvent(
-                assister.SteamID,
-                humanVictim.SteamID,
-                @event.Assistedflash));
-        }
-
-        return HookResult.Continue;
-    }
-
-    private HookResult OnWeaponFire(EventWeaponFire @event, GameEventInfo info)
-    {
-        var player = @event.Userid;
-        if (IsHuman(player))
-        {
-            _api?.Events.Publish(new WeaponFireEvent(
-                player!.SteamID,
-                @event.Weapon));
-        }
-
-        return HookResult.Continue;
-    }
-
-    private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
-    {
-        _abilityDamage.Clear();
-        _creditedKills.Clear();
-        _api?.Events.Publish(new RoundStartEvent());
-        return HookResult.Continue;
-    }
-
-    private HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
-    {
-        var results = Utilities.GetPlayers()
-            .Where(x => IsHuman(x) && x.TeamNum is TeamTerrorist or TeamCounterTerrorist)
-            .Select(x => new PlayerRoundResultEvent(x.SteamID, x.TeamNum == @event.Winner))
-            .ToArray();
-
-        foreach (var result in results)
-            _api?.Events.Publish(result);
-
-        _api?.Events.Publish(new RoundEndEvent(@event.Winner));
-        return HookResult.Continue;
-    }
-
-    private HookResult OnBombPlanted(EventBombPlanted @event, GameEventInfo info)
-    {
-        if (IsHuman(@event.Userid))
-            _api?.Events.Publish(new BombPlantedEvent(@event.Userid!.SteamID));
-
-        return HookResult.Continue;
-    }
-
-    private HookResult OnBombDefused(EventBombDefused @event, GameEventInfo info)
-    {
-        if (IsHuman(@event.Userid))
-            _api?.Events.Publish(new BombDefusedEvent(@event.Userid!.SteamID));
-
-        return HookResult.Continue;
-    }
-
-    private HookResult OnPlayerTakeDamagePre(
-        CCSPlayerPawn victimPawn,
-        CTakeDamageInfo damageInfo)
-    {
-        var victimController = victimPawn.OriginalController.Value;
-        if (!IsHuman(victimController))
-            return HookResult.Continue;
-
-        var attackerSteamId = GetAttackerSteamId(damageInfo);
-        var damageEvent = new DamagePreEvent
-        {
-            VictimSteamId = victimController!.SteamID,
-            AttackerSteamId = attackerSteamId,
-            AttackerIsPlayer = damageInfo.Attacker.Value is CCSPlayerPawn,
-            Damage = damageInfo.Damage,
-            Weapon = GetAttackerWeapon(damageInfo),
-            Kind = ToDamageKind(damageInfo)
-        };
-
-        var originalDamage = damageInfo.Damage;
-        _api?.Events.Publish(damageEvent);
-        damageInfo.Damage = Math.Max(0.0f, damageEvent.Damage);
-
-        // A handler fully negated the hit (e.g. evasion): block it entirely.
-        return originalDamage > 0 && damageInfo.Damage <= 0
-            ? HookResult.Handled
-            : HookResult.Continue;
-    }
-
-    private void OnPlayerTakeDamagePost(
-        CCSPlayerPawn victimPawn,
-        CTakeDamageInfo damageInfo,
-        CTakeDamageResult result)
-    {
-        var victimController = victimPawn.OriginalController.Value;
-        if (!IsHuman(victimController))
-            return;
-
-        _api?.Events.Publish(new DamagePostEvent(
-            victimController!.SteamID,
-            GetAttackerSteamId(damageInfo),
-            result.DamageDealt > 0 ? result.DamageDealt : result.HealthLost,
-            GetAttackerWeapon(damageInfo),
-            ToDamageKind(damageInfo)));
-    }
-
-    private static DamageKind ToDamageKind(CTakeDamageInfo damageInfo)
-    {
-        var bits = damageInfo.BitsDamageType;
-        var kind = damageInfo.GetHitGroup() == HitGroup_t.HITGROUP_HEAD ? DamageKind.Headshot : DamageKind.None;
-
-        if ((bits & (DamageTypes_t.DMG_BULLET | DamageTypes_t.DMG_BUCKSHOT)) != 0)
-            kind |= DamageKind.Bullet;
-        if ((bits & (DamageTypes_t.DMG_SLASH | DamageTypes_t.DMG_CLUB)) != 0)
-            kind |= DamageKind.Melee;
-        if ((bits & DamageTypes_t.DMG_FALL) != 0)
-            kind |= DamageKind.Fall;
-        if ((bits & (DamageTypes_t.DMG_BLAST | DamageTypes_t.DMG_BLAST_SURFACE)) != 0)
-            kind |= DamageKind.Blast;
-        if ((bits & DamageTypes_t.DMG_BURN) != 0)
-            kind |= DamageKind.Burn;
-        if ((bits & DamageTypes_t.DMG_HEADSHOT) != 0)
-            kind |= DamageKind.Headshot;
-
-        return kind;
     }
 
     private void OnFirstPersistenceProviderRegistered()
@@ -511,33 +276,6 @@ public sealed class WarcraftCorePlugin : BasePlugin
                 steamId);
         }
     }
-
-    private static ulong? GetAttackerSteamId(CTakeDamageInfo damageInfo)
-    {
-        var attacker = damageInfo.Attacker.Value;
-
-        if (attacker is CCSPlayerPawn pawn)
-        {
-            var controller = pawn.OriginalController.Value;
-            return IsHuman(controller) ? controller!.SteamID : null;
-        }
-
-        if (attacker is CCSPlayerController controllerEntity)
-            return IsHuman(controllerEntity) ? controllerEntity.SteamID : null;
-
-        return null;
-    }
-
-    private static string? GetAttackerWeapon(CTakeDamageInfo damageInfo)
-    {
-        if (damageInfo.Attacker.Value is not CCSPlayerPawn pawn)
-            return null;
-
-        return pawn.WeaponServices?.ActiveWeapon.Value?.DesignerName;
-    }
-
-    private const byte TeamTerrorist = 2;
-    private const byte TeamCounterTerrorist = 3;
 
     private static bool IsHuman(CCSPlayerController? player)
         => player is { IsValid: true, IsBot: false } && player.SteamID != 0;
