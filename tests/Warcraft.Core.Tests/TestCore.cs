@@ -35,6 +35,7 @@ internal sealed class TestCore
 
     public TestCore()
     {
+        Players = new PlayerStateStore(Time);
         Events = new WarcraftEventBus(exception => throw exception);
         Races = new RaceCatalogService(
             Players,
@@ -48,9 +49,9 @@ internal sealed class TestCore
         Activation = new AbilityActivationService(Resolver, Registrations, Cooldowns, Events);
     }
 
-    public PlayerStateStore Players { get; } = new();
-    public ModifierService Modifiers { get; } = new();
     public ManualTimeProvider Time { get; } = new();
+    public PlayerStateStore Players { get; }
+    public ModifierService Modifiers { get; } = new();
     public FakeCombatStateProvider Combat { get; } = new();
     public AbilityRegistrationStore Registrations { get; } = new();
     public WarcraftEventBus Events { get; }

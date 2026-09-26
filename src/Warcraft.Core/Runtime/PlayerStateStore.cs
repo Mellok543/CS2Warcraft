@@ -3,23 +3,33 @@ using Warcraft.Api.Players;
 
 namespace Warcraft.Core.Runtime;
 
-internal sealed class PlayerStateStore : IPlayersApi
+/// <summary>
+/// Owner of all <see cref="PlayerRuntimeState"/> instances. The dictionary is
+/// lock-protected; the state objects themselves are game-thread affine and are
+/// only mutated and snapshotted on the game thread.
+/// </summary>
+internal sealed class PlayerStateStore(TimeProvider? time = null) : IPlayersApi
 {
     private readonly Dictionary<ulong, PlayerRuntimeState> _players = [];
     private readonly object _sync = new();
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
 
     public PlayerStateSnapshot? Get(ulong steamId)
     {
+        var now = _time.GetUtcNow();
+
         lock (_sync)
             return _players.TryGetValue(steamId, out var player)
-                ? player.ToSnapshot()
+                ? player.ToSnapshot(now)
                 : null;
     }
 
     public IReadOnlyCollection<PlayerStateSnapshot> GetLoadedPlayers()
     {
+        var now = _time.GetUtcNow();
+
         lock (_sync)
-            return _players.Values.Select(x => x.ToSnapshot()).ToArray();
+            return _players.Values.Select(x => x.ToSnapshot(now)).ToArray();
     }
 
     internal PlayerRuntimeState GetRequired(ulong steamId)
@@ -52,7 +62,8 @@ internal sealed class PlayerStateStore : IPlayersApi
             var created = new PlayerRuntimeState
             {
                 SteamId = steamId,
-                Name = name
+                Name = name,
+                Stats = { SessionStartedAt = _time.GetUtcNow() }
             };
 
             _players[steamId] = created;
@@ -64,7 +75,7 @@ internal sealed class PlayerStateStore : IPlayersApi
     {
         lock (_sync)
         {
-            if (!_players.ContainsKey(persisted.SteamId))
+            if (!_players.TryGetValue(persisted.SteamId, out var current))
                 return false;
 
             var player = new PlayerRuntimeState
@@ -72,7 +83,10 @@ internal sealed class PlayerStateStore : IPlayersApi
                 SteamId = persisted.SteamId,
                 Name = currentName,
                 GlobalXp = persisted.GlobalXp,
-                ActiveRaceId = persisted.ActiveRaceId
+                ActiveRaceId = persisted.ActiveRaceId,
+                Stats = PlayerStatsRuntime.FromPersistence(
+                    persisted.Stats,
+                    current.Stats.SessionStartedAt)
             };
 
             foreach (var race in persisted.Races)
@@ -98,18 +112,22 @@ internal sealed class PlayerStateStore : IPlayersApi
 
     internal PlayerPersistenceDto? GetPersistenceSnapshot(ulong steamId)
     {
+        var now = _time.GetUtcNow();
+
         lock (_sync)
         {
             return _players.TryGetValue(steamId, out var player)
-                ? player.ToPersistence()
+                ? player.ToPersistence(now)
                 : null;
         }
     }
 
     internal IReadOnlyCollection<PlayerPersistenceDto> GetPersistenceSnapshots()
     {
+        var now = _time.GetUtcNow();
+
         lock (_sync)
-            return _players.Values.Select(x => x.ToPersistence()).ToArray();
+            return _players.Values.Select(x => x.ToPersistence(now)).ToArray();
     }
 
     internal bool Remove(ulong steamId)

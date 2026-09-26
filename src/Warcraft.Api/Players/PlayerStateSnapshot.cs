@@ -6,7 +6,17 @@ public sealed record PlayerStateSnapshot(
     long GlobalXp,
     string? ActiveRaceId,
     IReadOnlyDictionary<string, RaceProgressSnapshot> Races,
-    IReadOnlyDictionary<string, DateTimeOffset> Cooldowns);
+    IReadOnlyDictionary<string, DateTimeOffset> Cooldowns,
+    PlayerStatsSnapshot Stats);
+
+/// <summary>Lifetime statistics maintained by Core. PlaySeconds includes the current session.</summary>
+public sealed record PlayerStatsSnapshot(
+    long Kills,
+    long Deaths,
+    long Headshots,
+    long RoundsPlayed,
+    long RoundsWon,
+    long PlaySeconds);
 
 public sealed record RaceProgressSnapshot(
     string RaceId,

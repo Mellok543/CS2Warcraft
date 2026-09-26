@@ -80,6 +80,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
                 kills BIGINT NOT NULL DEFAULT 0,
                 deaths BIGINT NOT NULL DEFAULT 0,
                 headshots BIGINT NOT NULL DEFAULT 0,
+                rounds_played BIGINT NOT NULL DEFAULT 0,
                 rounds_won BIGINT NOT NULL DEFAULT 0,
                 play_seconds BIGINT NOT NULL DEFAULT 0,
                 PRIMARY KEY (steam_id),
@@ -95,6 +96,43 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             await using var command = new MySqlCommand(sql, connection);
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
+
+        await EnsureColumnAsync(
+            connection,
+            "wc_player_stats",
+            "rounds_played",
+            "ALTER TABLE wc_player_stats ADD COLUMN rounds_played BIGINT NOT NULL DEFAULT 0 AFTER headshots;",
+            cancellationToken);
+    }
+
+    /// <summary>Additive migration for databases created by earlier versions.</summary>
+    private static async Task EnsureColumnAsync(
+        MySqlConnection connection,
+        string table,
+        string column,
+        string alterSql,
+        CancellationToken cancellationToken)
+    {
+        await using (var exists = new MySqlCommand(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = @table
+              AND COLUMN_NAME = @column;
+            """,
+            connection))
+        {
+            exists.Parameters.AddWithValue("@table", table);
+            exists.Parameters.AddWithValue("@column", column);
+
+            var count = Convert.ToInt64(await exists.ExecuteScalarAsync(cancellationToken));
+            if (count > 0)
+                return;
+        }
+
+        await using var alter = new MySqlCommand(alterSql, connection);
+        await alter.ExecuteNonQueryAsync(cancellationToken);
     }
 
     public async ValueTask<PlayerPersistenceDto?> LoadPlayerAsync(
@@ -175,12 +213,40 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             }
         }
 
+        var stats = new PlayerStatsPersistenceDto();
+
+        await using (var command = new MySqlCommand(
+            """
+            SELECT kills, deaths, headshots, rounds_played, rounds_won, play_seconds
+            FROM wc_player_stats
+            WHERE steam_id = @steamId;
+            """,
+            connection))
+        {
+            command.Parameters.AddWithValue("@steamId", steamId);
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                stats = new PlayerStatsPersistenceDto
+                {
+                    Kills = reader.GetInt64(0),
+                    Deaths = reader.GetInt64(1),
+                    Headshots = reader.GetInt64(2),
+                    RoundsPlayed = reader.GetInt64(3),
+                    RoundsWon = reader.GetInt64(4),
+                    PlaySeconds = reader.GetInt64(5)
+                };
+            }
+        }
+
         return new PlayerPersistenceDto
         {
             SteamId = steamId,
             Name = name,
             GlobalXp = globalXp,
             ActiveRaceId = activeRaceId,
+            Stats = stats,
             Races = races.Values
                 .Select(x => new RaceProgressPersistenceDto
                 {
@@ -206,11 +272,12 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
         {
             await UpsertPlayerAsync(connection, transaction, player, cancellationToken);
             await ReplaceProgressAsync(connection, transaction, player, cancellationToken);
+            await UpsertStatsAsync(connection, transaction, player, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
         catch
         {
-            await transaction.RollbackAsync(cancellationToken);
+            await transaction.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
@@ -239,6 +306,41 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
         command.Parameters.AddWithValue(
             "@activeRaceId",
             (object?)player.ActiveRaceId ?? DBNull.Value);
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task UpsertStatsAsync(
+        MySqlConnection connection,
+        MySqlTransaction transaction,
+        PlayerPersistenceDto player,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(
+            """
+            INSERT INTO wc_player_stats
+                (steam_id, kills, deaths, headshots, rounds_played, rounds_won, play_seconds)
+            VALUES
+                (@steamId, @kills, @deaths, @headshots, @roundsPlayed, @roundsWon, @playSeconds)
+            ON DUPLICATE KEY UPDATE
+                kills = VALUES(kills),
+                deaths = VALUES(deaths),
+                headshots = VALUES(headshots),
+                rounds_played = VALUES(rounds_played),
+                rounds_won = VALUES(rounds_won),
+                play_seconds = VALUES(play_seconds);
+            """,
+            connection,
+            transaction);
+
+        var stats = player.Stats;
+        command.Parameters.AddWithValue("@steamId", player.SteamId);
+        command.Parameters.AddWithValue("@kills", stats.Kills);
+        command.Parameters.AddWithValue("@deaths", stats.Deaths);
+        command.Parameters.AddWithValue("@headshots", stats.Headshots);
+        command.Parameters.AddWithValue("@roundsPlayed", stats.RoundsPlayed);
+        command.Parameters.AddWithValue("@roundsWon", stats.RoundsWon);
+        command.Parameters.AddWithValue("@playSeconds", stats.PlaySeconds);
 
         await command.ExecuteNonQueryAsync(cancellationToken);
     }

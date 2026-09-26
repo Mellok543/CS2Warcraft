@@ -16,23 +16,70 @@ internal sealed class PlayerRuntimeState
     public Dictionary<string, DateTimeOffset> Cooldowns { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
-    public PlayerStateSnapshot ToSnapshot()
+    public PlayerStatsRuntime Stats { get; init; } = new();
+
+    public PlayerStateSnapshot ToSnapshot(DateTimeOffset now)
         => new(
             SteamId,
             Name,
             GlobalXp,
             ActiveRaceId,
             Races.ToDictionary(x => x.Key, x => x.Value.ToSnapshot(), StringComparer.OrdinalIgnoreCase),
-            new Dictionary<string, DateTimeOffset>(Cooldowns, StringComparer.OrdinalIgnoreCase));
+            new Dictionary<string, DateTimeOffset>(Cooldowns, StringComparer.OrdinalIgnoreCase),
+            Stats.ToSnapshot(now));
 
-    public PlayerPersistenceDto ToPersistence()
+    public PlayerPersistenceDto ToPersistence(DateTimeOffset now)
         => new()
         {
             SteamId = SteamId,
             Name = Name,
             GlobalXp = GlobalXp,
             ActiveRaceId = ActiveRaceId,
-            Races = Races.Values.Select(x => x.ToPersistence()).ToArray()
+            Races = Races.Values.Select(x => x.ToPersistence()).ToArray(),
+            Stats = Stats.ToPersistence(now)
+        };
+}
+
+internal sealed class PlayerStatsRuntime
+{
+    public long Kills { get; set; }
+    public long Deaths { get; set; }
+    public long Headshots { get; set; }
+    public long RoundsPlayed { get; set; }
+    public long RoundsWon { get; set; }
+
+    /// <summary>Play time stored before the current session started.</summary>
+    public long StoredPlaySeconds { get; set; }
+
+    public DateTimeOffset SessionStartedAt { get; set; }
+
+    public long PlaySeconds(DateTimeOffset now)
+        => StoredPlaySeconds + Math.Max(0L, (long)(now - SessionStartedAt).TotalSeconds);
+
+    public PlayerStatsSnapshot ToSnapshot(DateTimeOffset now)
+        => new(Kills, Deaths, Headshots, RoundsPlayed, RoundsWon, PlaySeconds(now));
+
+    public PlayerStatsPersistenceDto ToPersistence(DateTimeOffset now)
+        => new()
+        {
+            Kills = Kills,
+            Deaths = Deaths,
+            Headshots = Headshots,
+            RoundsPlayed = RoundsPlayed,
+            RoundsWon = RoundsWon,
+            PlaySeconds = PlaySeconds(now)
+        };
+
+    public static PlayerStatsRuntime FromPersistence(PlayerStatsPersistenceDto stored, DateTimeOffset sessionStartedAt)
+        => new()
+        {
+            Kills = stored.Kills,
+            Deaths = stored.Deaths,
+            Headshots = stored.Headshots,
+            RoundsPlayed = stored.RoundsPlayed,
+            RoundsWon = stored.RoundsWon,
+            StoredPlaySeconds = stored.PlaySeconds,
+            SessionStartedAt = sessionStartedAt
         };
 }
 

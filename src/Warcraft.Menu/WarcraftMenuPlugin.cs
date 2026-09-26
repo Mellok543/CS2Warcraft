@@ -306,6 +306,20 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             (_, _) => { },
             true);
 
+        var stats = state.Stats;
+        var playTime = TimeSpan.FromSeconds(stats.PlaySeconds);
+
+        foreach (var line in new[]
+                 {
+                     $"Убийства: {stats.Kills} | Смерти: {stats.Deaths}",
+                     $"В голову: {stats.Headshots}",
+                     $"Раунды: {stats.RoundsPlayed} | Победы: {stats.RoundsWon}",
+                     $"Время в игре: {(int)playTime.TotalHours} ч {playTime.Minutes} мин"
+                 })
+        {
+            menu.AddMenuOption(line, (_, _) => { }, true);
+        }
+
         MenuManager.OpenCenterHtmlMenu(this, player, menu);
     }
 

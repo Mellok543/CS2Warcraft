@@ -18,6 +18,7 @@ using Warcraft.Core.Persistence;
 using Warcraft.Core.Progression;
 using Warcraft.Core.Races;
 using Warcraft.Core.Runtime;
+using Warcraft.Core.Stats;
 
 namespace Warcraft.Core;
 
@@ -40,6 +41,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
     private PersistenceSaveScheduler? _saveScheduler;
     private IDisposable? _stateChangedSubscription;
     private IDisposable? _killXpSubscription;
+    private StatsService? _stats;
+    private readonly IGameThreadDispatcher _gameThread = new CssGameThreadDispatcher();
     private CoreConfig _config = new();
     private int _ticksSinceGameTick;
 
@@ -89,8 +92,10 @@ public sealed class WarcraftCorePlugin : BasePlugin
         _saveScheduler = new PersistenceSaveScheduler(
             players,
             persistence,
+            _gameThread,
             TimeSpan.FromMilliseconds(Math.Max(100, _config.AutosaveDelayMilliseconds)),
             Logger);
+        _stats = new StatsService(players, events);
 
         _stateChangedSubscription = events.Subscribe<PlayerStateChangedEvent>(
             changed => _saveScheduler?.Schedule(changed.SteamId));
@@ -159,6 +164,9 @@ public sealed class WarcraftCorePlugin : BasePlugin
         _killXpSubscription?.Dispose();
         _killXpSubscription = null;
 
+        _stats?.Dispose();
+        _stats = null;
+
         _saveScheduler?.Dispose();
         _saveScheduler = null;
 
@@ -215,8 +223,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
         var snapshot = _players.GetPersistenceSnapshot(steamId);
         _players.Remove(steamId);
 
-        if (snapshot is not null && _persistence is { HasProvider: true })
-            _ = SavePlayerAsync(snapshot);
+        if (snapshot is not null && _saveScheduler is not null)
+            _ = _saveScheduler.SaveNowAsync(snapshot);
     }
 
     private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
@@ -320,6 +328,12 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
     private HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
     {
+        var participants = Utilities.GetPlayers()
+            .Where(x => IsHuman(x) && x.TeamNum is TeamTerrorist or TeamCounterTerrorist)
+            .Select(x => new RoundParticipant(x.SteamID, x.TeamNum == @event.Winner))
+            .ToArray();
+
+        _stats?.RecordRoundEnd(participants);
         _api?.Events.Publish(new RoundEndEvent(@event.Winner));
         return HookResult.Continue;
     }
@@ -370,32 +384,40 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
     private void OnFirstPersistenceProviderRegistered()
     {
-        if (_players is null)
-            return;
+        // Raised from the storage provider's async initialization: hop to the game thread.
+        Server.NextFrame(() =>
+        {
+            if (_players is null)
+                return;
 
-        foreach (var player in _players.GetLoadedPlayers())
-            _ = LoadPlayerAsync(player.SteamId, player.Name);
+            foreach (var player in _players.GetLoadedPlayers())
+                _ = LoadPlayerAsync(player.SteamId, player.Name);
+        });
     }
 
     private async Task LoadPlayerAsync(ulong steamId, string currentName)
     {
-        if (_persistence is not { HasProvider: true } ||
-            _players is null ||
-            _lifetime is null)
-        {
+        var persistence = _persistence;
+        var players = _players;
+        var lifetime = _lifetime;
+
+        if (persistence is not { HasProvider: true } || players is null || lifetime is null)
             return;
-        }
+
+        var cancellationToken = lifetime.Token;
 
         try
         {
-            var persisted = await _persistence.LoadPlayerAsync(
-                steamId,
-                _lifetime.Token);
+            var persisted = await persistence.LoadPlayerAsync(steamId, cancellationToken);
+            if (persisted is null)
+                return;
 
-            if (persisted is not null)
-                _players.RestoreIfLoaded(persisted, currentName);
+            // Runtime state is game-thread affine; swap it in on the game thread.
+            await _gameThread
+                .InvokeAsync(() => players.RestoreIfLoaded(persisted, currentName))
+                .WaitAsync(cancellationToken);
         }
-        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
         }
         catch (Exception exception)
@@ -404,27 +426,6 @@ public sealed class WarcraftCorePlugin : BasePlugin
                 exception,
                 "Failed to load Warcraft state for {SteamId}.",
                 steamId);
-        }
-    }
-
-    private async Task SavePlayerAsync(PlayerPersistenceDto snapshot)
-    {
-        if (_persistence is not { HasProvider: true } || _lifetime is null)
-            return;
-
-        try
-        {
-            await _persistence.SavePlayerAsync(snapshot, _lifetime.Token);
-        }
-        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
-        {
-        }
-        catch (Exception exception)
-        {
-            Logger.LogError(
-                exception,
-                "Failed to save Warcraft state for {SteamId}.",
-                snapshot.SteamId);
         }
     }
 
@@ -451,6 +452,9 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
         return pawn.WeaponServices?.ActiveWeapon.Value?.DesignerName;
     }
+
+    private const byte TeamTerrorist = 2;
+    private const byte TeamCounterTerrorist = 3;
 
     private static bool IsHuman(CCSPlayerController? player)
         => player is { IsValid: true, IsBot: false } && player.SteamID != 0;
