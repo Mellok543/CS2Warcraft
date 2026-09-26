@@ -19,7 +19,8 @@ internal sealed class HeadshotDamageAbility : AbilityHandler
 
     private void OnDamagePre(DamagePreEvent @event)
     {
-        if ((@event.Kind & DamageKind.Headshot) == 0 ||
+        if (@event.IsAbilityDamage ||
+            (@event.Kind & DamageKind.Headshot) == 0 ||
             @event.AttackerSteamId is not { } attacker ||
             attacker == @event.VictimSteamId ||
             GetUsable(attacker) is not { } ability)
@@ -47,7 +48,8 @@ internal sealed class BackstabAbility : AbilityHandler
 
     private void OnDamagePre(DamagePreEvent @event)
     {
-        if (@event.AttackerSteamId is not { } attacker ||
+        if (@event.IsAbilityDamage ||
+            @event.AttackerSteamId is not { } attacker ||
             attacker == @event.VictimSteamId ||
             GetUsable(attacker) is not { } ability ||
             GamePlayers.FindAlive(attacker) is not { } source ||
@@ -85,7 +87,8 @@ internal sealed class ExecuteAbility : AbilityHandler
 
     private void OnDamagePre(DamagePreEvent @event)
     {
-        if (@event.AttackerSteamId is not { } attacker ||
+        if (@event.IsAbilityDamage ||
+            @event.AttackerSteamId is not { } attacker ||
             attacker == @event.VictimSteamId ||
             GetUsable(attacker) is not { } ability ||
             GamePlayers.FindAlive(@event.VictimSteamId) is not { } victim ||

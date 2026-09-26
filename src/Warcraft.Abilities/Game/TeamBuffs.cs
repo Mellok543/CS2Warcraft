@@ -66,7 +66,8 @@ internal sealed class TeamBuffs
                 if (e.Damage <= 0)
                     return;
 
-                if (e.AttackerSteamId is { } attacker && attacker != e.VictimSteamId)
+                // Damage bonuses amplify weapon damage only; reductions also protect from abilities.
+                if (!e.IsAbilityDamage && e.AttackerSteamId is { } attacker && attacker != e.VictimSteamId)
                     e.Damage *= 1f + Get(attacker, BuffKind.DamageBonus, now());
 
                 e.Damage *= 1f - Math.Min(MaxReduction, Get(e.VictimSteamId, BuffKind.DamageReduction, now()));

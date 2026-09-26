@@ -126,6 +126,31 @@ Every numeric value is either a scalar or an array indexed by ability level:
 }
 ```
 
+## Ability damage pipeline
+
+Every ability damage source (`chain_lightning`, `smite`, `war_stomp`,
+`entangle`, `life_drain`, `repulse`, `immolation`, `flame_totem`, `poison`,
+`reflect_damage`) calls `api.Combat.DealAbilityDamage`. Core then:
+
+1. publishes a `DamagePreEvent` with `Kind = DamageKind.Ability` and
+   `AbilityId` (human victims only);
+2. applies the resulting damage to health directly;
+3. on a lethal hit, stores a kill credit and forces the death, which the
+   `player_death` pre-hook rewrites to the ability owner;
+4. **never** publishes a `DamagePostEvent`.
+
+Consequences:
+
+| Modifier type | Examples | Ability damage |
+|---|---|---|
+| Defensive (victim side) | `damage_reduction`, `divine_shield`, `devotion_aura`, `shield_totem`, `evasion`, `cheat_death` | applies |
+| Offensive (attacker side) | `critical_strike`, `bonus_damage`, `headshot_damage`, `backstab`, `execute`, `battle_cry`, damage buffs | ignored (`IsAbilityDamage`) |
+| On-hit (DamagePost) | `reflect_damage`, `vampirism`, `poison`, `bash`, `money_steal`, `second_wind` | never triggered |
+
+So `reflect -> ability damage -> reflect` chains are impossible, and a nested
+`DealAbilityDamage` raised from a DamagePre handler skips the pipeline
+(bounded recursion). Covered by `AbilityDamagePipelineTests`.
+
 ## Descriptions
 
 Every handler registers a default Russian description template; a race can

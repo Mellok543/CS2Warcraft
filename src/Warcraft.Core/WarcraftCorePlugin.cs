@@ -41,7 +41,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
     private PersistenceSaveScheduler? _saveScheduler;
     private IDisposable? _stateChangedSubscription;
     private XpRewardService? _xpRewards;
-    private readonly AbilityDamageService _abilityDamage = new();
+    private AbilityDamageService? _abilityDamage;
     private PlayerNotifier? _notifier;
     private StatsService? _stats;
     private readonly IGameThreadDispatcher _gameThread = new CssGameThreadDispatcher();
@@ -76,6 +76,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
             new CssPlayerCombatStateProvider());
         var abilities = new AbilitiesApiService(registrations, resolver, cooldowns);
         var activation = new AbilityActivationService(resolver, registrations, cooldowns, events);
+        var abilityDamage = new AbilityDamageService(new AbilityDamagePipeline(events));
+        _abilityDamage = abilityDamage;
 
         IWarcraftApi api = new WarcraftApiFacade(
             players,
@@ -87,12 +89,12 @@ public sealed class WarcraftCorePlugin : BasePlugin
             modifiers,
             modules,
             menu,
-            _abilityDamage);
+            abilityDamage);
 
         _players = players;
         _persistence = persistence;
         _api = api;
-        var eventBridge = new CoreGameEventBridge(() => _api, _abilityDamage, _config);
+        var eventBridge = new CoreGameEventBridge(() => _api, abilityDamage, _config);
         _eventBridge = eventBridge;
         _lifetime = new CancellationTokenSource();
         _saveScheduler = new PersistenceSaveScheduler(

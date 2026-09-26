@@ -7,7 +7,7 @@ namespace Warcraft.Core.Game;
 /// Applies ability damage and remembers who dealt a lethal hit, so the Core
 /// death hooks can credit the kill to the ability owner. Game thread only.
 /// </summary>
-internal sealed class AbilityDamageService : ICombatApi
+internal sealed class AbilityDamageService(AbilityDamagePipeline pipeline) : ICombatApi
 {
     private const float CreditLifetimeSeconds = 2f;
 
@@ -28,12 +28,22 @@ internal sealed class AbilityDamageService : ICombatApi
             return AbilityDamageResult.NotApplied;
         }
 
+        var amount = pipeline.Resolve(
+            request.AttackerSteamId,
+            victim.IsBot || victim.SteamID == 0 ? null : victim.SteamID,
+            request.Amount,
+            request.AbilityId);
+
+        // Fully absorbed (shield, evasion): the hit landed but dealt nothing.
+        if (amount <= 0)
+            return new AbilityDamageResult(true, false, 0);
+
         var health = pawn.Health;
-        if (health > request.Amount)
+        if (health > amount)
         {
-            pawn.Health = health - request.Amount;
+            pawn.Health = health - amount;
             Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
-            return new AbilityDamageResult(true, false, request.Amount);
+            return new AbilityDamageResult(true, false, amount);
         }
 
         _credits.Store(

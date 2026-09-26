@@ -17,7 +17,8 @@ internal sealed class CriticalStrikeAbility : AbilityHandler
 
     private void OnDamagePre(DamagePreEvent @event)
     {
-        if (@event.AttackerSteamId is not { } attacker ||
+        if (@event.IsAbilityDamage ||
+            @event.AttackerSteamId is not { } attacker ||
             attacker == @event.VictimSteamId ||
             @event.Damage <= 0)
         {

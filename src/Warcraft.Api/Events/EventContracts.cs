@@ -136,7 +136,15 @@ public enum DamageKind
     Fall = 4,
     Blast = 8,
     Burn = 16,
-    Headshot = 32
+    Headshot = 32,
+
+    /// <summary>
+    /// Damage dealt through <c>ICombatApi.DealAbilityDamage</c>. Only a
+    /// <see cref="DamagePreEvent"/> is published for it (never a DamagePostEvent),
+    /// so on-hit effects cannot chain. Defensive modifiers apply; offensive
+    /// modifiers must ignore it (<see cref="DamagePreEvent.IsAbilityDamage"/>).
+    /// </summary>
+    Ability = 64
 }
 
 public sealed class DamagePreEvent : IWarcraftEvent
@@ -150,6 +158,11 @@ public sealed class DamagePreEvent : IWarcraftEvent
     public required float Damage { get; set; }
     public string? Weapon { get; init; }
     public DamageKind Kind { get; init; }
+
+    /// <summary>Ability id for <see cref="DamageKind.Ability"/> damage.</summary>
+    public string? AbilityId { get; init; }
+
+    public bool IsAbilityDamage => (Kind & DamageKind.Ability) != 0;
 }
 
 public sealed record DamagePostEvent(

@@ -18,8 +18,13 @@ internal sealed class BonusDamageAbility : AbilityHandler
 
     private void OnDamagePre(DamagePreEvent @event)
     {
-        if (@event.AttackerSteamId is not { } attacker || attacker == @event.VictimSteamId || @event.Damage <= 0)
+        if (@event.IsAbilityDamage ||
+            @event.AttackerSteamId is not { } attacker ||
+            attacker == @event.VictimSteamId ||
+            @event.Damage <= 0)
+        {
             return;
+        }
 
         var ability = GetUsable(attacker);
         if (ability is null)

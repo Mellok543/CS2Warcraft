@@ -223,7 +223,8 @@ internal sealed class BattleCryAbility : ActiveAbilityHandler
 
     private void OnDamagePre(DamagePreEvent @event)
     {
-        if (@event.AttackerSteamId is not { } attacker ||
+        if (@event.IsAbilityDamage ||
+            @event.AttackerSteamId is not { } attacker ||
             attacker == @event.VictimSteamId ||
             !_buffs.TryGetValue(attacker, out var buff))
         {
