@@ -1,12 +1,16 @@
+using Warcraft.Api.Events;
 using Warcraft.Api.Races;
 using Warcraft.Core.Runtime;
 
 namespace Warcraft.Core.Races;
 
-internal sealed class RaceCatalogService(PlayerStateStore players) : IRacesApi
+internal sealed class RaceCatalogService(
+    PlayerStateStore players,
+    IWarcraftEventBus events) : IRacesApi
 {
     private IReadOnlyDictionary<string, RaceDefinition> _catalog =
         new Dictionary<string, RaceDefinition>(StringComparer.OrdinalIgnoreCase);
+
     private readonly object _sync = new();
 
     public IReadOnlyCollection<RaceDefinition> GetAll()
@@ -29,7 +33,10 @@ internal sealed class RaceCatalogService(PlayerStateStore players) : IRacesApi
         if (errors.Count > 0)
             return new(false, _catalog.Count, errors);
 
-        var next = races.ToDictionary(x => x.Id, x => x, StringComparer.OrdinalIgnoreCase);
+        var next = races.ToDictionary(
+            x => x.Id,
+            x => x,
+            StringComparer.OrdinalIgnoreCase);
 
         lock (_sync)
             _catalog = next;
@@ -37,9 +44,13 @@ internal sealed class RaceCatalogService(PlayerStateStore players) : IRacesApi
         return new(true, next.Count, []);
     }
 
-    public RaceSelectionResult SelectRace(ulong steamId, string raceId, string reason)
+    public RaceSelectionResult SelectRace(
+        ulong steamId,
+        string raceId,
+        string reason)
     {
         RaceDefinition? race;
+
         lock (_sync)
             race = _catalog.GetValueOrDefault(raceId);
 
@@ -52,6 +63,8 @@ internal sealed class RaceCatalogService(PlayerStateStore players) : IRacesApi
 
         if (!player.Races.ContainsKey(race.Id))
             player.Races[race.Id] = new RaceProgressRuntime { RaceId = race.Id };
+
+        events.Publish(new PlayerStateChangedEvent(steamId, reason));
 
         return new(true, reason, previous, race.Id);
     }
@@ -75,18 +88,24 @@ internal sealed class RaceCatalogService(PlayerStateStore players) : IRacesApi
                 errors.Add($"Race '{race.Id}' maxLevel must be >= 1.");
 
             var abilityIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var ability in race.Abilities)
             {
                 if (!abilityIds.Add(ability.Id))
                     errors.Add($"Race '{race.Id}' contains duplicate ability '{ability.Id}'.");
+
                 if (ability.MaxLevel < 1)
                     errors.Add($"Ability '{race.Id}/{ability.Id}' maxLevel must be >= 1.");
+
                 if (ability.UnlockLevel < 1 || ability.UnlockLevel > race.MaxLevel)
                     errors.Add($"Ability '{race.Id}/{ability.Id}' has invalid unlockLevel.");
             }
 
-            if (race.Ultimate is not null && !abilityIds.Add(race.Ultimate.Id))
+            if (race.Ultimate is not null &&
+                !abilityIds.Add(race.Ultimate.Id))
+            {
                 errors.Add($"Race '{race.Id}' reuses ability '{race.Ultimate.Id}' as ultimate.");
+            }
         }
 
         return errors;

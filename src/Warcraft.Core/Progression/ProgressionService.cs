@@ -1,3 +1,4 @@
+using Warcraft.Api.Events;
 using Warcraft.Api.Modifiers;
 using Warcraft.Api.Progression;
 using Warcraft.Api.Races;
@@ -9,7 +10,8 @@ namespace Warcraft.Core.Progression;
 internal sealed class ProgressionService(
     PlayerStateStore players,
     RaceCatalogService races,
-    IModifiersApi modifiers) : IProgressApi
+    IModifiersApi modifiers,
+    IWarcraftEventBus events) : IProgressApi
 {
     public ProgressMutationResult AddXp(ulong steamId, long amount, string reason)
     {
@@ -26,7 +28,10 @@ internal sealed class ProgressionService(
         player.GlobalXp = Math.Max(0, player.GlobalXp + effectiveAmount);
 
         if (player.ActiveRaceId is null)
+        {
+            events.Publish(new PlayerStateChangedEvent(steamId, reason));
             return new(true, reason, PreviousXp: previousXp, CurrentXp: player.GlobalXp);
+        }
 
         var race = races.Get(player.ActiveRaceId);
         if (race is null)
@@ -46,6 +51,8 @@ internal sealed class ProgressionService(
             progress.Level++;
             progress.SkillPoints += 1 + Math.Max(0, modifier.BonusSkillPointsPerLevel);
         }
+
+        events.Publish(new PlayerStateChangedEvent(steamId, reason));
 
         return new(true, reason, previousLevel, progress.Level, previousXp, player.GlobalXp);
     }
@@ -67,6 +74,8 @@ internal sealed class ProgressionService(
         var previous = progress.Level;
         progress.Level = level;
 
+        events.Publish(new PlayerStateChangedEvent(steamId, reason));
+
         return new(true, reason, previous, level);
     }
 
@@ -82,6 +91,8 @@ internal sealed class ProgressionService(
 
         var progress = GetOrCreateRace(players.GetRequired(steamId), race.Id);
         progress.SkillPoints = Math.Max(0, progress.SkillPoints + amount);
+
+        events.Publish(new PlayerStateChangedEvent(steamId, reason));
 
         return new(true, reason);
     }
@@ -109,6 +120,8 @@ internal sealed class ProgressionService(
 
         var progress = GetOrCreateRace(player, player.ActiveRaceId);
         progress.AbilityLevels[abilityId] = level;
+
+        events.Publish(new PlayerStateChangedEvent(steamId, reason));
 
         return new(true, reason);
     }
@@ -167,6 +180,8 @@ internal sealed class ProgressionService(
         progress.SkillPoints--;
         progress.AbilityLevels[abilityId] = currentLevel + 1;
 
+        events.Publish(new PlayerStateChangedEvent(steamId, $"upgrade:{abilityId}"));
+
         return new(
             true,
             "Способность улучшена.",
@@ -185,6 +200,8 @@ internal sealed class ProgressionService(
         player.ActiveRaceId = null;
         player.Races.Clear();
         player.Cooldowns.Clear();
+
+        events.Publish(new PlayerStateChangedEvent(steamId, reason));
 
         return new(true, reason, PreviousXp: previousXp, CurrentXp: 0);
     }

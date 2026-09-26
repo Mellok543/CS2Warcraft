@@ -35,18 +35,24 @@ public sealed class WarcraftCorePlugin : BasePlugin
     private PlayerStateStore? _players;
     private PersistenceCoordinator? _persistence;
     private CancellationTokenSource? _lifetime;
+    private PersistenceSaveScheduler? _saveScheduler;
+    private IDisposable? _stateChangedSubscription;
+    private IDisposable? _killXpSubscription;
+    private CoreConfig _config = new();
 
     public override void Load(bool hotReload)
     {
+        _config = CoreConfig.LoadOrCreate();
+
         var players = new PlayerStateStore();
         var modifiers = new ModifierService();
-        var races = new RaceCatalogService(players);
         var events = new WarcraftEventBus(exception =>
             Logger.LogError(exception, "Unhandled Warcraft event subscriber exception."));
+        var races = new RaceCatalogService(players, events);
         var persistence = new PersistenceCoordinator();
         var modules = new ModuleRegistryService();
         var menu = new MenuExtensionRegistry();
-        var progress = new ProgressionService(players, races, modifiers);
+        var progress = new ProgressionService(players, races, modifiers, events);
         var abilities = new AbilityRegistryService(players, races);
 
         IWarcraftApi api = new WarcraftApiFacade(
@@ -64,6 +70,26 @@ public sealed class WarcraftCorePlugin : BasePlugin
         _persistence = persistence;
         _api = api;
         _lifetime = new CancellationTokenSource();
+        _saveScheduler = new PersistenceSaveScheduler(
+            players,
+            persistence,
+            TimeSpan.FromMilliseconds(Math.Max(100, _config.AutosaveDelayMilliseconds)),
+            Logger);
+
+        _stateChangedSubscription = events.Subscribe<PlayerStateChangedEvent>(
+            changed => _saveScheduler?.Schedule(changed.SteamId));
+
+        _killXpSubscription = events.Subscribe<PlayerKillEvent>(kill =>
+        {
+            if (kill.TeamKill)
+                return;
+
+            var amount = _config.KillXp +
+                         (kill.Headshot ? _config.HeadshotBonusXp : 0);
+
+            if (amount > 0)
+                progress.AddXp(kill.KillerSteamId, amount, "player-kill");
+        });
 
         persistence.FirstProviderRegistered += OnFirstPersistenceProviderRegistered;
 
@@ -106,6 +132,15 @@ public sealed class WarcraftCorePlugin : BasePlugin
             _persistence.FirstProviderRegistered -= OnFirstPersistenceProviderRegistered;
 
         _lifetime?.Cancel();
+
+        _stateChangedSubscription?.Dispose();
+        _stateChangedSubscription = null;
+
+        _killXpSubscription?.Dispose();
+        _killXpSubscription = null;
+
+        _saveScheduler?.Dispose();
+        _saveScheduler = null;
 
         if (_players is not null && _persistence is { HasProvider: true })
         {
@@ -210,7 +245,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
             _api?.Events.Publish(new PlayerKillEvent(
                 killerSteamId.Value,
                 humanVictim.SteamID,
-                @event.Headshot));
+                @event.Headshot,
+                attacker!.TeamNum == humanVictim.TeamNum));
         }
 
         return HookResult.Continue;

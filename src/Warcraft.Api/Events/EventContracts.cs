@@ -15,7 +15,11 @@ public interface IWarcraftEventBus
 
 public sealed record PlayerSpawnEvent(ulong SteamId) : IWarcraftEvent;
 public sealed record PlayerDeathEvent(ulong SteamId, ulong? KillerSteamId) : IWarcraftEvent;
-public sealed record PlayerKillEvent(ulong KillerSteamId, ulong VictimSteamId, bool Headshot) : IWarcraftEvent;
+public sealed record PlayerKillEvent(
+    ulong KillerSteamId,
+    ulong VictimSteamId,
+    bool Headshot,
+    bool TeamKill) : IWarcraftEvent;
 public sealed record PlayerHurtEvent(ulong VictimSteamId, ulong? AttackerSteamId, float Damage) : IWarcraftEvent;
 public sealed record WeaponFireEvent(ulong SteamId, string Weapon) : IWarcraftEvent;
 public sealed record PlayerJumpEvent(ulong SteamId) : IWarcraftEvent;
@@ -23,6 +27,10 @@ public sealed record RoundStartEvent() : IWarcraftEvent;
 public sealed record RoundEndEvent(int WinnerTeam) : IWarcraftEvent;
 public sealed record UltimatePressedEvent(ulong SteamId) : IWarcraftEvent;
 public sealed record AbilityPressedEvent(ulong SteamId, string? AbilityId = null) : IWarcraftEvent;
+
+public sealed record PlayerStateChangedEvent(
+    ulong SteamId,
+    string Reason) : IWarcraftEvent;
 
 public sealed record RaceReloadRequestedEvent(string RequestedBy) : IWarcraftEvent;
 
