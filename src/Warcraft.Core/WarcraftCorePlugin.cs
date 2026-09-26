@@ -140,10 +140,11 @@ public sealed class WarcraftCorePlugin : BasePlugin
         if (!IsHuman(player))
             return;
 
-        _players?.Upsert(player!.SteamID, player.PlayerName);
+        var human = player!;
+        _players?.Upsert(human.SteamID, human.PlayerName);
 
         if (_persistence is { HasProvider: true })
-            _ = LoadPlayerAsync(player.SteamID, player.PlayerName);
+            _ = LoadPlayerAsync(human.SteamID, human.PlayerName);
     }
 
     private void OnClientDisconnect(int playerSlot)
@@ -175,11 +176,12 @@ public sealed class WarcraftCorePlugin : BasePlugin
         if (!IsHuman(victim))
             return HookResult.Continue;
 
+        var humanVictim = victim!;
         var attacker = @event.Attacker;
-        var attackerSteamId = IsHuman(attacker) ? attacker!.SteamID : null;
+        ulong? attackerSteamId = IsHuman(attacker) ? attacker!.SteamID : null;
 
         _api?.Events.Publish(new PlayerHurtEvent(
-            victim!.SteamID,
+            humanVictim.SteamID,
             attackerSteamId,
             @event.DmgHealth));
 
@@ -192,18 +194,19 @@ public sealed class WarcraftCorePlugin : BasePlugin
         if (!IsHuman(victim))
             return HookResult.Continue;
 
+        var humanVictim = victim!;
         var attacker = @event.Attacker;
-        var killerSteamId = IsHuman(attacker) ? attacker!.SteamID : null;
+        ulong? killerSteamId = IsHuman(attacker) ? attacker!.SteamID : null;
 
         _api?.Events.Publish(new PlayerDeathEvent(
-            victim!.SteamID,
+            humanVictim.SteamID,
             killerSteamId));
 
-        if (killerSteamId.HasValue && killerSteamId.Value != victim.SteamID)
+        if (killerSteamId.HasValue && killerSteamId.Value != humanVictim.SteamID)
         {
             _api?.Events.Publish(new PlayerKillEvent(
                 killerSteamId.Value,
-                victim.SteamID,
+                humanVictim.SteamID,
                 @event.Headshot));
         }
 
