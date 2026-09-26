@@ -25,7 +25,7 @@ example when a `weaponTypes` condition fails after a weapon switch). The engine
 damage slowdown is respected: speed is re-applied once it has recovered.
 `evasion` only negates damage dealt by players (not fall/world damage); a fully
 negated hit is blocked by Core. `reflect_damage` applies to human attackers
-and, like chain lightning, bypasses the weapon damage pipeline.
+and, like chain lightning, deals damage through `api.Combat` (kills are credited).
 
 `GameTickEvent` is published by Core every `gameTickIntervalMilliseconds`
 (core.json, default 100 ms).
@@ -143,8 +143,12 @@ Strikes the nearest enemy within `range`, then jumps to the nearest enemy
 around the previous target that has not been hit yet, up to `jumps` extra
 times. Each jump multiplies damage by `damageFalloff` (default `1.0`).
 Damage is applied directly to health (it does not re-enter the weapon damage
-pipeline, so it does not trigger critical strike or vampirism). A lethal bolt
-kills the target without kill credit.
+pipeline, so it does not trigger critical strike or vampirism).
+
+Ability damage goes through `api.Combat.DealAbilityDamage`. A lethal hit is
+executed as a forced suicide, and Core rewrites the attacker in the
+`player_death` pre-hook: the kill feed shows the ability owner, who receives
+kill XP and a kill in the statistics. The CS scoreboard is not adjusted.
 
 ```json
 "ultimate": {

@@ -26,25 +26,4 @@ internal static class PlayerHealth
         Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iMaxHealth");
         Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
     }
-
-    /// <summary>
-    /// Deals ability damage outside of the weapon damage pipeline (so it does not
-    /// re-trigger DamagePre/Post handlers). Returns true when the target died.
-    /// </summary>
-    public static bool Damage(in LivePlayer target, int amount)
-    {
-        if (amount <= 0)
-            return false;
-
-        var remaining = target.Pawn.Health - amount;
-        if (remaining > 0)
-        {
-            target.Pawn.Health = remaining;
-            Utilities.SetStateChanged(target.Pawn, "CBaseEntity", "m_iHealth");
-            return false;
-        }
-
-        target.Controller.CommitSuicide(false, true);
-        return true;
-    }
 }

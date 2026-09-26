@@ -1,4 +1,5 @@
 using Warcraft.Api.Abilities;
+using Warcraft.Api.Combat;
 using Warcraft.Api.Events;
 using Warcraft.Api.Menu;
 using Warcraft.Api.Modifiers;
@@ -21,4 +22,5 @@ public interface IWarcraftApi
     IModifiersApi Modifiers { get; }
     IModulesApi Modules { get; }
     IMenuExtensionsApi Menu { get; }
+    ICombatApi Combat { get; }
 }

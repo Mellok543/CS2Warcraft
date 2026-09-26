@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Numerics;
 using Warcraft.Abilities.Game;
 using Warcraft.Api.Abilities;
+using Warcraft.Api.Combat;
 using Warcraft.Api.Events;
 
 namespace Warcraft.Abilities;
@@ -69,7 +70,11 @@ internal sealed class ChainLightningAbility(BeamEffects beams) : AbilityHandler
         {
             var to = victim.Position;
             beams.Draw(Lift(from), Lift(to), BoltColor, 3f, 0.35f);
-            PlayerHealth.Damage(victim, (int)Math.Round(currentDamage));
+            Api?.Combat.DealAbilityDamage(new AbilityDamageRequest(
+                @event.SteamId,
+                victim.Controller.Slot,
+                (int)Math.Round(currentDamage),
+                Id));
 
             hits++;
             if (hits > jumps)

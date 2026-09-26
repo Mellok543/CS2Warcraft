@@ -1,5 +1,6 @@
 using Warcraft.Abilities.Game;
 using Warcraft.Api.Abilities;
+using Warcraft.Api.Combat;
 using Warcraft.Api.Events;
 
 namespace Warcraft.Abilities;
@@ -43,6 +44,12 @@ internal sealed class ReflectDamageAbility : AbilityHandler
             return;
 
         if (GamePlayers.FindAlive(attacker) is { } target)
-            PlayerHealth.Damage(target, reflected);
+        {
+            Api?.Combat.DealAbilityDamage(new AbilityDamageRequest(
+                @event.VictimSteamId,
+                target.Controller.Slot,
+                reflected,
+                Id));
+        }
     }
 }

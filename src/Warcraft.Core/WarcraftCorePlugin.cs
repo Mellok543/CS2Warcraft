@@ -41,6 +41,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
     private PersistenceSaveScheduler? _saveScheduler;
     private IDisposable? _stateChangedSubscription;
     private XpRewardService? _xpRewards;
+    private readonly AbilityDamageService _abilityDamage = new();
+    private readonly Dictionary<int, ulong> _creditedKills = [];
     private PlayerNotifier? _notifier;
     private StatsService? _stats;
     private readonly IGameThreadDispatcher _gameThread = new CssGameThreadDispatcher();
@@ -84,7 +86,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
             persistence,
             modifiers,
             modules,
-            menu);
+            menu,
+            _abilityDamage);
 
         _players = players;
         _persistence = persistence;
@@ -124,6 +127,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         RegisterEventHandler<EventPlayerJump>(OnPlayerJump);
         RegisterEventHandler<EventPlayerHurt>(OnPlayerHurt);
+        RegisterEventHandler<EventPlayerDeath>(OnPlayerDeathPre, HookMode.Pre);
         RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
         RegisterEventHandler<EventWeaponFire>(OnWeaponFire);
         RegisterEventHandler<EventRoundStart>(OnRoundStart);
@@ -278,14 +282,42 @@ public sealed class WarcraftCorePlugin : BasePlugin
         return HookResult.Continue;
     }
 
+    /// <summary>
+    /// A lethal ability hit is executed as a forced suicide. Before the death event
+    /// is broadcast, credit it to the ability owner so the kill feed, kill XP and
+    /// statistics treat it as a regular kill.
+    /// </summary>
+    private HookResult OnPlayerDeathPre(EventPlayerDeath @event, GameEventInfo info)
+    {
+        var victim = @event.Userid;
+        if (victim is not { IsValid: true } || !_abilityDamage.TryTakeCredit(victim.Slot, out var credit))
+            return HookResult.Continue;
+
+        var attacker = @event.Attacker;
+        if (attacker is { IsValid: true } && attacker.Slot != victim.Slot)
+            return HookResult.Continue;
+
+        var killer = Utilities.GetPlayerFromSteamId(credit.AttackerSteamId);
+        if (killer is not { IsValid: true })
+            return HookResult.Continue;
+
+        _creditedKills[victim.Slot] = killer.SteamID;
+        @event.Attacker = killer;
+        return HookResult.Changed;
+    }
+
     private HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
     {
         var victim = @event.Userid;
+        var creditedKiller = victim is { IsValid: true } && _creditedKills.Remove(victim.Slot, out var credited)
+            ? Utilities.GetPlayerFromSteamId(credited)
+            : null;
+
         if (!IsHuman(victim))
             return HookResult.Continue;
 
         var humanVictim = victim!;
-        var attacker = @event.Attacker;
+        var attacker = creditedKiller ?? @event.Attacker;
         ulong? killerSteamId = IsHuman(attacker) ? attacker!.SteamID : null;
 
         _api?.Events.Publish(new PlayerDeathEvent(
@@ -330,6 +362,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
     private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
     {
+        _abilityDamage.Clear();
+        _creditedKills.Clear();
         _api?.Events.Publish(new RoundStartEvent());
         return HookResult.Continue;
     }
