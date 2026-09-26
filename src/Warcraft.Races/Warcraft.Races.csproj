@@ -1,1 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>Warcraft.Races</AssemblyName><RootNamespace>Warcraft.Races</RootNamespace></PropertyGroup><ItemGroup><PackageReference Include="CounterStrikeSharp.API" /><ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" /></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Warcraft.Races</AssemblyName>
+    <RootNamespace>Warcraft.Races</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CounterStrikeSharp.API" />
+    <ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="../../configs/warcraft/races/*.json">
+      <Link>defaults/races/%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

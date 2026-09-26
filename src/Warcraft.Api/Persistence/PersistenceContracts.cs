@@ -3,10 +3,13 @@ namespace Warcraft.Api.Persistence;
 public interface IPersistenceApi
 {
     bool RegisterProvider(IWarcraftStorageProvider provider);
+    bool UnregisterProvider(string providerName);
     bool HasProvider { get; }
+
     ValueTask<PlayerPersistenceDto?> LoadPlayerAsync(
         ulong steamId,
         CancellationToken cancellationToken = default);
+
     ValueTask SavePlayerAsync(
         PlayerPersistenceDto player,
         CancellationToken cancellationToken = default);
@@ -15,9 +18,11 @@ public interface IPersistenceApi
 public interface IWarcraftStorageProvider
 {
     string ProviderName { get; }
+
     ValueTask<PlayerPersistenceDto?> LoadPlayerAsync(
         ulong steamId,
         CancellationToken cancellationToken = default);
+
     ValueTask SavePlayerAsync(
         PlayerPersistenceDto player,
         CancellationToken cancellationToken = default);

@@ -7,14 +7,24 @@ internal sealed class PersistenceCoordinator : IPersistenceApi
     private IWarcraftStorageProvider? _provider;
     private readonly object _sync = new();
 
+    internal event Action? FirstProviderRegistered;
+
+    private bool _hasEverRegisteredProvider;
+
     public bool HasProvider
     {
-        get { lock (_sync) return _provider is not null; }
+        get
+        {
+            lock (_sync)
+                return _provider is not null;
+        }
     }
 
     public bool RegisterProvider(IWarcraftStorageProvider provider)
     {
         ArgumentNullException.ThrowIfNull(provider);
+
+        var raiseFirstRegistration = false;
 
         lock (_sync)
         {
@@ -22,6 +32,34 @@ internal sealed class PersistenceCoordinator : IPersistenceApi
                 return false;
 
             _provider = provider;
+
+            if (!_hasEverRegisteredProvider)
+            {
+                _hasEverRegisteredProvider = true;
+                raiseFirstRegistration = true;
+            }
+        }
+
+        if (raiseFirstRegistration)
+            FirstProviderRegistered?.Invoke();
+
+        return true;
+    }
+
+    public bool UnregisterProvider(string providerName)
+    {
+        lock (_sync)
+        {
+            if (_provider is null ||
+                !string.Equals(
+                    _provider.ProviderName,
+                    providerName,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            _provider = null;
             return true;
         }
     }
@@ -39,7 +77,10 @@ internal sealed class PersistenceCoordinator : IPersistenceApi
     private IWarcraftStorageProvider GetProvider()
     {
         lock (_sync)
-            return _provider ?? throw new InvalidOperationException(
-                "No Warcraft persistence provider has been registered.");
+        {
+            return _provider
+                ?? throw new InvalidOperationException(
+                    "No Warcraft persistence provider has been registered.");
+        }
     }
 }

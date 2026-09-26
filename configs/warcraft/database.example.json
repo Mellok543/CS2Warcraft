@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "host": "127.0.0.1",
+  "port": 3306,
+  "database": "warcraft",
+  "user": "warcraft",
+  "password": "change-me",
+  "minimumPoolSize": 1,
+  "maximumPoolSize": 20,
+  "connectionTimeoutSeconds": 10
+}

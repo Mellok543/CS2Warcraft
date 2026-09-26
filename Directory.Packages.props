@@ -4,5 +4,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="CounterStrikeSharp.API" Version="1.0.375" />
+    <PackageVersion Include="MySqlConnector" Version="2.6.2" />
   </ItemGroup>
 </Project>

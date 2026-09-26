@@ -11,7 +11,9 @@ internal sealed class PlayerStateStore : IPlayersApi
     public PlayerStateSnapshot? Get(ulong steamId)
     {
         lock (_sync)
-            return _players.TryGetValue(steamId, out var player) ? player.ToSnapshot() : null;
+            return _players.TryGetValue(steamId, out var player)
+                ? player.ToSnapshot()
+                : null;
     }
 
     public IReadOnlyCollection<PlayerStateSnapshot> GetLoadedPlayers()
@@ -41,16 +43,24 @@ internal sealed class PlayerStateStore : IPlayersApi
                 return existing;
             }
 
-            var created = new PlayerRuntimeState { SteamId = steamId, Name = name };
+            var created = new PlayerRuntimeState
+            {
+                SteamId = steamId,
+                Name = name
+            };
+
             _players[steamId] = created;
             return created;
         }
     }
 
-    internal void Restore(PlayerPersistenceDto persisted, string currentName)
+    internal bool RestoreIfLoaded(PlayerPersistenceDto persisted, string currentName)
     {
         lock (_sync)
         {
+            if (!_players.ContainsKey(persisted.SteamId))
+                return false;
+
             var player = new PlayerRuntimeState
             {
                 SteamId = persisted.SteamId,
@@ -76,15 +86,24 @@ internal sealed class PlayerStateStore : IPlayersApi
             }
 
             _players[persisted.SteamId] = player;
+            return true;
         }
     }
 
     internal PlayerPersistenceDto? GetPersistenceSnapshot(ulong steamId)
     {
         lock (_sync)
+        {
             return _players.TryGetValue(steamId, out var player)
                 ? player.ToPersistence()
                 : null;
+        }
+    }
+
+    internal IReadOnlyCollection<PlayerPersistenceDto> GetPersistenceSnapshots()
+    {
+        lock (_sync)
+            return _players.Values.Select(x => x.ToPersistence()).ToArray();
     }
 
     internal bool Remove(ulong steamId)

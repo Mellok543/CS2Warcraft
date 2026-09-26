@@ -1,1 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>Warcraft.Database</AssemblyName><RootNamespace>Warcraft.Database</RootNamespace></PropertyGroup><ItemGroup><PackageReference Include="CounterStrikeSharp.API" /><ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" /></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Warcraft.Database</AssemblyName>
+    <RootNamespace>Warcraft.Database</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CounterStrikeSharp.API" />
+    <PackageReference Include="MySqlConnector" />
+    <ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" />
+  </ItemGroup>
+</Project>

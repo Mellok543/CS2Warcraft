@@ -1,0 +1,40 @@
+{
+  "id": "orc",
+  "name": "Орк",
+  "description": "Сильный боец с критическими ударами, повышенным здоровьем и цепной молнией.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "abilities": [
+    {
+      "id": "critical_strike",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "chance": [0.08, 0.14, 0.20],
+        "damageMultiplier": [1.25, 1.40, 1.60]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "bonus_health",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "health": [10, 20, 30]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "chain_lightning",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "damage": 35,
+      "range": 500,
+      "jumps": 4,
+      "cooldown": 25
+    },
+    "conditions": {}
+  }
+}

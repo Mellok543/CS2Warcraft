@@ -24,6 +24,14 @@ public sealed record RoundEndEvent(int WinnerTeam) : IWarcraftEvent;
 public sealed record UltimatePressedEvent(ulong SteamId) : IWarcraftEvent;
 public sealed record AbilityPressedEvent(ulong SteamId, string? AbilityId = null) : IWarcraftEvent;
 
+public sealed record RaceReloadRequestedEvent(string RequestedBy) : IWarcraftEvent;
+
+public sealed record RaceCatalogReloadedEvent(
+    bool Success,
+    int RaceCount,
+    IReadOnlyList<string> Errors,
+    string Source) : IWarcraftEvent;
+
 public sealed class DamagePreEvent : IWarcraftEvent
 {
     public required ulong VictimSteamId { get; init; }
