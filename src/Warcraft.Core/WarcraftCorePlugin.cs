@@ -9,6 +9,7 @@ using Warcraft.Api.Modules;
 using Warcraft.Api.Persistence;
 using Warcraft.Core.Abilities;
 using Warcraft.Core.Conditions;
+using Warcraft.Core.Diagnostics;
 using Warcraft.Core.Events;
 using Warcraft.Core.Game;
 using Warcraft.Core.Menu;
@@ -42,6 +43,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
     private IDisposable? _stateChangedSubscription;
     private XpRewardService? _xpRewards;
     private AbilityDamageService? _abilityDamage;
+    private DiagnosticsService? _diagnostics;
     private PlayerNotifier? _notifier;
     private StatsService? _stats;
     private readonly IGameThreadDispatcher _gameThread = new CssGameThreadDispatcher();
@@ -78,6 +80,15 @@ public sealed class WarcraftCorePlugin : BasePlugin
         var activation = new AbilityActivationService(resolver, registrations, cooldowns, events);
         var abilityDamage = new AbilityDamageService(new AbilityDamagePipeline(events));
         _abilityDamage = abilityDamage;
+        var diagnostics = new DiagnosticsService(
+            races,
+            registrations,
+            modules,
+            persistence,
+            players,
+            events,
+            TimeProvider.System);
+        _diagnostics = diagnostics;
 
         IWarcraftApi api = new WarcraftApiFacade(
             players,
@@ -89,7 +100,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
             modifiers,
             modules,
             menu,
-            abilityDamage);
+            abilityDamage,
+            diagnostics);
 
         _players = players;
         _persistence = persistence;
@@ -175,6 +187,9 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
         _stats?.Dispose();
         _stats = null;
+
+        _diagnostics?.Dispose();
+        _diagnostics = null;
 
         FlushPlayersOnUnload();
 

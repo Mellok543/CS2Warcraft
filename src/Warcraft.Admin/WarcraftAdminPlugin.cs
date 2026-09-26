@@ -32,6 +32,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         AddCommand("css_wc_reset", "Reset Warcraft progress", OnResetCommand);
         AddCommand("css_wc_givepoints", "Give active race skill points", OnGivePointsCommand);
         AddCommand("css_wc_reload_races", "Reload Warcraft race configs", OnReloadRacesCommand);
+        AddCommand("css_wc_status", "Show Warcraft diagnostics", OnStatusCommand);
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
@@ -241,6 +242,17 @@ public sealed class WarcraftAdminPlugin : BasePlugin
 
         command.ReplyToCommand(
             "[Warcraft] Запрошена перезагрузка конфигов рас.");
+    }
+
+    private void OnStatusCommand(
+        CCSPlayerController? caller,
+        CommandInfo command)
+    {
+        if (!CanUse(caller, command) || _api is null)
+            return;
+
+        foreach (var line in StatusReport.Build(_api.Diagnostics.GetStatus(), _api.Diagnostics.GetRaceCatalogHealth()))
+            command.ReplyToCommand(line);
     }
 
     private static bool CanUse(

@@ -6,6 +6,9 @@ public interface IPersistenceApi
     bool UnregisterProvider(string providerName);
     bool HasProvider { get; }
 
+    /// <summary>Name of the registered storage provider, or null.</summary>
+    string? ProviderName { get; }
+
     ValueTask<PlayerPersistenceDto?> LoadPlayerAsync(
         ulong steamId,
         CancellationToken cancellationToken = default);

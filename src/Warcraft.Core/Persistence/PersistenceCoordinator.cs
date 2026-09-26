@@ -20,6 +20,15 @@ internal sealed class PersistenceCoordinator : IPersistenceApi
         }
     }
 
+    public string? ProviderName
+    {
+        get
+        {
+            lock (_sync)
+                return _provider?.ProviderName;
+        }
+    }
+
     public bool RegisterProvider(IWarcraftStorageProvider provider)
     {
         ArgumentNullException.ThrowIfNull(provider);

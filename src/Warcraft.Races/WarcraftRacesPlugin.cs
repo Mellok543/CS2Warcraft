@@ -149,6 +149,37 @@ public sealed class WarcraftRacesPlugin : BasePlugin
             source);
     }
 
+    private void LogCatalogHealth()
+    {
+        var health = _api?.Diagnostics.GetRaceCatalogHealth();
+        if (health is null)
+            return;
+
+        Logger.LogInformation(
+            "Race catalog health: {Total} races, starter [{Starter}], locked {Locked}, VIP [{Vip}].",
+            health.TotalRaces,
+            string.Join(", ", health.StarterRaces),
+            health.LockedRaces.Count,
+            string.Join(", ", health.VipRaces));
+
+        foreach (var issue in health.UnresolvedHandlers)
+        {
+            Logger.LogWarning(
+                "Race '{Race}' uses {Kind} '{Ability}' but no handler is registered (missing Warcraft.Abilities?).",
+                issue.RaceId,
+                issue.IsUltimate ? "ultimate" : "ability",
+                issue.AbilityId);
+        }
+
+        foreach (var issue in health.PassiveUltimates)
+        {
+            Logger.LogWarning(
+                "Race '{Race}' uses passive mechanic '{Ability}' as ultimate; it can never be activated.",
+                issue.RaceId,
+                issue.AbilityId);
+        }
+    }
+
     private void PublishResult(
         IWarcraftApi api,
         bool success,
@@ -168,6 +199,9 @@ public sealed class WarcraftRacesPlugin : BasePlugin
                 "Race catalog reloaded from {Source}. Races: {RaceCount}.",
                 source,
                 raceCount);
+
+            // Ability handlers may register after us during startup: report on the next frame.
+            Server.NextFrame(LogCatalogHealth);
             return;
         }
 
