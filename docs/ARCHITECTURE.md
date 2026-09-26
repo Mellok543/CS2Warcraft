@@ -44,6 +44,30 @@ No race-specific C# branches are permitted in Core.
 and supplies race-specific config/conditions. Handlers subscribe to
 `IWarcraftEventBus`, so there is no central race/ability switch.
 
+## Active abilities, ultimates and cooldowns
+
+Core owns player input (`css_ultimate`, `css_ability [slot]`) and every
+eligibility rule: active race, learned level, `unlockLevel`, `conditions` and
+cooldown. It then publishes `UltimatePressedEvent` / `AbilityPressedEvent`;
+the handler that owns the ability id performs the mechanic and reports
+success or failure. Core starts the cooldown (JSON `cooldown`, per level) only
+after success. Cooldowns exist only in `PlayerRuntimeState.Cooldowns`.
+
+## Conditions
+
+Race ability `conditions` are compiled by Core together with the race catalog
+(`RaceCatalogCompiler` → `CompiledRaceCatalog`). Handlers never evaluate them:
+`api.Abilities.GetUsableAbility` returns `null` when any condition fails.
+
+## Threading
+
+- Engine callbacks, Core events, runtime state mutations and snapshots run on
+  the game thread.
+- Background work (MySQL, file watcher timers) hops back with
+  `Server.NextFrame` / `Server.NextFrameAsync` before touching Core state.
+- Registries (abilities, modifiers, menu, modules, race catalog swap) are
+  thread-safe.
+
 ## Persistence model
 
 `Warcraft.Database` registers one `IWarcraftStorageProvider`. Core coordinates

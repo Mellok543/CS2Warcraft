@@ -1,3 +1,4 @@
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Capabilities;
@@ -99,8 +100,9 @@ public sealed class WarcraftRacesPlugin : BasePlugin
         lock (_reloadSync)
         {
             _reloadTimer?.Dispose();
+            // Timer callbacks run on the thread pool; Core APIs and events belong on the game thread.
             _reloadTimer = new Timer(
-                _ => ReloadCatalog("filesystem"),
+                _ => Server.NextFrame(() => ReloadCatalog("filesystem")),
                 null,
                 TimeSpan.FromMilliseconds(500),
                 Timeout.InfiniteTimeSpan);
