@@ -1,1 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>Warcraft.Vip</AssemblyName><RootNamespace>Warcraft.Vip</RootNamespace><!-- No plugin class yet: not deployed. --><WarcraftDeploy>false</WarcraftDeploy></PropertyGroup><ItemGroup><PackageReference Include="CounterStrikeSharp.API" /><ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" Private="false" /></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Warcraft.Vip</AssemblyName>
+    <RootNamespace>Warcraft.Vip</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CounterStrikeSharp.API" />
+    <ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Shared/WarcraftCoreCapability.cs" Link="Shared/WarcraftCoreCapability.cs" />
+  </ItemGroup>
+</Project>
