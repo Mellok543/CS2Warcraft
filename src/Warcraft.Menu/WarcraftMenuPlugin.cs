@@ -15,7 +15,7 @@ namespace Warcraft.Menu;
 public sealed class WarcraftMenuPlugin : BasePlugin
 {
     public override string ModuleName => "Warcraft.Menu";
-    public override string ModuleVersion => "0.1.0";
+    public override string ModuleVersion => WarcraftVersion.Current;
     public override string ModuleAuthor => "Mellok543";
     public override string ModuleDescription =>
         "Main UI shell and race/ability menus for CS2Warcraft.";

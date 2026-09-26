@@ -11,7 +11,8 @@ internal sealed class AbilityDamageService : ICombatApi
 {
     private const float CreditLifetimeSeconds = 2f;
 
-    private readonly Dictionary<int, PendingKillCredit> _pending = [];
+    private readonly PendingAbilityKillCredits _credits =
+        new(() => Server.CurrentTime);
 
     public AbilityDamageResult DealAbilityDamage(AbilityDamageRequest request)
     {
@@ -21,8 +22,11 @@ internal sealed class AbilityDamageService : ICombatApi
         var victim = Utilities.GetPlayerFromSlot(request.VictimSlot);
         var pawn = victim?.PlayerPawn.Value;
 
-        if (victim is not { IsValid: true, PawnIsAlive: true } || pawn is not { IsValid: true, Health: > 0 })
+        if (victim is not { IsValid: true, PawnIsAlive: true } ||
+            pawn is not { IsValid: true, Health: > 0 })
+        {
             return AbilityDamageResult.NotApplied;
+        }
 
         var health = pawn.Health;
         if (health > request.Amount)
@@ -32,25 +36,22 @@ internal sealed class AbilityDamageService : ICombatApi
             return new AbilityDamageResult(true, false, request.Amount);
         }
 
-        _pending[request.VictimSlot] = new PendingKillCredit(
+        _credits.Store(
+            request.VictimSlot,
             request.AttackerSteamId,
             request.AbilityId,
-            Server.CurrentTime + CreditLifetimeSeconds);
+            CreditLifetimeSeconds);
 
         victim.CommitSuicide(false, true);
         return new AbilityDamageResult(true, true, health);
     }
 
-    /// <summary>Returns the ability owner credited with the death of <paramref name="victimSlot"/>.</summary>
     public bool TryTakeCredit(int victimSlot, out PendingKillCredit credit)
-    {
-        if (!_pending.Remove(victimSlot, out credit!))
-            return false;
+        => _credits.TryTake(victimSlot, out credit);
 
-        return credit.ExpiresAt >= Server.CurrentTime;
-    }
+    public int PruneExpiredCredits()
+        => _credits.PruneExpired();
 
-    public void Clear() => _pending.Clear();
+    public void Clear()
+        => _credits.Clear();
 }
-
-internal sealed record PendingKillCredit(ulong AttackerSteamId, string AbilityId, float ExpiresAt);

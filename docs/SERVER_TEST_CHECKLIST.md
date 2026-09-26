@@ -1,0 +1,85 @@
+# CS2Warcraft server smoke-test checklist
+
+Run this checklist on a real Counter-Strike 2 server before tagging a release.
+
+## Installation and loading
+
+- [ ] Start from a clean CounterStrikeSharp server.
+- [ ] Copy the staged `artifacts/addons/counterstrikesharp/` layout.
+- [ ] Confirm exactly one shared `Warcraft.Api.dll` is loaded.
+- [ ] Confirm all Warcraft modules load without exceptions.
+- [ ] Confirm `Warcraft.Database` connects and schema migration succeeds.
+- [ ] Confirm plugin load order does not matter after `OnAllPluginsLoaded`.
+- [ ] Confirm a hot reload does not duplicate menu entries, modifiers or handlers.
+
+## Player lifecycle and persistence
+
+- [ ] First-time player joins and receives an empty profile.
+- [ ] Existing player joins and persisted race/progress/statistics are restored.
+- [ ] Player earns XP, disconnects immediately, reconnects and keeps it.
+- [ ] Player upgrades an ability, reconnects and keeps the level and skill-point spend.
+- [ ] Player changes race, reconnects and keeps the active race.
+- [ ] Restart the server and verify the same persisted values again.
+- [ ] Change map and verify loaded players keep valid runtime state.
+- [ ] Verify two quick saves for one SteamID never regress to an older snapshot.
+
+## Race catalog
+
+- [ ] `!wc_reload_races` successfully reloads a valid edit.
+- [ ] Break one JSON file and verify the previous catalog remains active.
+- [ ] Restore the file and verify reload succeeds.
+- [ ] Verify starter races can be selected.
+- [ ] Verify locked races show their requirements and cannot be bypassed from normal menu flow.
+- [ ] Verify VIP-only races are rejected by Core for a non-VIP player.
+- [ ] Verify admin forced race selection behaves as intended.
+
+## Progression
+
+- [ ] Normal kill awards configured kill XP.
+- [ ] Headshot awards kill XP plus headshot bonus.
+- [ ] Teamkill does not award normal kill XP.
+- [ ] VIP XP multiplier is applied exactly once.
+- [ ] Level-up grants the configured skill points.
+- [ ] Ability upgrade enforces unlock level, max level and available skill points.
+
+## Abilities and combat
+
+- [ ] `critical_strike` modifies outgoing damage only when it procs.
+- [ ] `evasion` can fully cancel an eligible hit.
+- [ ] `bonus_health` applies correctly after spawn.
+- [ ] `vampirism` heals without exceeding max health.
+- [ ] Active ability command triggers the configured active ability.
+- [ ] Ultimate command respects cooldown and unlock requirements.
+- [ ] `chain_lightning` damages valid enemy targets and respects jump/range config.
+- [ ] A lethal chain-lightning hit credits the caster in kill feed, XP and stats.
+- [ ] A lethal reflected-damage hit credits the reflector in kill feed, XP and stats.
+- [ ] Ability kill credit does not survive past its TTL.
+- [ ] Ability kill credit does not leak to a player reusing the same slot.
+- [ ] Attacker disconnect during a pending ability kill does not crash.
+- [ ] Victim disconnect during a pending ability kill does not crash.
+- [ ] Round start clears stale pending ability damage attribution.
+- [ ] No reflect/ability recursion creates an infinite damage loop.
+
+## Statistics and objectives
+
+- [ ] Kills/deaths/headshots update once per event.
+- [ ] Assists update once per valid assist.
+- [ ] Round played/won counters update correctly for both teams.
+- [ ] Bomb plant/defuse rewards and statistics are correct.
+- [ ] Playtime increases across a session and survives reconnect/restart.
+
+## UI and optional modules
+
+- [ ] `!wc` opens the root menu.
+- [ ] Race selection, current race, abilities and statistics menus work.
+- [ ] Shop registers one root menu entry and purchases work.
+- [ ] VIP registers one root menu entry and displays the expected modifiers.
+- [ ] Admin commands enforce permission and immunity.
+
+## Stability
+
+- [ ] Run at least one full match with 4+ human players.
+- [ ] Change map at least twice.
+- [ ] Reload race JSON repeatedly while players are connected.
+- [ ] Exercise abilities while players connect/disconnect.
+- [ ] Review server logs for exceptions, duplicate registrations and persistence errors.

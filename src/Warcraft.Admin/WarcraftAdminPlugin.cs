@@ -17,7 +17,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
     private const string AdminPermission = "@warcraft/admin";
 
     public override string ModuleName => "Warcraft.Admin";
-    public override string ModuleVersion => "0.1.0";
+    public override string ModuleVersion => WarcraftVersion.Current;
     public override string ModuleAuthor => "Mellok543";
     public override string ModuleDescription =>
         "Administrative commands for CS2Warcraft through Warcraft.Api.";

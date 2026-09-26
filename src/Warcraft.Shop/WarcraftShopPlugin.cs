@@ -22,7 +22,7 @@ public sealed class WarcraftShopPlugin : BasePlugin
     private const string AdminPermission = "@warcraft/admin";
 
     public override string ModuleName => "Warcraft.Shop";
-    public override string ModuleVersion => "0.1.0";
+    public override string ModuleVersion => WarcraftVersion.Current;
     public override string ModuleAuthor => "Mellok543";
     public override string ModuleDescription => "JSON-configured Warcraft item shop working through Warcraft.Core.";
 

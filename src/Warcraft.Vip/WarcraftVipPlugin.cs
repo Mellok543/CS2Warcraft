@@ -18,7 +18,7 @@ public sealed class WarcraftVipPlugin : BasePlugin
     private const string MenuEntryId = "warcraft.vip.info";
 
     public override string ModuleName => "Warcraft.Vip";
-    public override string ModuleVersion => "0.1.0";
+    public override string ModuleVersion => WarcraftVersion.Current;
     public override string ModuleAuthor => "Mellok543";
     public override string ModuleDescription =>
         "VIP modifiers (XP multiplier, VIP races, shop discount) registered through Warcraft.Core.";

@@ -16,7 +16,7 @@ namespace Warcraft.Abilities;
 public sealed class WarcraftAbilitiesPlugin : BasePlugin
 {
     public override string ModuleName => "Warcraft.Abilities";
-    public override string ModuleVersion => "0.1.0";
+    public override string ModuleVersion => WarcraftVersion.Current;
     public override string ModuleAuthor => "Mellok543";
     public override string ModuleDescription =>
         "Reusable event-driven ability handlers for CS2Warcraft.";

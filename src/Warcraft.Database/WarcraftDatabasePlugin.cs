@@ -11,7 +11,7 @@ namespace Warcraft.Database;
 public sealed class WarcraftDatabasePlugin : BasePlugin
 {
     public override string ModuleName => "Warcraft.Database";
-    public override string ModuleVersion => "0.1.0";
+    public override string ModuleVersion => WarcraftVersion.Current;
     public override string ModuleAuthor => "Mellok543";
     public override string ModuleDescription =>
         "MySQL persistence provider for CS2Warcraft.";

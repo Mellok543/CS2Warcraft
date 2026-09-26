@@ -26,7 +26,7 @@ namespace Warcraft.Core;
 public sealed class WarcraftCorePlugin : BasePlugin
 {
     public override string ModuleName => "Warcraft.Core";
-    public override string ModuleVersion => "0.3.0";
+    public override string ModuleVersion => WarcraftVersion.Current;
     public override string ModuleAuthor => "Mellok543";
     public override string ModuleDescription =>
         "Central runtime state, event bridge and API provider for CS2Warcraft.";
