@@ -41,4 +41,28 @@ internal static class AbilityConfigReader
         string property,
         int fallback = 0)
         => (int)Math.Round(GetLevelDouble(ability, property, fallback));
+
+    /// <summary>
+    /// Reads a list of strings: either one list for every level
+    /// (<c>["a", "b"]</c>) or one list per level (<c>[["a"], ["a", "b"]]</c>).
+    /// </summary>
+    public static IReadOnlyList<string> GetLevelStrings(PlayerAbilitySnapshot ability, string property)
+    {
+        if (ability.Config.ValueKind != JsonValueKind.Object ||
+            !ability.Config.TryGetProperty(property, out var value) ||
+            value.ValueKind != JsonValueKind.Array ||
+            value.GetArrayLength() == 0)
+        {
+            return [];
+        }
+
+        var list = value;
+        if (value[0].ValueKind == JsonValueKind.Array)
+            list = value[Math.Clamp(ability.Level - 1, 0, value.GetArrayLength() - 1)];
+
+        return list.EnumerateArray()
+            .Where(x => x.ValueKind == JsonValueKind.String)
+            .Select(x => x.GetString()!)
+            .ToArray();
+    }
 }

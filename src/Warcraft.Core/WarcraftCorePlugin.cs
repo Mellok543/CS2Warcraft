@@ -413,7 +413,8 @@ public sealed class WarcraftCorePlugin : BasePlugin
             AttackerSteamId = attackerSteamId,
             AttackerIsPlayer = damageInfo.Attacker.Value is CCSPlayerPawn,
             Damage = damageInfo.Damage,
-            Weapon = GetAttackerWeapon(damageInfo)
+            Weapon = GetAttackerWeapon(damageInfo),
+            Kind = ToDamageKind(damageInfo.BitsDamageType)
         };
 
         var originalDamage = damageInfo.Damage;
@@ -439,7 +440,28 @@ public sealed class WarcraftCorePlugin : BasePlugin
             victimController!.SteamID,
             GetAttackerSteamId(damageInfo),
             result.DamageDealt > 0 ? result.DamageDealt : result.HealthLost,
-            GetAttackerWeapon(damageInfo)));
+            GetAttackerWeapon(damageInfo),
+            ToDamageKind(damageInfo.BitsDamageType)));
+    }
+
+    private static DamageKind ToDamageKind(DamageTypes_t bits)
+    {
+        var kind = DamageKind.None;
+
+        if ((bits & (DamageTypes_t.DMG_BULLET | DamageTypes_t.DMG_BUCKSHOT)) != 0)
+            kind |= DamageKind.Bullet;
+        if ((bits & (DamageTypes_t.DMG_SLASH | DamageTypes_t.DMG_CLUB)) != 0)
+            kind |= DamageKind.Melee;
+        if ((bits & DamageTypes_t.DMG_FALL) != 0)
+            kind |= DamageKind.Fall;
+        if ((bits & (DamageTypes_t.DMG_BLAST | DamageTypes_t.DMG_BLAST_SURFACE)) != 0)
+            kind |= DamageKind.Blast;
+        if ((bits & DamageTypes_t.DMG_BURN) != 0)
+            kind |= DamageKind.Burn;
+        if ((bits & DamageTypes_t.DMG_HEADSHOT) != 0)
+            kind |= DamageKind.Headshot;
+
+        return kind;
     }
 
     private void OnFirstPersistenceProviderRegistered()

@@ -7,21 +7,50 @@ and returns the effective `PlayerAbilitySnapshot`.
 
 ## Handlers
 
-| ID                | Kind     | Trigger                  | Config keys                                          |
-|-------------------|----------|--------------------------|------------------------------------------------------|
-| `critical_strike` | passive  | `DamagePreEvent`         | `chance`, `damageMultiplier`                         |
-| `bonus_health`    | passive  | `PlayerSpawnEvent`       | `health`                                             |
-| `vampirism`       | passive  | `DamagePostEvent`        | `percent`                                            |
-| `chain_lightning` | ultimate | `UltimatePressedEvent`   | `damage`, `range`, `jumps`, `damageFalloff`, `cooldown` |
-| `speed`           | passive  | `GameTickEvent`          | `multiplier` (> 1.0)                                 |
-| `low_gravity`     | passive  | `GameTickEvent`          | `gravity` (0.05 .. 1.0)                              |
-| `regeneration`    | passive  | `GameTickEvent`          | `amount`, `interval` (seconds, default 1)            |
-| `evasion`         | passive  | `DamagePreEvent`         | `chance`                                             |
-| `reflect_damage`  | passive  | `DamagePostEvent`        | `percent`, `maxDamage` (optional cap per hit)        |
-| `dash`            | active   | `AbilityPressedEvent`    | `force`, `upForce`, `cooldown`                     |
-| `bash`            | passive  | `DamagePostEvent` + tick | `chance`, `duration` (s), `slow` (0 = freeze)      |
-| `invisibility`    | passive  | `GameTickEvent`          | `alpha` (0 invisible .. 255 normal)                 |
-| `damage_reduction`| passive  | `DamagePreEvent`         | `percent` (max 0.9)                                 |
+Passive mechanics:
+
+| ID                 | Trigger                 | Config keys                                              |
+|--------------------|-------------------------|----------------------------------------------------------|
+| `critical_strike`  | `DamagePreEvent`        | `chance`, `damageMultiplier`                             |
+| `bonus_damage`     | `DamagePreEvent`        | `percent`                                                |
+| `bonus_health`     | `PlayerSpawnEvent`      | `health`                                                 |
+| `vampirism`        | `DamagePostEvent`       | `percent`                                                |
+| `regeneration`     | `GameTickEvent`         | `amount`, `interval` (s, default 1)                      |
+| `evasion`          | `DamagePreEvent`        | `chance`                                                 |
+| `reflect_damage`   | `DamagePostEvent`       | `percent`, `maxDamage` (optional cap per hit)            |
+| `damage_reduction` | `DamagePreEvent`        | `percent` (max 0.9)                                      |
+| `fall_immunity`    | `DamagePreEvent` (fall) | `percent` (1 = immune)                                   |
+| `speed`            | `GameTickEvent`         | `multiplier` (> 1.0)                                     |
+| `low_gravity`      | `GameTickEvent`         | `gravity` (0.05 .. 1.0)                                  |
+| `invisibility`     | `GameTickEvent`         | `alpha` (0 invisible .. 255 normal)                      |
+| `bash`             | `DamagePostEvent`       | `chance`, `duration` (s), `slow` (0 = freeze)            |
+| `poison`           | `DamagePostEvent`       | `chance` (default 1), `damage`, `ticks`, `interval`      |
+| `kill_heal`        | `PlayerKillEvent`       | `amount`                                                 |
+| `plunder`          | `PlayerKillEvent`       | `money`, `maxMoney` (default 16000)                      |
+| `reincarnation`    | `PlayerDeathEvent`      | `chance`, `delay` (s, default 2); once per round          |
+| `spawn_armor`      | `PlayerSpawnEvent`      | `armor`, `helmet` (1 = yes)                              |
+| `spawn_items`      | `PlayerSpawnEvent`      | `items`: `["weapon_x"]` or per level `[["a"], ["a","b"]]` |
+
+Activatable mechanics — usable both as a regular active ability
+(`css_ability <slot>`) and as the race `ultimate` (`css_ultimate`); every one
+reads `cooldown`:
+
+| ID                | Effect                                           | Config keys                                   |
+|-------------------|--------------------------------------------------|-----------------------------------------------|
+| `chain_lightning` | bolt jumping between enemies                     | `damage`, `range`, `jumps`, `damageFalloff`   |
+| `dash`            | velocity push in look direction                  | `force`, `upForce`                            |
+| `sprint`          | temporary speed boost                            | `multiplier`, `duration`                      |
+| `heal_burst`      | heals self and allies in radius                  | `amount`, `radius` (0 = self)                 |
+| `divine_shield`   | temporary damage reduction                       | `duration`, `percent` (1 = invulnerable)      |
+| `war_stomp`       | damage + stun to all enemies around              | `radius`, `damage`, `stun`                    |
+| `entangle`        | roots nearest enemy, damage per second           | `range`, `duration`, `damage`                 |
+| `life_drain`      | damages nearest enemy and heals the caster       | `range`, `damage`, `healPercent`              |
+
+All ability damage (`chain_lightning`, `war_stomp`, `entangle`, `life_drain`,
+`poison`, `reflect_damage`) goes through `api.Combat` and credits kills.
+Movement effects (`speed`, `sprint`, `bash`, `war_stomp`, `entangle`) share one
+`MovementController`, so they never overwrite each other: stun beats speed,
+and the strongest speed source wins.
 
 `speed` and `low_gravity` keep the pawn attribute at the configured value while
 the ability is usable and restore the default when it stops being usable (for
@@ -123,9 +152,10 @@ bind x css_ultimate        // !ultimate
 bind c "css_ability 1"     // !ability 1
 ```
 
-`css_ability <slot>` addresses the race's abilities whose handler registered
-`AbilityKind.Active`, numbered in JSON order starting at 1. The ultimate is the
-race's `ultimate` block.
+`css_ability <slot>` addresses the race's activatable abilities (handlers
+registered as `Active` or `Ultimate`), numbered in JSON order starting at 1.
+The ultimate is the race's `ultimate` block; it may use any activatable
+mechanic. Passive mechanics cannot be activated.
 
 Activation pipeline (all checks in Core, mechanics in the handler):
 

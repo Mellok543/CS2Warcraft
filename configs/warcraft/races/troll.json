@@ -1,0 +1,68 @@
+{
+  "id": "troll",
+  "name": "Тролль-берсерк",
+  "description": "Чем меньше здоровья, тем сильнее бьёт. Отравленные клинки и пожирание врагов.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "abilities": [
+    {
+      "id": "bonus_damage",
+      "name": "Берсерк",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "percent": [
+          0.15,
+          0.25,
+          0.35
+        ]
+      },
+      "conditions": {
+        "maxHealthPercent": 0.5
+      }
+    },
+    {
+      "id": "poison",
+      "name": "Отравленные клинки",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "chance": [
+          0.2,
+          0.3,
+          0.4
+        ],
+        "damage": 3,
+        "ticks": 4,
+        "interval": 1
+      },
+      "conditions": {}
+    },
+    {
+      "id": "kill_heal",
+      "name": "Пожирание",
+      "maxLevel": 2,
+      "unlockLevel": 3,
+      "config": {
+        "amount": [
+          15,
+          30
+        ]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "life_drain",
+    "name": "Кровавый ритуал",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "range": 500,
+      "damage": 30,
+      "healPercent": 1.0,
+      "cooldown": 25
+    },
+    "conditions": {}
+  }
+}

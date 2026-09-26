@@ -13,7 +13,7 @@ namespace Warcraft.Abilities;
 /// Config: damage, range, jumps, optional damageFalloff (multiplier per jump).
 /// Cooldown (<c>cooldown</c>) and all eligibility checks are enforced by Core.
 /// </summary>
-internal sealed class ChainLightningAbility(BeamEffects beams) : AbilityHandler
+internal sealed class ChainLightningAbility(BeamEffects beams) : ActiveAbilityHandler
 {
     private const float ChestHeight = 48f;
     private static readonly Color BoltColor = Color.FromArgb(255, 120, 170, 255);
@@ -24,14 +24,8 @@ internal sealed class ChainLightningAbility(BeamEffects beams) : AbilityHandler
         "Молния бьёт ближайшего врага в радиусе {range} на {damage} урона и перескакивает ещё на {jumps} целей (урон x{damageFalloff|1} за прыжок). Перезарядка {cooldown} с.";
     protected override string DisplayName => "Цепная молния";
 
-    protected override void Subscribe(IWarcraftEventBus events)
-        => Track(events.Subscribe<UltimatePressedEvent>(OnUltimatePressed));
-
-    private void OnUltimatePressed(UltimatePressedEvent @event)
+    protected override void Activate(AbilityActivationEvent @event, LivePlayer caster)
     {
-        if (!@event.IsFor(Id))
-            return;
-
         var ability = @event.Ability;
         var damage = Math.Max(0.0, AbilityConfigReader.GetLevelDouble(ability, "damage"));
         var range = (float)Math.Max(0.0, AbilityConfigReader.GetLevelDouble(ability, "range"));
@@ -41,12 +35,6 @@ internal sealed class ChainLightningAbility(BeamEffects beams) : AbilityHandler
         if (damage <= 0 || range <= 0)
         {
             @event.Fail("Цепная молния не настроена (damage/range).");
-            return;
-        }
-
-        if (GamePlayers.FindAlive(@event.SteamId) is not { } caster)
-        {
-            @event.Fail("Вы должны быть живы.");
             return;
         }
 

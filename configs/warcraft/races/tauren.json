@@ -1,0 +1,75 @@
+{
+  "id": "tauren",
+  "name": "Таурен",
+  "description": "Живучий вождь: много здоровья, перерождение и громовая поступь.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "abilities": [
+    {
+      "id": "bonus_health",
+      "name": "Сила быка",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "health": [
+          15,
+          30,
+          45
+        ]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "reincarnation",
+      "name": "Перерождение",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "chance": [
+          0.25,
+          0.4,
+          0.55
+        ],
+        "delay": 2
+      },
+      "conditions": {}
+    },
+    {
+      "id": "war_stomp",
+      "name": "Громовая поступь",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "radius": [
+          250,
+          300
+        ],
+        "damage": [
+          15,
+          25
+        ],
+        "stun": [
+          0.8,
+          1.2
+        ],
+        "cooldown": [
+          20,
+          16
+        ]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "divine_shield",
+    "name": "Непоколебимость",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "duration": 4,
+      "percent": 0.6,
+      "cooldown": 35
+    },
+    "conditions": {}
+  }
+}

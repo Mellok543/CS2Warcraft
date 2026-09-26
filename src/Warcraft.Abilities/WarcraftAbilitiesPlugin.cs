@@ -1,8 +1,11 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using Microsoft.Extensions.Logging;
+using Warcraft.Abilities.Actives;
 using Warcraft.Abilities.Game;
+using Warcraft.Abilities.Passives;
 using Warcraft.Api;
+using Warcraft.Api.Events;
 using Warcraft.Shared;
 using Warcraft.Api.Modules;
 
@@ -19,6 +22,7 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
 
     private IWarcraftApi? _api;
     private readonly List<IAbilityHandler> _handlers = [];
+    private readonly List<IDisposable> _systems = [];
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
@@ -36,21 +40,53 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
             ModuleVersion,
             "Reusable ability handlers"));
 
-        var beams = new BeamEffects(new PluginGameScheduler(this));
+        var scheduler = new PluginGameScheduler(this);
+        var beams = new BeamEffects(scheduler);
+        var movement = new MovementController();
+        var dots = new DamageOverTime(_api);
 
+        // Passives
         Register(new CriticalStrikeAbility());
         Register(new BonusHealthAbility());
         Register(new VampirismAbility());
-        Register(new ChainLightningAbility(beams));
-        Register(new SpeedAbility());
+        Register(new SpeedAbility(movement));
         Register(new LowGravityAbility());
         Register(new RegenerationAbility());
         Register(new EvasionAbility());
         Register(new ReflectDamageAbility());
-        Register(new DashAbility());
-        Register(new BashAbility());
+        Register(new BashAbility(movement));
         Register(new InvisibilityAbility());
         Register(new DamageReductionAbility());
+        Register(new BonusDamageAbility());
+        Register(new FallImmunityAbility());
+        Register(new PoisonAbility(dots));
+        Register(new KillHealAbility());
+        Register(new PlunderAbility());
+        Register(new ReincarnationAbility(scheduler));
+        Register(new SpawnArmorAbility(scheduler));
+        Register(new SpawnItemsAbility(scheduler));
+
+        // Activatable (ability slot or ultimate)
+        Register(new ChainLightningAbility(beams));
+        Register(new DashAbility());
+        Register(new HealBurstAbility());
+        Register(new DivineShieldAbility());
+        Register(new SprintAbility(movement));
+        Register(new WarStompAbility(movement));
+        Register(new EntangleAbility(movement, dots, beams));
+        Register(new LifeDrainAbility(beams));
+
+        // Shared systems run after the handlers have updated their state for this tick.
+        _systems.Add(_api.Events.Subscribe<GameTickEvent>(tick =>
+        {
+            movement.Update(tick.ServerTime);
+            dots.Update(tick.ServerTime);
+        }));
+        _systems.Add(_api.Events.Subscribe<RoundStartEvent>(_ =>
+        {
+            movement.Clear();
+            dots.Clear();
+        }));
 
         Logger.LogInformation(
             "Warcraft.Abilities registered {Count} handlers.",
@@ -59,6 +95,11 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
 
     public override void Unload(bool hotReload)
     {
+        foreach (var system in _systems)
+            system.Dispose();
+
+        _systems.Clear();
+
         for (var i = _handlers.Count - 1; i >= 0; i--)
             _handlers[i].Dispose();
 

@@ -175,7 +175,7 @@ internal sealed class AbilityResolver(
 
     private List<CompiledAbility> GetActiveAbilities(CompiledRace race)
         => race.Abilities
-            .Where(x => !x.IsUltimate && registrations.Get(x.Id)?.Kind == AbilityKind.Active)
+            .Where(x => !x.IsUltimate && registrations.Get(x.Id)?.Kind is AbilityKind.Active or AbilityKind.Ultimate)
             .ToList();
 
     private bool TryGetRace(

@@ -47,10 +47,32 @@ internal static class GamePlayers
     public static IEnumerable<LivePlayer> AllAliveHumans()
         => AllAlive().Where(x => !x.Controller.IsBot && x.Controller.SteamID != 0);
 
+    public static LivePlayer? FindAliveBySlot(int slot)
+    {
+        var controller = Utilities.GetPlayerFromSlot(slot);
+        return controller is null ? null : AsAlive(controller);
+    }
+
     public static bool AreEnemies(in LivePlayer first, in LivePlayer second)
         => first.Team != second.Team &&
            first.Team is TeamTerrorist or TeamCounterTerrorist &&
            second.Team is TeamTerrorist or TeamCounterTerrorist;
+
+    public static IEnumerable<LivePlayer> EnemiesAround(LivePlayer owner, Vector3 center, float radius)
+        => AllAlive().Where(x => AreEnemies(owner, x) && Vector3.Distance(center, x.Position) <= radius);
+
+    /// <summary>Teammates in range, including the owner.</summary>
+    public static IEnumerable<LivePlayer> AlliesAround(LivePlayer owner, Vector3 center, float radius)
+        => AllAlive().Where(x => x.Team == owner.Team && Vector3.Distance(center, x.Position) <= radius);
+
+    public static LivePlayer? NearestEnemy(LivePlayer owner, float range)
+    {
+        var origin = owner.Position;
+        return EnemiesAround(owner, origin, range)
+            .OrderBy(x => Vector3.DistanceSquared(origin, x.Position))
+            .Cast<LivePlayer?>()
+            .FirstOrDefault();
+    }
 
     private static LivePlayer? AsAlive(CCSPlayerController controller)
     {

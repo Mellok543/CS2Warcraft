@@ -126,6 +126,19 @@ public sealed record RaceCatalogReloadedEvent(
     IReadOnlyList<string> Errors,
     string Source) : IWarcraftEvent;
 
+/// <summary>Engine damage categories relevant to abilities.</summary>
+[Flags]
+public enum DamageKind
+{
+    None = 0,
+    Bullet = 1,
+    Melee = 2,
+    Fall = 4,
+    Blast = 8,
+    Burn = 16,
+    Headshot = 32
+}
+
 public sealed class DamagePreEvent : IWarcraftEvent
 {
     public required ulong VictimSteamId { get; init; }
@@ -136,10 +149,12 @@ public sealed class DamagePreEvent : IWarcraftEvent
 
     public required float Damage { get; set; }
     public string? Weapon { get; init; }
+    public DamageKind Kind { get; init; }
 }
 
 public sealed record DamagePostEvent(
     ulong VictimSteamId,
     ulong? AttackerSteamId,
     float FinalDamage,
-    string? Weapon) : IWarcraftEvent;
+    string? Weapon,
+    DamageKind Kind = DamageKind.None) : IWarcraftEvent;

@@ -1,0 +1,84 @@
+{
+  "id": "druid",
+  "name": "Друид",
+  "description": "Целитель леса: лечит союзников, мягко приземляется и опутывает врагов корнями.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "abilities": [
+    {
+      "id": "heal_burst",
+      "name": "Омоложение",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "amount": [
+          20,
+          30,
+          40
+        ],
+        "radius": [
+          0,
+          250,
+          400
+        ],
+        "cooldown": [
+          18,
+          15,
+          12
+        ]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "fall_immunity",
+      "name": "Кошачья грация",
+      "maxLevel": 2,
+      "unlockLevel": 2,
+      "config": {
+        "percent": [
+          0.5,
+          1.0
+        ]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "low_gravity",
+      "name": "Лёгкость",
+      "maxLevel": 2,
+      "unlockLevel": 3,
+      "config": {
+        "gravity": [
+          0.8,
+          0.65
+        ]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "entangle",
+    "name": "Опутывающие корни",
+    "maxLevel": 2,
+    "unlockLevel": 6,
+    "config": {
+      "range": [
+        500,
+        700
+      ],
+      "duration": [
+        2,
+        3
+      ],
+      "damage": [
+        4,
+        6
+      ],
+      "cooldown": [
+        30,
+        24
+      ]
+    },
+    "conditions": {}
+  }
+}

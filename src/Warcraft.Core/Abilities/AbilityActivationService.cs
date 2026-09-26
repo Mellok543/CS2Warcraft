@@ -27,7 +27,6 @@ internal sealed class AbilityActivationService(
         return Activate(
             steamId,
             ultimate,
-            AbilityKind.Ultimate,
             snapshot => new UltimatePressedEvent { SteamId = steamId, Ability = snapshot });
     }
 
@@ -40,20 +39,19 @@ internal sealed class AbilityActivationService(
         return Activate(
             steamId,
             ability,
-            AbilityKind.Active,
             snapshot => new AbilityPressedEvent { SteamId = steamId, Ability = snapshot, Slot = slot });
     }
 
     private AbilityActivationResult Activate(
         ulong steamId,
         CompiledAbility ability,
-        AbilityKind expectedKind,
         Func<PlayerAbilitySnapshot, AbilityActivationEvent> createEvent)
     {
         var name = resolver.GetDisplayName(ability);
 
-        if (registrations.Get(ability.Id)?.Kind != expectedKind)
-            return Fail($"Способность «{name}» не реализована на сервере.");
+        // Any activatable mechanic (Active or Ultimate) may sit in either slot.
+        if (registrations.Get(ability.Id)?.Kind is null or AbilityKind.Passive)
+            return Fail($"Способность «{name}» не реализована на сервере как активная.");
 
         var usability = resolver.Resolve(steamId, ability, ability.Id, out var snapshot);
         if (usability != AbilityUsability.Usable || snapshot is null)
