@@ -14,6 +14,7 @@ internal sealed class MinHealthPercentConditionFactory : IAbilityConditionFactor
 
     private sealed class Condition(double threshold) : IAbilityCondition
     {
+        public string Description => $"HP ≥ {HealthFraction.Percent(threshold)}";
         public bool IsSatisfied(in PlayerCombatState state) => state.HealthFraction >= threshold;
     }
 }
@@ -30,12 +31,16 @@ internal sealed class MaxHealthPercentConditionFactory : IAbilityConditionFactor
 
     private sealed class Condition(double threshold) : IAbilityCondition
     {
+        public string Description => $"HP ≤ {HealthFraction.Percent(threshold)}";
         public bool IsSatisfied(in PlayerCombatState state) => state.HealthFraction <= threshold;
     }
 }
 
 internal static class HealthFraction
 {
+    public static string Percent(double fraction)
+        => (fraction * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "%";
+
     public static bool TryParse(JsonElement value, out double fraction, out string error)
     {
         error = string.Empty;

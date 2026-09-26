@@ -12,6 +12,10 @@ internal sealed class CompiledConditions
 
     public bool IsEmpty => _conditions.Length == 0;
 
+    /// <summary>Player-facing summary, null when there are no conditions.</summary>
+    public string? Description
+        => IsEmpty ? null : string.Join("; ", _conditions.Select(x => x.Description));
+
     public bool IsSatisfied(in PlayerCombatState state)
     {
         foreach (var condition in _conditions)

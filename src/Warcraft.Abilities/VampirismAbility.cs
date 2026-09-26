@@ -9,7 +9,8 @@ internal sealed class VampirismAbility : AbilityHandler
 {
     public override string Id => "vampirism";
     protected override AbilityKind Kind => AbilityKind.Passive;
-    protected override string Description => "Heals the attacker for a percentage of damage dealt.";
+    protected override string Description =>
+        "Восстанавливает здоровье на {percent%} от нанесённого урона.";
     protected override string DisplayName => "Вампиризм";
 
     protected override void Subscribe(IWarcraftEventBus events)

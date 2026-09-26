@@ -97,6 +97,12 @@ internal sealed class RaceCatalogCompiler(AbilityConditionRegistry conditions)
         if (cooldownError is not null)
             errors.Add($"{kind} '{owner}': {cooldownError}");
 
+        if (ability.Description is { } description)
+        {
+            foreach (var key in AbilityDescriptionFormatter.MissingKeys(description, ability.Config).Distinct())
+                errors.Add($"{kind} '{owner}' description uses '{{{key}}}' which is missing from config.");
+        }
+
         var compiledConditions = conditions.Compile(ability.Conditions, owner, errors);
 
         return new CompiledAbility(ability, isUltimate, compiledConditions);

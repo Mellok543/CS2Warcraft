@@ -16,7 +16,8 @@ internal sealed class RegenerationAbility : AbilityHandler
 
     public override string Id => "regeneration";
     protected override AbilityKind Kind => AbilityKind.Passive;
-    protected override string Description => "Regenerates health over time.";
+    protected override string Description =>
+        "Восстанавливает {amount} HP каждые {interval|1} с.";
     protected override string DisplayName => "Регенерация";
 
     protected override void Subscribe(IWarcraftEventBus events)

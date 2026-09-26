@@ -12,7 +12,8 @@ internal sealed class ReflectDamageAbility : AbilityHandler
 {
     public override string Id => "reflect_damage";
     protected override AbilityKind Kind => AbilityKind.Passive;
-    protected override string Description => "Reflects part of received damage to the attacker.";
+    protected override string Description =>
+        "Возвращает атакующему {percent%} полученного урона.";
     protected override string DisplayName => "Отражение урона";
 
     protected override void Subscribe(IWarcraftEventBus events)

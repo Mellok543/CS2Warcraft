@@ -14,6 +14,8 @@ internal sealed class RequiresGroundedConditionFactory : IAbilityConditionFactor
 
     private sealed class Condition(bool grounded) : IAbilityCondition
     {
+        public string Description => grounded ? "стоя на земле" : "в воздухе";
+
         public bool IsSatisfied(in PlayerCombatState state) => state.IsGrounded == grounded;
     }
 }

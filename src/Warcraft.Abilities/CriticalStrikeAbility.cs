@@ -8,7 +8,8 @@ internal sealed class CriticalStrikeAbility : AbilityHandler
 {
     public override string Id => "critical_strike";
     protected override AbilityKind Kind => AbilityKind.Passive;
-    protected override string Description => "Randomly multiplies outgoing damage.";
+    protected override string Description =>
+        "С шансом {chance%} наносит x{damageMultiplier} урона.";
     protected override string DisplayName => "Критический удар";
 
     protected override void Subscribe(IWarcraftEventBus events)

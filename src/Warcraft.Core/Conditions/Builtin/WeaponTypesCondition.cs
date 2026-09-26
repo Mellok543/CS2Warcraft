@@ -34,6 +34,9 @@ internal sealed class WeaponTypesConditionFactory : IAbilityConditionFactory
 
     private sealed class WeaponTypesCondition(IReadOnlySet<string> categories) : IAbilityCondition
     {
+        public string Description { get; } =
+            "оружие: " + string.Join(", ", categories.Select(WeaponCategories.DisplayName));
+
         public bool IsSatisfied(in PlayerCombatState state)
             => state.WeaponCategory is not null && categories.Contains(state.WeaponCategory);
     }

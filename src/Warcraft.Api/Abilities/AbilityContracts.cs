@@ -27,10 +27,17 @@ public interface IAbilitiesApi
     /// </summary>
     IReadOnlyList<PlayerAbilityStatus> GetPlayerAbilities(ulong steamId);
 
+    /// <summary>Descriptions of a race's abilities for previews (e.g. before selecting the race).</summary>
+    IReadOnlyList<AbilityInfo> GetRaceAbilities(string raceId);
+
     TimeSpan GetCooldownRemaining(ulong steamId, string abilityId);
     CooldownResult TryStartCooldown(ulong steamId, string abilityId, TimeSpan duration);
 }
 
+/// <param name="Description">
+/// Default description template shown to players, e.g. <c>"Шанс {chance%} нанести x{damageMultiplier} урона."</c>
+/// Races may override it with their own <c>description</c>.
+/// </param>
 public sealed record AbilityRegistration(
     string Id,
     string OwnerModule,
@@ -72,11 +79,26 @@ public sealed record PlayerAbilityStatus(
     AbilityUpgradeBlock UpgradeBlock,
     TimeSpan Cooldown,
     TimeSpan CooldownRemaining,
-    int? ActiveSlot)
+    int? ActiveSlot,
+    string Description,
+    string? NextLevelDescription,
+    string? ConditionsDescription)
 {
     public bool IsLearned => Level > 0;
     public bool CanUpgrade => UpgradeBlock == AbilityUpgradeBlock.None;
 }
+
+public sealed record AbilityInfo(
+    string AbilityId,
+    string DisplayName,
+    AbilityKind Kind,
+    bool IsUltimate,
+    int UnlockLevel,
+    int MaxLevel,
+    string FirstLevelDescription,
+    string MaxLevelDescription,
+    string? ConditionsDescription,
+    bool HandlerRegistered);
 
 public enum AbilityUpgradeBlock
 {

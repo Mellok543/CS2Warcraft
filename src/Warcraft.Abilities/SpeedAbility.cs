@@ -11,7 +11,8 @@ internal sealed class SpeedAbility : PawnAttributeAbility
     private const float DefaultModifier = 1.0f;
 
     public override string Id => "speed";
-    protected override string Description => "Increases movement speed.";
+    protected override string Description =>
+        "Скорость передвижения x{multiplier}.";
     protected override string DisplayName => "Скорость";
 
     protected override float? ReadValue(PlayerAbilitySnapshot ability)

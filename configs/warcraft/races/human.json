@@ -31,6 +31,7 @@
     {
       "id": "reflect_damage",
       "name": "Шипы",
+      "description": "Возвращает атакующему {percent%} полученного урона, но не больше {maxDamage} за удар.",
       "maxLevel": 3,
       "unlockLevel": 3,
       "config": {

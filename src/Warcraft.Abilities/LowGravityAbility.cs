@@ -11,7 +11,8 @@ internal sealed class LowGravityAbility : PawnAttributeAbility
     private const float DefaultGravity = 1.0f;
 
     public override string Id => "low_gravity";
-    protected override string Description => "Reduces gravity for higher jumps.";
+    protected override string Description =>
+        "Гравитация x{gravity}: прыжки выше и дальше.";
     protected override string DisplayName => "Низкая гравитация";
 
     protected override float? ReadValue(PlayerAbilitySnapshot ability)

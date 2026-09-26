@@ -29,6 +29,7 @@ Core validation covers ids, levels, the Core-owned `cooldown` key and every
     {
       "id": "speed",              // handler id from Warcraft.Abilities
       "name": "Нечестивая аура",  // optional race-specific display name
+      "description": "Скорость x{multiplier}.", // optional, overrides the handler text
       "maxLevel": 3,
       "unlockLevel": 1,           // required race level to learn / use
       "config": { "multiplier": [1.10, 1.20, 1.30] },

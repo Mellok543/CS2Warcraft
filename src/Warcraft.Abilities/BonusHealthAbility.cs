@@ -11,7 +11,8 @@ internal sealed class BonusHealthAbility : AbilityHandler
 
     public override string Id => "bonus_health";
     protected override AbilityKind Kind => AbilityKind.Passive;
-    protected override string Description => "Adds maximum health on spawn.";
+    protected override string Description =>
+        "+{health} к максимальному здоровью при возрождении.";
     protected override string DisplayName => "Бонус здоровья";
 
     protected override void Subscribe(IWarcraftEventBus events)

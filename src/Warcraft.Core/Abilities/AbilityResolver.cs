@@ -127,10 +127,47 @@ internal sealed class AbilityResolver(
                 AbilityUpgradeRules.Check(progress, definition),
                 AbilityConfigValues.GetCooldown(definition.Config, level),
                 cooldowns.GetRemaining(steamId, ability.Id),
-                slotIndex >= 0 ? slotIndex + 1 : null));
+                slotIndex >= 0 ? slotIndex + 1 : null,
+                Describe(ability, Math.Max(1, level)),
+                level < definition.MaxLevel ? Describe(ability, level + 1) : null,
+                ability.Conditions.Description));
         }
 
         return result;
+    }
+
+    public IReadOnlyList<AbilityInfo> GetRaceInfo(string raceId)
+    {
+        var race = races.GetCompiled(raceId);
+        if (race is null)
+            return [];
+
+        return race.Abilities
+            .Select(ability =>
+            {
+                var registration = registrations.Get(ability.Id);
+                return new AbilityInfo(
+                    ability.Id,
+                    GetDisplayName(ability),
+                    registration?.Kind ?? (ability.IsUltimate ? AbilityKind.Ultimate : AbilityKind.Passive),
+                    ability.IsUltimate,
+                    ability.Definition.UnlockLevel,
+                    ability.Definition.MaxLevel,
+                    Describe(ability, 1),
+                    Describe(ability, ability.Definition.MaxLevel),
+                    ability.Conditions.Description,
+                    registration is not null);
+            })
+            .ToArray();
+    }
+
+    /// <summary>Race JSON description overrides the handler's default template.</summary>
+    private string Describe(CompiledAbility ability, int level)
+    {
+        var template = ability.Definition.Description ?? registrations.Get(ability.Id)?.Description;
+        return string.IsNullOrWhiteSpace(template)
+            ? "Описание отсутствует."
+            : AbilityDescriptionFormatter.Format(template, ability.Definition.Config, level);
     }
 
     public string GetDisplayName(CompiledAbility ability)

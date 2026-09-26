@@ -46,6 +46,30 @@ Every numeric value is either a scalar or an array indexed by ability level:
 }
 ```
 
+## Descriptions
+
+Every handler registers a default Russian description template; a race can
+override it per ability with `"description"`. Core fills placeholders from the
+race config at the relevant level:
+
+| Placeholder     | Example config         | Output (level 2) |
+|-----------------|------------------------|------------------|
+| `{damage}`      | `"damage": 35`         | `35`             |
+| `{chance%}`     | `"chance": [0.1, 0.2]` | `20%`            |
+| `{interval\|1}` | key missing            | `1`              |
+
+```json
+{ "id": "reflect_damage",
+  "description": "Возвращает атакующему {percent%} урона, но не больше {maxDamage} за удар.",
+  "config": { "percent": [0.10, 0.18, 0.25], "maxDamage": 20 } }
+```
+
+A race `description` that references a key missing from its config (and without
+a `|default`) rejects the reload. Conditions are described automatically
+(`оружие: винтовка; HP ≥ 50%`). The menu shows an ability card (current and
+next level, requirements, conditions, bind hint) and a race preview with every
+ability before the race is selected.
+
 ## Usability
 
 Handlers call `api.Abilities.GetUsableAbility(steamId, id)`. Core returns a

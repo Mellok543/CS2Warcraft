@@ -378,7 +378,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
         _api?.Events.Publish(new DamagePostEvent(
             victimController!.SteamID,
             GetAttackerSteamId(damageInfo),
-            result.DamageDealt,
+            result.DamageDealt > 0 ? result.DamageDealt : result.HealthLost,
             GetAttackerWeapon(damageInfo)));
     }
 

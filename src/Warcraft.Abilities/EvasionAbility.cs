@@ -8,7 +8,8 @@ internal sealed class EvasionAbility : AbilityHandler
 {
     public override string Id => "evasion";
     protected override AbilityKind Kind => AbilityKind.Passive;
-    protected override string Description => "Chance to avoid incoming player damage.";
+    protected override string Description =>
+        "С шансом {chance%} полностью избегает урона от игрока.";
     protected override string DisplayName => "Уклонение";
 
     protected override void Subscribe(IWarcraftEventBus events)

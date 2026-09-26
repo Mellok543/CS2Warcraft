@@ -19,7 +19,8 @@ internal sealed class ChainLightningAbility(BeamEffects beams) : AbilityHandler
 
     public override string Id => "chain_lightning";
     protected override AbilityKind Kind => AbilityKind.Ultimate;
-    protected override string Description => "Lightning that jumps between nearby enemies.";
+    protected override string Description =>
+        "Молния бьёт ближайшего врага в радиусе {range} на {damage} урона и перескакивает ещё на {jumps} целей (урон x{damageFalloff|1} за прыжок). Перезарядка {cooldown} с.";
     protected override string DisplayName => "Цепная молния";
 
     protected override void Subscribe(IWarcraftEventBus events)

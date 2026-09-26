@@ -156,21 +156,7 @@ public sealed class WarcraftMenuPlugin : BasePlugin
 
             menu.AddMenuOption(
                 definition.Name + suffix,
-                (_, _) =>
-                {
-                    var result = api.Races.SelectRace(
-                        player.SteamID,
-                        definition.Id,
-                        "menu");
-
-                    player.PrintToChat(
-                        result.Success
-                            ? $" [Warcraft] Вы выбрали расу {definition.Name}."
-                            : $" [Warcraft] {result.Message}");
-
-                    OpenMainMenu(player);
-                },
-                vipBlocked);
+                (_, _) => OpenRacePreview(player, definition.Id));
         }
 
         MenuManager.OpenCenterHtmlMenu(this, player, menu);
@@ -207,25 +193,98 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         foreach (var status in api.Abilities.GetPlayerAbilities(player.SteamID))
         {
             var abilityId = status.AbilityId;
-            var displayName = status.DisplayName;
 
             menu.AddMenuOption(
                 AbilityStatusText.UpgradeLine(status),
-                (_, _) =>
-                {
-                    var result = api.Progress.UpgradeAbility(player.SteamID, abilityId);
-
-                    player.PrintToChat(
-                        $" [Warcraft] {result.Message} " +
-                        $"{displayName}: {result.PreviousLevel}->{result.CurrentLevel}");
-
-                    OpenAbilityMenu(player);
-                },
-                !status.CanUpgrade || !status.HandlerRegistered);
+                (_, _) => OpenAbilityDetails(player, abilityId));
         }
 
         MenuManager.OpenCenterHtmlMenu(this, player, menu);
     }
+
+    private void OpenRacePreview(CCSPlayerController player, string raceId)
+    {
+        var api = _api;
+        var race = api?.Races.Get(raceId);
+        if (api is null || race is null)
+            return;
+
+        var vipBlocked = race.VipOnly && !api.Modifiers.GetCombined(player.SteamID).CanAccessVipRaces;
+        var selected = string.Equals(
+            api.Players.Get(player.SteamID)?.ActiveRaceId,
+            race.Id,
+            StringComparison.OrdinalIgnoreCase);
+        var abilities = api.Abilities.GetRaceAbilities(race.Id);
+
+        Print(player, $"{race.Name}: {race.Description}");
+        foreach (var ability in abilities)
+        {
+            foreach (var line in AbilityStatusText.PreviewLines(ability))
+                Print(player, line);
+        }
+
+        var menu = new CenterHtmlMenu(race.Name, this)
+        {
+            ExitButton = true
+        };
+
+        menu.AddMenuOption(
+            selected ? "Уже выбрана" : vipBlocked ? "Только для VIP" : "Выбрать расу",
+            (_, _) =>
+            {
+                var result = api.Races.SelectRace(player.SteamID, race.Id, "menu");
+                Print(player, result.Success ? $"Вы выбрали расу {race.Name}." : result.Message);
+                OpenMainMenu(player);
+            },
+            selected || vipBlocked);
+
+        foreach (var ability in abilities)
+            menu.AddMenuOption(AbilityStatusText.PreviewTitle(ability), (_, _) => { }, true);
+
+        menu.AddMenuOption("Назад", (_, _) => OpenRaceMenu(player));
+
+        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+    }
+
+    private void OpenAbilityDetails(CCSPlayerController player, string abilityId)
+    {
+        var api = _api;
+        var status = api?.Abilities.GetPlayerAbilities(player.SteamID)
+            .FirstOrDefault(x => string.Equals(x.AbilityId, abilityId, StringComparison.OrdinalIgnoreCase));
+
+        if (api is null || status is null)
+            return;
+
+        foreach (var line in AbilityStatusText.DetailLines(status))
+            Print(player, line);
+
+        var menu = new CenterHtmlMenu(status.DisplayName, this)
+        {
+            ExitButton = true
+        };
+
+        menu.AddMenuOption(
+            $"{AbilityStatusText.Tag(status)}Уровень {status.Level}/{status.MaxLevel} | {AbilityStatusText.State(status)}",
+            (_, _) => { },
+            true);
+
+        menu.AddMenuOption(
+            "Улучшить",
+            (_, _) =>
+            {
+                var result = api.Progress.UpgradeAbility(player.SteamID, abilityId);
+                Print(player, $"{result.Message} {status.DisplayName}: {result.PreviousLevel}->{result.CurrentLevel}");
+                OpenAbilityDetails(player, abilityId);
+            },
+            !status.CanUpgrade || !status.HandlerRegistered);
+
+        menu.AddMenuOption("Назад", (_, _) => OpenAbilityMenu(player));
+
+        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+    }
+
+    private static void Print(CCSPlayerController player, string message)
+        => player.PrintToChat($" [Warcraft] {message}");
 
     private void OpenCurrentRaceMenu(CCSPlayerController player)
     {

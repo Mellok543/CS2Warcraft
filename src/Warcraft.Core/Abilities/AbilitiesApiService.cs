@@ -25,6 +25,9 @@ internal sealed class AbilitiesApiService(
     public IReadOnlyList<PlayerAbilityStatus> GetPlayerAbilities(ulong steamId)
         => resolver.GetStatuses(steamId);
 
+    public IReadOnlyList<AbilityInfo> GetRaceAbilities(string raceId)
+        => resolver.GetRaceInfo(raceId);
+
     public TimeSpan GetCooldownRemaining(ulong steamId, string abilityId)
         => cooldowns.GetRemaining(steamId, abilityId);
 

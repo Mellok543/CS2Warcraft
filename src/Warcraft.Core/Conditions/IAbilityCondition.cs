@@ -4,6 +4,9 @@ namespace Warcraft.Core.Conditions;
 
 internal interface IAbilityCondition
 {
+    /// <summary>Short player-facing text, e.g. "HP ≥ 50%".</summary>
+    string Description { get; }
+
     bool IsSatisfied(in PlayerCombatState state);
 }
 
