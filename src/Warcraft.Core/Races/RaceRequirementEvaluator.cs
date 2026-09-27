@@ -9,7 +9,8 @@ internal static class RaceRequirementEvaluator
     public static IReadOnlyList<RaceRequirementProgress> Evaluate(
         PlayerRuntimeState player,
         RaceRequirements? requirements,
-        Func<string, RaceDefinition?> findRace)
+        Func<string, RaceDefinition?> findRace,
+        long playSeconds)
     {
         if (requirements is null || requirements.IsEmpty)
             return [];
@@ -31,7 +32,7 @@ internal static class RaceRequirementEvaluator
         {
             result.Add(new RaceRequirementProgress(
                 "Время на сервере (ч)",
-                player.Stats.PlaySeconds(DateTimeOffset.UtcNow) / 3600,
+                Math.Max(0, playSeconds) / 3600,
                 requirements.PlaytimeHours));
         }
 
