@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 24,
+    "totalLevel": 60,
     "races": {
-      "orc": 6
-    }
+      "orc": 8
+    },
+    "playtimeHours": 35,
+    "globalXp": 50000
   },
   "abilities": [
     {
@@ -17,7 +19,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "damage": [2, 3, 4],
+        "damage": [
+          2,
+          3,
+          4
+        ],
         "radius": 220,
         "interval": 1
       },
@@ -29,7 +35,11 @@
       "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
-        "percent": [0.05, 0.1, 0.15]
+        "percent": [
+          0.05,
+          0.1,
+          0.15
+        ]
       },
       "conditions": {}
     },
@@ -39,11 +49,17 @@
       "maxLevel": 2,
       "unlockLevel": 3,
       "config": {
-        "damage": [4, 7],
+        "damage": [
+          4,
+          7
+        ],
         "radius": 280,
         "duration": 8,
         "interval": 1,
-        "cooldown": [25, 20]
+        "cooldown": [
+          25,
+          20
+        ]
       },
       "conditions": {}
     }

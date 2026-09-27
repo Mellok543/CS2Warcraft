@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 24,
+    "totalLevel": 60,
     "races": {
-      "undead": 6
-    }
+      "undead": 8
+    },
+    "playtimeHours": 35,
+    "globalXp": 50000
   },
   "abilities": [
     {
@@ -17,7 +19,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "slow": [0.9, 0.8, 0.7],
+        "slow": [
+          0.9,
+          0.8,
+          0.7
+        ],
         "radius": 250
       },
       "conditions": {}
@@ -28,7 +34,10 @@
       "maxLevel": 2,
       "unlockLevel": 2,
       "config": {
-        "percent": [0.25, 0.5]
+        "percent": [
+          0.25,
+          0.5
+        ]
       },
       "conditions": {}
     },
@@ -38,11 +47,20 @@
       "maxLevel": 2,
       "unlockLevel": 3,
       "config": {
-        "slow": [0.6, 0.45],
+        "slow": [
+          0.6,
+          0.45
+        ],
         "radius": 300,
-        "duration": [6, 9],
+        "duration": [
+          6,
+          9
+        ],
         "interval": 1,
-        "cooldown": [25, 20]
+        "cooldown": [
+          25,
+          20
+        ]
       },
       "conditions": {}
     }
@@ -54,11 +72,23 @@
     "maxLevel": 2,
     "unlockLevel": 6,
     "config": {
-      "radius": [300, 400],
-      "damage": [15, 25],
-      "stun": [2, 3],
+      "radius": [
+        300,
+        400
+      ],
+      "damage": [
+        15,
+        25
+      ],
+      "stun": [
+        2,
+        3
+      ],
       "slow": 0.3,
-      "cooldown": [40, 32]
+      "cooldown": [
+        40,
+        32
+      ]
     },
     "conditions": {}
   }

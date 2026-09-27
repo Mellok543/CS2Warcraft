@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 14,
+    "totalLevel": 30,
     "races": {
-      "paladin": 4
-    }
+      "paladin": 7
+    },
+    "playtimeHours": 15,
+    "globalXp": 20000
   },
   "abilities": [
     {
@@ -17,7 +19,10 @@
       "maxLevel": 2,
       "unlockLevel": 1,
       "config": {
-        "multiplier": [1.15, 1.25],
+        "multiplier": [
+          1.15,
+          1.25
+        ],
         "duration": 2
       },
       "conditions": {}
@@ -28,7 +33,11 @@
       "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
-        "percent": [0.1, 0.2, 0.3],
+        "percent": [
+          0.1,
+          0.2,
+          0.3
+        ],
         "duration": 5,
         "radius": 400,
         "cooldown": 30
@@ -52,7 +61,10 @@
       "maxLevel": 2,
       "unlockLevel": 4,
       "config": {
-        "health": [20, 40]
+        "health": [
+          20,
+          40
+        ]
       },
       "conditions": {}
     }

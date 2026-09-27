@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 24,
+    "totalLevel": 60,
     "races": {
-      "paladin": 6
-    }
+      "paladin": 8
+    },
+    "playtimeHours": 35,
+    "globalXp": 50000
   },
   "abilities": [
     {
@@ -17,7 +19,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "amount": [1, 2, 3],
+        "amount": [
+          1,
+          2,
+          3
+        ],
         "radius": 400,
         "interval": 2
       },
@@ -30,7 +36,11 @@
       "unlockLevel": 2,
       "config": {
         "threshold": 0.3,
-        "amount": [20, 35, 50]
+        "amount": [
+          20,
+          35,
+          50
+        ]
       },
       "conditions": {}
     },
@@ -40,11 +50,17 @@
       "maxLevel": 2,
       "unlockLevel": 3,
       "config": {
-        "amount": [4, 7],
+        "amount": [
+          4,
+          7
+        ],
         "radius": 300,
         "duration": 10,
         "interval": 1,
-        "cooldown": [30, 24]
+        "cooldown": [
+          30,
+          24
+        ]
       },
       "conditions": {}
     }

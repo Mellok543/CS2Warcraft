@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 24,
+    "totalLevel": 60,
     "races": {
       "human": 8
-    }
+    },
+    "playtimeHours": 35,
+    "globalXp": 50000
   },
   "abilities": [
     {
@@ -17,7 +19,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "percent": [0.05, 0.1, 0.15],
+        "percent": [
+          0.05,
+          0.1,
+          0.15
+        ],
         "radius": 400
       },
       "conditions": {}
@@ -28,7 +34,10 @@
       "maxLevel": 2,
       "unlockLevel": 2,
       "config": {
-        "health": [15, 30]
+        "health": [
+          15,
+          30
+        ]
       },
       "conditions": {}
     },
@@ -49,11 +58,17 @@
       "maxLevel": 2,
       "unlockLevel": 4,
       "config": {
-        "percent": [0.15, 0.25],
+        "percent": [
+          0.15,
+          0.25
+        ],
         "radius": 300,
         "duration": 8,
         "interval": 1,
-        "cooldown": [30, 24]
+        "cooldown": [
+          30,
+          24
+        ]
       },
       "conditions": {}
     }
@@ -65,7 +80,7 @@
     "unlockLevel": 6,
     "config": {
       "duration": 4,
-      "percent": 1.0,
+      "percent": 1,
       "cooldown": 45
     },
     "conditions": {}
