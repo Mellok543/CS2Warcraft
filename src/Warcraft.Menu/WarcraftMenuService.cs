@@ -1,5 +1,6 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using Warcraft.Api.Menu;
 
 namespace Warcraft.Menu;
 
@@ -8,6 +9,7 @@ internal sealed class WarcraftMenuService
     private const int VisibleOptionCount = 7;
 
     private readonly Dictionary<int, ActiveMenuState> _activeMenus = [];
+    private readonly Dictionary<int, long> _notificationVersions = [];
     private readonly PanoramaMenuRenderer _renderer;
 
     public WarcraftMenuService(Action<string>? log = null)
@@ -28,6 +30,7 @@ internal sealed class WarcraftMenuService
         }
 
         _activeMenus.Clear();
+        _notificationVersions.Clear();
         _renderer.Stop();
     }
 
@@ -111,7 +114,48 @@ internal sealed class WarcraftMenuService
     public void HandleClientDisconnect(int playerSlot)
     {
         _activeMenus.Remove(playerSlot);
+        _notificationVersions.Remove(playerSlot);
         _renderer.ForgetPlayer(playerSlot);
+    }
+
+    public void ShowNotification(
+        CCSPlayerController player,
+        string heading,
+        string title,
+        string description,
+        MenuNotificationStyle style,
+        float durationSeconds)
+    {
+        if (!IsHuman(player))
+            return;
+
+        var version = _notificationVersions.GetValueOrDefault(player.Slot) + 1;
+        _notificationVersions[player.Slot] = version;
+
+        _renderer.ShowNotification(
+            player,
+            heading,
+            title,
+            description,
+            style.ToString().ToLowerInvariant());
+
+        _ = HideNotificationLaterAsync(player.Slot, version, Math.Clamp(durationSeconds, 1f, 12f));
+    }
+
+    private async Task HideNotificationLaterAsync(int slot, long version, float durationSeconds)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(durationSeconds));
+
+        Server.NextFrame(() =>
+        {
+            if (_notificationVersions.GetValueOrDefault(slot) != version)
+                return;
+
+            _notificationVersions.Remove(slot);
+            var player = Utilities.GetPlayerFromSlot(slot);
+            if (player is { IsValid: true })
+                _renderer.HideNotification(player);
+        });
     }
 
     private void SelectCurrent(ActiveMenuState state)

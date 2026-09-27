@@ -9,6 +9,7 @@ internal sealed class PanoramaMenuRenderer(
     Action<string>? log = null)
 {
     private const string RootPanelId = "wc_menu_root";
+    private const string NotificationPanelId = "wc_notification_root";
     private readonly HashSet<int> _visiblePlayers = [];
     private CCSCustomHudLayout? _entity;
 
@@ -72,6 +73,34 @@ internal sealed class PanoramaMenuRenderer(
     }
 
     public void ForgetPlayer(int slot) => _visiblePlayers.Remove(slot);
+
+    public void ShowNotification(
+        CCSPlayerController player,
+        string heading,
+        string title,
+        string description,
+        string styleClass)
+    {
+        if (!EnsureReady() || !player.IsValid || player.IsBot)
+            return;
+
+        SetText(player, "wc_notification_heading", heading);
+        SetText(player, "wc_notification_title", title);
+        SetText(player, "wc_notification_description", description);
+
+        foreach (var style in new[] { "common", "rare", "epic", "legendary", "secret" })
+            SetClass(player, NotificationPanelId, style, string.Equals(style, styleClass, StringComparison.OrdinalIgnoreCase));
+
+        SetClass(player, NotificationPanelId, "shown", true);
+    }
+
+    public void HideNotification(CCSPlayerController player)
+    {
+        if (!IsReady || !player.IsValid)
+            return;
+
+        SetClass(player, NotificationPanelId, "shown", false);
+    }
 
     public void SetText(CCSPlayerController player, string panelId, string value, string variable = "text")
     {

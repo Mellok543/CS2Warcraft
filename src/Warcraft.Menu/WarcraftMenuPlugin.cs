@@ -22,6 +22,7 @@ public sealed class WarcraftMenuPlugin : BasePlugin
     private IWarcraftApi? _api;
     private WarcraftMenuService? _menus;
     private IDisposable? _openRequestSubscription;
+    private IDisposable? _notificationSubscription;
 
     public override void Load(bool hotReload)
     {
@@ -45,6 +46,7 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         }
 
         _openRequestSubscription = _api.Menu.SubscribeOpenRequests(HandleOpenRequest);
+        _notificationSubscription = _api.Menu.SubscribeNotifications(HandleNotification);
 
         _api.Modules.Register(new ModuleRegistration(
             "warcraft.menu",
@@ -56,6 +58,9 @@ public sealed class WarcraftMenuPlugin : BasePlugin
     {
         _openRequestSubscription?.Dispose();
         _openRequestSubscription = null;
+
+        _notificationSubscription?.Dispose();
+        _notificationSubscription = null;
 
         _api?.Modules.Unregister("warcraft.menu");
         _api = null;
@@ -70,6 +75,24 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             var player = Utilities.GetPlayerFromSteamId(request.SteamId);
             if (player is { IsValid: true, IsBot: false })
                 OpenExtensionPage(player, request.PageId);
+        });
+    }
+
+    private void HandleNotification(MenuNotificationRequest notification)
+    {
+        Server.NextFrame(() =>
+        {
+            var player = Utilities.GetPlayerFromSteamId(notification.SteamId);
+            if (player is not { IsValid: true, IsBot: false } || _menus is null)
+                return;
+
+            _menus.ShowNotification(
+                player,
+                notification.Heading,
+                notification.Title,
+                notification.Description,
+                notification.Style,
+                notification.DurationSeconds);
         });
     }
 
@@ -143,7 +166,7 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             new("Выбор расы", _ => OpenRaceMenu(player)),
             new("Прокачка способностей", _ => OpenAbilityMenu(player), race is null,
                 "Прокачка доступна после выбора расы"),
-            new("Статистика", _ => OpenStatsMenu(player))
+            new("Профиль", _ => OpenProfileMenu(player))
         };
 
         foreach (var entry in api.Menu.GetEntries("root", player.SteamID))
@@ -326,27 +349,48 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         menus.Open(player, race.Name.ToUpperInvariant(), $"УРОВЕНЬ {progress.Level}/{race.MaxLevel}", options);
     }
 
-    private void OpenStatsMenu(CCSPlayerController player)
+    private void OpenProfileMenu(CCSPlayerController player)
     {
-        var state = _api?.Players.Get(player.SteamID);
+        var api = _api;
         var menus = _menus;
-        if (state is null || menus is null)
+        var state = api?.Players.Get(player.SteamID);
+        if (api is null || state is null || menus is null)
             return;
 
         var stats = state.Stats;
         var playTime = TimeSpan.FromSeconds(stats.PlaySeconds);
+        var activeRace = state.ActiveRaceId is null ? null : api.Races.Get(state.ActiveRaceId);
+        var activeProgress = state.ActiveRaceId is null ? null : state.Races.GetValueOrDefault(state.ActiveRaceId);
+        var totalRaceLevels = state.Races.Values.Sum(x => x.Level);
+        var unlockedAchievements = api.Achievements.GetAll(player.SteamID).Values.Count(x => x.Unlocked);
+        var winRate = stats.RoundsPlayed == 0 ? 0d : stats.RoundsWon * 100d / stats.RoundsPlayed;
+        var kd = stats.Deaths == 0 ? stats.Kills : (double)stats.Kills / stats.Deaths;
+
         var options = new List<WarcraftHudMenuOption>
         {
-            new($"Общий XP: {state.GlobalXp}", _ => { }, true, "Общий опыт аккаунта"),
-            new($"Изучено рас: {state.Races.Count}", _ => { }, true, "Количество рас с прогрессом"),
-            new($"Убийства: {stats.Kills} • Смерти: {stats.Deaths}", _ => { }, true, "Боевая статистика"),
-            new($"В голову: {stats.Headshots}", _ => { }, true, "Убийства в голову"),
-            new($"Раунды: {stats.RoundsPlayed} • Победы: {stats.RoundsWon}", _ => { }, true, "Статистика раундов"),
-            new($"В игре: {(int)playTime.TotalHours} ч {playTime.Minutes} мин", _ => { }, true, "Общее время игры"),
+            new(activeRace is null
+                    ? "Активная раса: не выбрана"
+                    : $"Активная раса: {activeRace.Name} • ур. {activeProgress?.Level ?? 1}",
+                _ => { }, true, "Текущая выбранная раса"),
+            new($"Общий XP: {state.GlobalXp} • уровни рас: {totalRaceLevels}",
+                _ => { }, true, "Суммарный прогресс аккаунта"),
+            new($"Расы с прогрессом: {state.Races.Count}",
+                _ => { }, true, "Количество рас, в которых есть прогресс"),
+            new($"Убийства: {stats.Kills} • смерти: {stats.Deaths} • K/D {kd:0.00}",
+                _ => { }, true, "Боевая статистика"),
+            new($"Headshots: {stats.Headshots}",
+                _ => { }, true, "Убийства в голову"),
+            new($"Победы: {stats.RoundsWon}/{stats.RoundsPlayed} • {winRate:0.0}%",
+                _ => { }, true, "Процент выигранных раундов"),
+            new($"Достижения открыто: {unlockedAchievements}",
+                _ => api.Menu.RequestOpenPage("warcraft.achievements.page", player.SteamID),
+                false, "Открыть достижения"),
+            new($"В игре: {(int)playTime.TotalHours} ч {playTime.Minutes} мин",
+                _ => { }, true, "Общее время игры"),
             new("← Назад", _ => OpenMainMenu(player))
         };
 
-        menus.Open(player, "СТАТИСТИКА", player.PlayerName.ToUpperInvariant(), options);
+        menus.Open(player, "ПРОФИЛЬ", player.PlayerName.ToUpperInvariant(), options);
     }
 
     private static void Print(CCSPlayerController player, string message)

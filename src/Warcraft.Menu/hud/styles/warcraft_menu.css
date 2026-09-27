@@ -67,3 +67,60 @@
 .wc-key.close Label { color: #ed7180; }
 .wc-key-caption { margin-right: 3px; color: #717d8c; font-size: 9px; font-weight: bold; letter-spacing: 0.7px; vertical-align: center; }
 .wc-status { width: 100%; margin-top: 9px; color: #a5afbb; font-size: 11px; }
+
+
+.wc-notification {
+    visibility: collapse; opacity: 0; position: -4000px 0px 0px;
+    width: 500px; min-height: 108px;
+    horizontal-align: right; vertical-align: top;
+    margin-top: 120px; margin-right: 34px;
+    flow-children: right;
+    background-color: #090b10f5;
+    border: 1px solid #d5a64255;
+    box-shadow: #000000c8 0px 8px 28px 2px;
+    transform: translateX(70px);
+    transition-property: opacity, transform;
+    transition-duration: 0.24s;
+    transition-timing-function: ease-out;
+}
+.wc-notification.shown {
+    visibility: visible; opacity: 1; position: 0px 0px 0px;
+    transform: translateX(0px);
+}
+.wc-notification-accent { width: 5px; height: 100%; background-color: #b3bac4; }
+.wc-notification-body {
+    width: fill-parent-flow(1.0); min-height: 108px;
+    padding: 16px 18px 14px 18px;
+    flow-children: down;
+}
+.wc-notification-heading {
+    color: #8f9aaa; font-size: 9px; font-weight: bold;
+    letter-spacing: 2px; text-transform: uppercase;
+}
+.wc-notification-title {
+    margin-top: 5px; color: #f3f4f6;
+    font-size: 21px; font-weight: bold; letter-spacing: 0.5px;
+}
+.wc-notification-description {
+    margin-top: 5px; color: #abb4c1;
+    font-size: 11px; line-height: 15px;
+}
+.wc-notification-icon {
+    width: 58px; height: 58px; margin-right: 16px;
+    vertical-align: center; border: 1px solid #ffffff16;
+    background-color: #171b22;
+}
+.wc-notification-icon Label {
+    width: 100%; color: #d8dde6; font-size: 29px;
+    font-weight: bold; text-align: center; vertical-align: center;
+}
+.wc-notification.common .wc-notification-accent { background-color: #aab3c0; }
+.wc-notification.common .wc-notification-icon Label { color: #cfd6df; }
+.wc-notification.rare .wc-notification-accent { background-color: #5d9ee8; }
+.wc-notification.rare .wc-notification-icon Label { color: #80b9fa; }
+.wc-notification.epic .wc-notification-accent { background-color: #a66bea; }
+.wc-notification.epic .wc-notification-icon Label { color: #c18bff; }
+.wc-notification.legendary .wc-notification-accent { background-color: #e5aa35; box-shadow: #e5aa3566 0px 0px 14px 1px; }
+.wc-notification.legendary .wc-notification-icon Label { color: #f4c45f; }
+.wc-notification.secret .wc-notification-accent { background-color: #d65870; }
+.wc-notification.secret .wc-notification-icon Label { color: #ed758c; }

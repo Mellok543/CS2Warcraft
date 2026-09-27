@@ -54,5 +54,15 @@
                 </Panel>
             </Panel>
         </Panel>
+
+        <Panel id="wc_notification_root" class="wc-notification" hittest="false">
+            <Panel class="wc-notification-accent" hittest="false" />
+            <Panel class="wc-notification-body" hittest="false">
+                <Label id="wc_notification_heading" class="wc-notification-heading" text="{s:text}" />
+                <Label id="wc_notification_title" class="wc-notification-title" text="{s:text}" />
+                <Label id="wc_notification_description" class="wc-notification-description" text="{s:text}" />
+            </Panel>
+            <Panel class="wc-notification-icon" hittest="false"><Label text="★" /></Panel>
+        </Panel>
     </Panel>
 </root>
