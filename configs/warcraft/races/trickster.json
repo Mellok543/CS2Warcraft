@@ -15,7 +15,11 @@
       "unlockLevel": 1,
       "config": {
         "chance": 0.5,
-        "amount": [50, 100, 150]
+        "amount": [
+          50,
+          100,
+          150
+        ]
       },
       "conditions": {}
     },
@@ -25,8 +29,22 @@
       "maxLevel": 2,
       "unlockLevel": 2,
       "config": {
-        "forward": [1.15, 1.3],
-        "up": [60, 120]
+        "forward": [
+          1.15,
+          1.3
+        ],
+        "up": [
+          60,
+          120
+        ],
+        "maxSpeed": [
+          315,
+          355
+        ],
+        "cooldown": [
+          1.5,
+          1.2
+        ]
       },
       "conditions": {}
     },
@@ -36,7 +54,10 @@
       "maxLevel": 2,
       "unlockLevel": 3,
       "config": {
-        "money": [150, 300]
+        "money": [
+          150,
+          300
+        ]
       },
       "conditions": {}
     },
@@ -46,8 +67,14 @@
       "maxLevel": 2,
       "unlockLevel": 4,
       "config": {
-        "seconds": [3, 4],
-        "cooldown": [25, 18]
+        "seconds": [
+          3,
+          4
+        ],
+        "cooldown": [
+          25,
+          18
+        ]
       },
       "conditions": {}
     }

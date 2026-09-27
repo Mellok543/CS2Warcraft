@@ -17,7 +17,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "multiplier": [1.05, 1.1, 1.15],
+        "multiplier": [
+          1.05,
+          1.1,
+          1.15
+        ],
         "radius": 350
       },
       "conditions": {}
@@ -28,8 +32,22 @@
       "maxLevel": 2,
       "unlockLevel": 2,
       "config": {
-        "forward": [1.15, 1.3],
-        "up": [50, 100]
+        "forward": [
+          1.15,
+          1.3
+        ],
+        "up": [
+          50,
+          100
+        ],
+        "maxSpeed": [
+          305,
+          345
+        ],
+        "cooldown": [
+          1.7,
+          1.35
+        ]
       },
       "conditions": {}
     },
@@ -39,7 +57,7 @@
       "maxLevel": 1,
       "unlockLevel": 3,
       "config": {
-        "percent": 1.0
+        "percent": 1
       },
       "conditions": {}
     },
@@ -49,9 +67,15 @@
       "maxLevel": 2,
       "unlockLevel": 4,
       "config": {
-        "force": [650, 800],
+        "force": [
+          650,
+          800
+        ],
         "upForce": 250,
-        "cooldown": [10, 7]
+        "cooldown": [
+          10,
+          7
+        ]
       },
       "conditions": {}
     }

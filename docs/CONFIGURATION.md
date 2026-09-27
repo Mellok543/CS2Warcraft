@@ -73,3 +73,19 @@ placeholders: [ABILITIES.md](ABILITIES.md).
 |---|---|
 | `@warcraft/admin` | Warcraft admin commands ([ADMIN_COMMANDS.md](ADMIN_COMMANDS.md)) |
 | `@warcraft/vip` | VIP benefits (configurable in `vip.json`) |
+
+
+## Progression balance
+
+The default race tree is paced in four unlock tiers after starter races. Production race configs use `totalLevel`, `globalXp`, parent-race level, and `playtimeHours` together.
+
+| Tier | Total race levels | Global XP | Minimum playtime |
+| --- | ---: | ---: | ---: |
+| II | 10 | 5,000 | 5 h |
+| III | 30 | 20,000 | 15 h |
+| IV | 60 | 50,000 | 35 h |
+| V | 100 | 100,000 | 70 h |
+
+The final tier cannot be unlocked before 70 recorded hours even with VIP or temporary XP multipliers.
+
+`jump_boost` also supports `maxSpeed` and `cooldown`; both are used to prevent repeated long jumps from compounding into unlimited bhop acceleration.
