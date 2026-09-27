@@ -188,12 +188,15 @@ internal sealed class TurretTotemAbility(TotemSystem totems, BeamEffects beams) 
 
     protected override void Pulse(Totem totem, PlayerAbilitySnapshot ability, double now)
     {
-        var target = totem.Enemies()
+        var targets = totem.Enemies()
             .OrderBy(enemy => System.Numerics.Vector3.DistanceSquared(totem.Position, enemy.Position))
-            .FirstOrDefault();
+            .Take(1)
+            .ToArray();
 
-        if (target is null)
+        if (targets.Length == 0)
             return;
+
+        var target = targets[0];
 
         var damage = Math.Clamp(AbilityConfigReader.GetLevelInt(ability, "damage", 8), 1, 100);
         var muzzle = totem.Position with { Z = totem.Position.Z + 48f };
