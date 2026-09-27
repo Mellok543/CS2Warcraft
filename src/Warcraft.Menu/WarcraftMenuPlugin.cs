@@ -1,9 +1,11 @@
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Modules.Commands;
 using Microsoft.Extensions.Logging;
 using Warcraft.Api;
 using Warcraft.Api.Abilities;
+using Warcraft.Api.Menu;
 using Warcraft.Api.Modules;
 using Warcraft.Shared;
 
@@ -19,6 +21,7 @@ public sealed class WarcraftMenuPlugin : BasePlugin
 
     private IWarcraftApi? _api;
     private WarcraftMenuService? _menus;
+    private IDisposable? _openRequestSubscription;
 
     public override void Load(bool hotReload)
     {
@@ -41,6 +44,8 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             return;
         }
 
+        _openRequestSubscription = _api.Menu.SubscribeOpenRequests(HandleOpenRequest);
+
         _api.Modules.Register(new ModuleRegistration(
             "warcraft.menu",
             ModuleVersion,
@@ -49,10 +54,61 @@ public sealed class WarcraftMenuPlugin : BasePlugin
 
     public override void Unload(bool hotReload)
     {
+        _openRequestSubscription?.Dispose();
+        _openRequestSubscription = null;
+
         _api?.Modules.Unregister("warcraft.menu");
         _api = null;
         _menus?.Stop();
         _menus = null;
+    }
+
+    private void HandleOpenRequest(MenuOpenRequest request)
+    {
+        Server.NextFrame(() =>
+        {
+            var player = Utilities.GetPlayerFromSteamId(request.SteamId);
+            if (player is { IsValid: true, IsBot: false })
+                OpenExtensionPage(player, request.PageId);
+        });
+    }
+
+    private void OpenExtensionPage(CCSPlayerController player, string pageId)
+    {
+        var api = _api;
+        var menus = _menus;
+        if (api is null || menus is null)
+            return;
+
+        var page = api.Menu.GetPage(pageId, player.SteamID);
+        if (page is null)
+        {
+            Print(player, "Раздел меню сейчас недоступен.");
+            return;
+        }
+
+        var options = page.Items
+            .Select(item => new WarcraftHudMenuOption(
+                item.Text,
+                _ => item.OnSelected(player.SteamID),
+                !item.Enabled,
+                item.DisabledReason))
+            .ToList();
+
+        if (!string.IsNullOrWhiteSpace(page.ParentPageId))
+        {
+            options.Add(new WarcraftHudMenuOption(
+                "← Назад",
+                _ =>
+                {
+                    if (string.Equals(page.ParentPageId, "root", StringComparison.OrdinalIgnoreCase))
+                        OpenMainMenu(player);
+                    else
+                        OpenExtensionPage(player, page.ParentPageId);
+                }));
+        }
+
+        menus.Open(player, page.Title, page.Subtitle, options);
     }
 
     private void OnWarcraftCommand(CCSPlayerController? player, CommandInfo command)

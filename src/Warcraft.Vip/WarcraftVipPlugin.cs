@@ -1,5 +1,4 @@
 using System.Globalization;
-using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -16,6 +15,7 @@ public sealed class WarcraftVipPlugin : BasePlugin
 {
     private const string ModuleId = "warcraft.vip";
     private const string MenuEntryId = "warcraft.vip.info";
+    private const string PageId = "warcraft.vip.page";
 
     public override string ModuleName => "Warcraft.Vip";
     public override string ModuleVersion => WarcraftVersion.Current;
@@ -51,13 +51,8 @@ public sealed class WarcraftVipPlugin : BasePlugin
         }
 
         _api.Modules.Register(new ModuleRegistration(ModuleId, ModuleVersion, "VIP modifiers"));
-        _api.Menu.Register(new MenuEntryRegistration(
-            MenuEntryId,
-            ModuleId,
-            "root",
-            "VIP",
-            50,
-            ShowInfo));
+        _api.Menu.RegisterPage(new MenuPageRegistration(PageId, ModuleId, BuildVipPage));
+        _api.Menu.Register(new MenuEntryRegistration(MenuEntryId, ModuleId, "root", "VIP", 50, OpenVip));
 
         Logger.LogInformation("Warcraft.Vip loaded. VIP flag: {Permission}", config.Permission);
     }
@@ -67,6 +62,7 @@ public sealed class WarcraftVipPlugin : BasePlugin
         if (_api is not null)
         {
             _api.Menu.Unregister(MenuEntryId, ModuleId);
+            _api.Menu.UnregisterPage(PageId, ModuleId);
             _api.Modifiers.UnregisterProvider(VipModifierProvider.Id);
             _api.Modules.Unregister(ModuleId);
         }
@@ -78,30 +74,48 @@ public sealed class WarcraftVipPlugin : BasePlugin
     private void OnVipCommand(CCSPlayerController? player, CommandInfo command)
     {
         if (player is { IsValid: true, IsBot: false })
-            ShowInfo(player.SteamID);
+            OpenVip(player.SteamID);
     }
 
-    private void ShowInfo(ulong steamId)
+    private void OpenVip(ulong steamId)
+        => _api?.Menu.RequestOpenPage(PageId, steamId);
+
+    private MenuPageDescriptor? BuildVipPage(ulong steamId)
     {
-        var player = Utilities.GetPlayerFromSteamId(steamId);
-        if (player is not { IsValid: true } || _provider is null)
-            return;
+        var provider = _provider;
+        if (provider is null)
+            return null;
 
-        var perks = _provider.VipModifiers;
-        var isVip = _provider.IsVip(steamId);
+        var perks = provider.VipModifiers;
+        var isVip = provider.IsVip(steamId);
 
-        player.PrintToChat(isVip
-            ? " [Warcraft] У вас VIP-статус. Бонусы:"
-            : " [Warcraft] VIP-статуса нет. VIP получает:");
-        player.PrintToChat($" [Warcraft] - опыт x{perks.XpMultiplier.ToString("0.##", CultureInfo.InvariantCulture)}");
+        var items = new List<MenuPageItemDescriptor>
+        {
+            Info(
+                isVip ? "✓ VIP-статус активен" : "VIP-статус не активен",
+                isVip ? "VIP-бонусы применяются" : "Ниже показаны доступные VIP-бонусы"),
+            Info(
+                "Опыт: x" + perks.XpMultiplier.ToString("0.##", CultureInfo.InvariantCulture),
+                "Множитель получаемого опыта")
+        };
 
         if (perks.BonusSkillPointsPerLevel > 0)
-            player.PrintToChat($" [Warcraft] - +{perks.BonusSkillPointsPerLevel} очк. навыков за уровень");
+            items.Add(Info("+" + perks.BonusSkillPointsPerLevel + " очк. навыков за уровень", "Дополнительные очки при повышении уровня"));
 
         if (perks.CanAccessVipRaces)
-            player.PrintToChat(" [Warcraft] - доступ к VIP-расам");
+            items.Add(Info("Доступ к VIP-расам", "Открывает специальные VIP-расы"));
 
         if (perks.ShopDiscount > 0)
-            player.PrintToChat($" [Warcraft] - скидка в магазине {perks.ShopDiscount * 100:0}%");
+            items.Add(Info("Скидка в магазине: " + (perks.ShopDiscount * 100).ToString("0") + "%", "Скидка применяется к ценам Warcraft Shop"));
+
+        return new MenuPageDescriptor(
+            PageId,
+            "VIP",
+            isVip ? "СТАТУС: АКТИВЕН" : "СТАТУС: НЕ АКТИВЕН",
+            items,
+            "root");
     }
+
+    private static MenuPageItemDescriptor Info(string text, string reason)
+        => new(text, _ => { }, false, reason);
 }

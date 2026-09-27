@@ -3,7 +3,6 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
-using CounterStrikeSharp.API.Modules.Menu;
 using Microsoft.Extensions.Logging;
 using Warcraft.Api;
 using Warcraft.Api.Events;
@@ -19,6 +18,7 @@ public sealed class WarcraftShopPlugin : BasePlugin
 {
     private const string ModuleId = "warcraft.shop";
     private const string MenuEntryId = "warcraft.shop.open";
+    private const string PageId = "warcraft.shop.page";
     private const string AdminPermission = "@warcraft/admin";
 
     public override string ModuleName => "Warcraft.Shop";
@@ -27,7 +27,6 @@ public sealed class WarcraftShopPlugin : BasePlugin
     public override string ModuleDescription => "JSON-configured Warcraft item shop working through Warcraft.Core.";
 
     private readonly ShopEffectRegistry _effects = ShopEffectRegistry.CreateDefault();
-
     private IWarcraftApi? _api;
     private ShopService? _shop;
     private IDisposable? _roundStartSubscription;
@@ -53,6 +52,7 @@ public sealed class WarcraftShopPlugin : BasePlugin
 
         _roundStartSubscription = _api.Events.Subscribe<RoundStartEvent>(_ => _shop?.ResetRound());
         _api.Modules.Register(new ModuleRegistration(ModuleId, ModuleVersion, "Item shop"));
+        _api.Menu.RegisterPage(new MenuPageRegistration(PageId, ModuleId, BuildShopPage));
         _api.Menu.Register(new MenuEntryRegistration(MenuEntryId, ModuleId, "root", "Магазин", 40, OpenShop));
     }
 
@@ -64,6 +64,7 @@ public sealed class WarcraftShopPlugin : BasePlugin
         if (_api is not null)
         {
             _api.Menu.Unregister(MenuEntryId, ModuleId);
+            _api.Menu.UnregisterPage(PageId, ModuleId);
             _api.Modules.Unregister(ModuleId);
         }
 
@@ -82,7 +83,7 @@ public sealed class WarcraftShopPlugin : BasePlugin
 
         _shop.ReplaceItems(loaded.Items);
         Logger.LogInformation("Warcraft shop loaded {Count} items.", loaded.Items.Count);
-        return $"Загружено предметов: {loaded.Items.Count}, ошибок: {loaded.Errors.Count}.";
+        return "Загружено предметов: " + loaded.Items.Count + ", ошибок: " + loaded.Errors.Count + ".";
     }
 
     private void OnShopCommand(CCSPlayerController? player, CommandInfo command)
@@ -95,45 +96,64 @@ public sealed class WarcraftShopPlugin : BasePlugin
     {
         if (player is not null && !AdminManager.PlayerHasPermissions(player, AdminPermission))
         {
-            command.ReplyToCommand($"[Warcraft] Требуется право {AdminPermission}.");
+            command.ReplyToCommand("[Warcraft] Требуется право " + AdminPermission + ".");
             return;
         }
 
-        command.ReplyToCommand($"[Warcraft] {Reload()}");
+        command.ReplyToCommand("[Warcraft] " + Reload());
     }
 
     private void OpenShop(ulong steamId)
+        => _api?.Menu.RequestOpenPage(PageId, steamId);
+
+    private MenuPageDescriptor? BuildShopPage(ulong steamId)
     {
         var player = Utilities.GetPlayerFromSteamId(steamId);
         var shop = _shop;
         if (player is not { IsValid: true } || shop is null)
-            return;
+            return null;
 
         var money = player.InGameMoneyServices?.Account ?? 0;
-        var menu = new CenterHtmlMenu($"Магазин | ${money}", this) { ExitButton = true };
+        var items = new List<MenuPageItemDescriptor>();
 
         if (shop.Items.Count == 0)
-            menu.AddMenuOption("Магазин пуст", (_, _) => { }, true);
-
-        foreach (var item in shop.Items)
         {
-            var definition = item;
-            var price = shop.GetPrice(steamId, definition);
-            var limit = definition.MaxPerRound > 0
-                ? $" ({shop.GetBoughtThisRound(steamId, definition)}/{definition.MaxPerRound})"
-                : string.Empty;
-
-            menu.AddMenuOption($"{definition.Name} — ${price}{limit}", (buyer, _) =>
-            {
-                if (definition.Description is { } description)
-                    buyer.PrintToChat($" [Warcraft] {definition.Name}: {description}");
-
-                var result = shop.Buy(buyer, definition);
-                buyer.PrintToChat($" [Warcraft] {result.Message}");
-                OpenShop(buyer.SteamID);
-            });
+            items.Add(new MenuPageItemDescriptor(
+                "Магазин пуст",
+                _ => { },
+                false,
+                "Сейчас нет доступных предметов"));
         }
 
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        foreach (var definition in shop.Items)
+        {
+            var price = shop.GetPrice(steamId, definition);
+            var limit = definition.MaxPerRound > 0
+                ? " (" + shop.GetBoughtThisRound(steamId, definition) + "/" + definition.MaxPerRound + ")"
+                : string.Empty;
+
+            items.Add(new MenuPageItemDescriptor(
+                definition.Name + " — $" + price + limit,
+                buyerSteamId =>
+                {
+                    var buyer = Utilities.GetPlayerFromSteamId(buyerSteamId);
+                    if (buyer is not { IsValid: true })
+                        return;
+
+                    if (definition.Description is { } description)
+                        buyer.PrintToChat(" [Warcraft] " + definition.Name + ": " + description);
+
+                    var result = shop.Buy(buyer, definition);
+                    buyer.PrintToChat(" [Warcraft] " + result.Message);
+                    OpenShop(buyerSteamId);
+                }));
+        }
+
+        return new MenuPageDescriptor(
+            PageId,
+            "МАГАЗИН",
+            "БАЛАНС: $" + money,
+            items,
+            "root");
     }
 }

@@ -6,6 +6,13 @@ public interface IMenuExtensionsApi
     bool Unregister(string entryId, string ownerModule);
     IReadOnlyCollection<MenuEntryDescriptor> GetEntries(string section, ulong steamId);
     bool Invoke(string entryId, ulong steamId);
+
+    bool RegisterPage(MenuPageRegistration registration);
+    bool UnregisterPage(string pageId, string ownerModule);
+    MenuPageDescriptor? GetPage(string pageId, ulong steamId);
+
+    IDisposable SubscribeOpenRequests(Action<MenuOpenRequest> handler);
+    bool RequestOpenPage(string pageId, ulong steamId);
 }
 
 public sealed record MenuEntryRegistration(
@@ -22,3 +29,25 @@ public sealed record MenuEntryDescriptor(
     string DisplayName,
     int Order,
     bool Enabled);
+
+public sealed record MenuPageRegistration(
+    string Id,
+    string OwnerModule,
+    Func<ulong, MenuPageDescriptor?> Build);
+
+public sealed record MenuPageDescriptor(
+    string Id,
+    string Title,
+    string Subtitle,
+    IReadOnlyList<MenuPageItemDescriptor> Items,
+    string? ParentPageId = "root");
+
+public sealed record MenuPageItemDescriptor(
+    string Text,
+    Action<ulong> OnSelected,
+    bool Enabled = true,
+    string? DisabledReason = null);
+
+public sealed record MenuOpenRequest(
+    string PageId,
+    ulong SteamId);
