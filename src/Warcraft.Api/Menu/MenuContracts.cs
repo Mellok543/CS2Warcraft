@@ -13,6 +13,9 @@ public interface IMenuExtensionsApi
 
     IDisposable SubscribeOpenRequests(Action<MenuOpenRequest> handler);
     bool RequestOpenPage(string pageId, ulong steamId);
+
+    IDisposable SubscribeNotifications(Action<MenuNotificationRequest> handler);
+    bool RequestNotification(MenuNotificationRequest notification);
 }
 
 public sealed record MenuEntryRegistration(
@@ -51,3 +54,21 @@ public sealed record MenuPageItemDescriptor(
 public sealed record MenuOpenRequest(
     string PageId,
     ulong SteamId);
+
+
+public enum MenuNotificationStyle
+{
+    Common,
+    Rare,
+    Epic,
+    Legendary,
+    Secret
+}
+
+public sealed record MenuNotificationRequest(
+    ulong SteamId,
+    string Heading,
+    string Title,
+    string Description,
+    MenuNotificationStyle Style = MenuNotificationStyle.Common,
+    float DurationSeconds = 4.5f);

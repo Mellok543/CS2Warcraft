@@ -11,6 +11,7 @@ internal sealed class MenuExtensionRegistry : IMenuExtensionsApi
         new(StringComparer.OrdinalIgnoreCase);
 
     private readonly List<Action<MenuOpenRequest>> _openHandlers = [];
+    private readonly List<Action<MenuNotificationRequest>> _notificationHandlers = [];
     private readonly object _sync = new();
 
     public bool Register(MenuEntryRegistration registration)
@@ -143,10 +144,60 @@ internal sealed class MenuExtensionRegistry : IMenuExtensionsApi
         return handlers.Length > 0;
     }
 
+    public IDisposable SubscribeNotifications(Action<MenuNotificationRequest> handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+
+        lock (_sync)
+            _notificationHandlers.Add(handler);
+
+        return new NotificationSubscription(this, handler);
+    }
+
+    public bool RequestNotification(MenuNotificationRequest notification)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+
+        if (notification.SteamId == 0 ||
+            string.IsNullOrWhiteSpace(notification.Title) ||
+            notification.DurationSeconds <= 0)
+        {
+            return false;
+        }
+
+        Action<MenuNotificationRequest>[] handlers;
+        lock (_sync)
+            handlers = _notificationHandlers.ToArray();
+
+        foreach (var handler in handlers)
+            handler(notification);
+
+        return handlers.Length > 0;
+    }
+
     private void Unsubscribe(Action<MenuOpenRequest> handler)
     {
         lock (_sync)
             _openHandlers.Remove(handler);
+    }
+
+    private void UnsubscribeNotification(Action<MenuNotificationRequest> handler)
+    {
+        lock (_sync)
+            _notificationHandlers.Remove(handler);
+    }
+
+    private sealed class NotificationSubscription(
+        MenuExtensionRegistry owner,
+        Action<MenuNotificationRequest> handler) : IDisposable
+    {
+        private int _disposed;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+                owner.UnsubscribeNotification(handler);
+        }
     }
 
     private sealed class Subscription(
