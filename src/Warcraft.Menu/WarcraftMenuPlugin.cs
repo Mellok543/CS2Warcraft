@@ -1,13 +1,12 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Modules.Commands;
-using CounterStrikeSharp.API.Modules.Menu;
 using Microsoft.Extensions.Logging;
 using Warcraft.Api;
-using Warcraft.Shared;
 using Warcraft.Api.Abilities;
 using Warcraft.Api.Modules;
 using Warcraft.Api.Races;
+using Warcraft.Shared;
 
 namespace Warcraft.Menu;
 
@@ -18,14 +17,23 @@ public sealed class WarcraftMenuPlugin : BasePlugin
     public override string ModuleVersion => WarcraftVersion.Current;
     public override string ModuleAuthor => "Mellok543";
     public override string ModuleDescription =>
-        "Main UI shell and race/ability menus for CS2Warcraft.";
+        "JBF-style bindable CenterHtml UI for CS2Warcraft.";
 
     private IWarcraftApi? _api;
+    private WarcraftMenuService? _menus;
 
     public override void Load(bool hotReload)
     {
+        _menus = new WarcraftMenuService(this, WarcraftMenuConfig.LoadOrCreate());
+
         AddCommand("css_wc", "Open Warcraft menu", OnWarcraftCommand);
         AddCommand("css_races", "Open Warcraft race selection", OnRacesCommand);
+
+        AddCommand("css_menu_up", "Move Warcraft menu selection up", OnMenuUp);
+        AddCommand("css_menu_down", "Move Warcraft menu selection down", OnMenuDown);
+        AddCommand("css_menu_select", "Select current Warcraft menu option", OnMenuSelect);
+        AddCommand("css_menu_close", "Close Warcraft menu", OnMenuClose);
+        AddCommand("css_wc_menubinds", "Show recommended Warcraft menu binds", OnMenuBinds);
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
@@ -42,93 +50,101 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         _api.Modules.Register(new ModuleRegistration(
             "warcraft.menu",
             ModuleVersion,
-            "Main Warcraft menu shell"));
+            "Bindable Warcraft CenterHtml UI"));
     }
 
     public override void Unload(bool hotReload)
     {
         _api?.Modules.Unregister("warcraft.menu");
         _api = null;
+        _menus = null;
     }
 
-    private void OnWarcraftCommand(
-        CCSPlayerController? player,
-        CommandInfo command)
+    private void OnWarcraftCommand(CCSPlayerController? player, CommandInfo command)
     {
-        if (!IsHuman(player) || _api is null)
-            return;
-
-        OpenMainMenu(player!);
+        if (IsHuman(player) && _api is not null)
+            OpenMainMenu(player!);
     }
 
-    private void OnRacesCommand(
-        CCSPlayerController? player,
-        CommandInfo command)
+    private void OnRacesCommand(CCSPlayerController? player, CommandInfo command)
     {
-        if (!IsHuman(player) || _api is null)
+        if (IsHuman(player) && _api is not null)
+            OpenRaceMenu(player!);
+    }
+
+    private void OnMenuUp(CCSPlayerController? player, CommandInfo command)
+        => _menus?.Move(player, -1);
+
+    private void OnMenuDown(CCSPlayerController? player, CommandInfo command)
+        => _menus?.Move(player, 1);
+
+    private void OnMenuSelect(CCSPlayerController? player, CommandInfo command)
+        => _menus?.Select(player);
+
+    private void OnMenuClose(CCSPlayerController? player, CommandInfo command)
+        => _menus?.Close(player);
+
+    private static void OnMenuBinds(CCSPlayerController? player, CommandInfo command)
+    {
+        if (!IsHuman(player))
             return;
 
-        OpenRaceMenu(player!);
+        player!.PrintToChat(" [Warcraft] Рекомендуемые бинды меню:");
+        player.PrintToChat(" [Warcraft] bind UPARROW css_menu_up");
+        player.PrintToChat(" [Warcraft] bind DOWNARROW css_menu_down");
+        player.PrintToChat(" [Warcraft] bind ENTER css_menu_select");
+        player.PrintToChat(" [Warcraft] bind BACKSPACE css_menu_close");
     }
 
     private void OpenMainMenu(CCSPlayerController player)
     {
         var api = _api;
-        if (api is null)
+        var menus = _menus;
+        if (api is null || menus is null)
             return;
 
         var state = api.Players.Get(player.SteamID);
-        var race = state?.ActiveRaceId is null
-            ? null
-            : api.Races.Get(state.ActiveRaceId);
+        var race = state?.ActiveRaceId is null ? null : api.Races.Get(state.ActiveRaceId);
 
-        var menu = new CenterHtmlMenu("Warcraft", this)
-        {
-            ExitButton = true
-        };
+        var subtitle = race is null
+            ? "раса не выбрана"
+            : $"{race.Name} • ур. {state!.Races.GetValueOrDefault(race.Id)?.Level ?? 1}";
 
-        menu.AddMenuOption(
-            $"Раса: {race?.Name ?? "не выбрана"}",
-            (_, _) => OpenCurrentRaceMenu(player),
+        var menu = menus.Create("WARCRAFT", subtitle);
+
+        menu.Add(
+            race is null ? "Текущая раса: не выбрана" : $"Текущая раса: {race.Name}",
+            _ => OpenCurrentRaceMenu(player),
             race is null);
 
         if (race is not null)
         {
             var ultimate = api.Abilities.GetPlayerAbilities(player.SteamID)
                 .FirstOrDefault(x => x.IsUltimate);
-
-            menu.AddMenuOption(AbilityStatusText.UltimateSummary(ultimate), (_, _) => { }, true);
+            menu.AddInfo(AbilityStatusText.UltimateSummary(ultimate));
         }
 
-        menu.AddMenuOption(
-            "Выбор расы",
-            (_, _) => OpenRaceMenu(player));
-
-        menu.AddMenuOption(
-            "Прокачка способностей",
-            (_, _) => OpenAbilityMenu(player),
-            race is null);
-
-        menu.AddMenuOption(
-            "Статистика",
-            (_, _) => OpenStatsMenu(player));
+        menu.Add("Выбор расы", _ => OpenRaceMenu(player));
+        menu.Add("Прокачка способностей", _ => OpenAbilityMenu(player), race is null);
+        menu.Add("Статистика", _ => OpenStatsMenu(player));
 
         foreach (var entry in api.Menu.GetEntries("root", player.SteamID))
         {
             var entryId = entry.Id;
-            menu.AddMenuOption(
+            menu.Add(
                 entry.DisplayName,
-                (_, _) => api.Menu.Invoke(entryId, player.SteamID),
+                _ => api.Menu.Invoke(entryId, player.SteamID),
                 !entry.Enabled);
         }
 
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        menus.Open(player, menu);
     }
 
     private void OpenRaceMenu(CCSPlayerController player)
     {
         var api = _api;
-        if (api is null)
+        var menus = _menus;
+        if (api is null || menus is null)
             return;
 
         var current = api.Players.Get(player.SteamID)?.ActiveRaceId;
@@ -140,33 +156,32 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             .ToArray();
 
         var open = races.Count(x => x.Availability.IsAvailable);
-        var menu = new CenterHtmlMenu($"Выбор расы | открыто {open}/{races.Length}", this)
-        {
-            ExitButton = true
-        };
+        var menu = menus.Create("ВЫБОР РАСЫ", $"открыто {open}/{races.Length}");
 
         foreach (var (race, availability) in races)
         {
-            var raceId = race.Id;
             var suffix = string.Equals(race.Id, current, StringComparison.OrdinalIgnoreCase)
-                ? " [выбрана]"
+                ? "  ✓ выбрана"
                 : availability.VipLocked
-                    ? " [VIP]"
+                    ? "  ◆ VIP"
                     : !availability.IsAvailable
-                        ? " [закрыта]"
+                        ? "  🔒"
                         : string.Empty;
 
-            menu.AddMenuOption(race.Name + suffix, (_, _) => OpenRacePreview(player, raceId));
+            var raceId = race.Id;
+            menu.Add($"{race.Name}{suffix}", _ => OpenRacePreview(player, raceId));
         }
 
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        menu.Add("← Назад", _ => OpenMainMenu(player));
+        menus.Open(player, menu);
     }
 
     private void OpenRacePreview(CCSPlayerController player, string raceId)
     {
         var api = _api;
+        var menus = _menus;
         var race = api?.Races.Get(raceId);
-        if (api is null || race is null)
+        if (api is null || menus is null || race is null)
             return;
 
         var availability = api.Races.GetAvailability(player.SteamID, race.Id);
@@ -174,40 +189,20 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             api.Players.Get(player.SteamID)?.ActiveRaceId,
             race.Id,
             StringComparison.OrdinalIgnoreCase);
-        var abilities = api.Abilities.GetRaceAbilities(race.Id);
 
-        Print(player, $"{race.Name}: {race.Description}");
-        foreach (var ability in abilities)
-        {
-            foreach (var line in AbilityStatusText.PreviewLines(ability))
-                Print(player, line);
-        }
-
-        if (!availability.AlreadyUnlocked)
-        {
-            foreach (var requirement in availability.Requirements)
-            {
-                Print(player, $"{(requirement.IsMet ? "[+]" : "[-]")} {requirement.Description}: " +
-                              $"{requirement.Current}/{requirement.Required}");
-            }
-        }
-
-        var menu = new CenterHtmlMenu(race.Name, this)
-        {
-            ExitButton = true
-        };
+        var menu = menus.Create(race.Name.ToUpperInvariant(), race.Description);
 
         var selectText = selected
-            ? "Уже выбрана"
+            ? "✓ Уже выбрана"
             : availability.VipLocked
-                ? "Только для VIP"
+                ? "◆ Только для VIP"
                 : !availability.IsAvailable
-                    ? "Закрыта (условия в чате)"
-                    : "Выбрать расу";
+                    ? "🔒 Раса закрыта"
+                    : "Выбрать эту расу";
 
-        menu.AddMenuOption(
+        menu.Add(
             selectText,
-            (_, _) =>
+            _ =>
             {
                 var result = api.Races.SelectRace(player.SteamID, race.Id, "menu");
                 Print(player, result.Success ? $"Вы выбрали расу {race.Name}." : result.Message);
@@ -219,105 +214,94 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         {
             foreach (var requirement in availability.Requirements)
             {
-                menu.AddMenuOption(
-                    $"{(requirement.IsMet ? "✔" : "✘")} {requirement.Description}: {requirement.Current}/{requirement.Required}",
-                    (_, _) => { },
-                    true);
+                menu.AddInfo(
+                    $"{(requirement.IsMet ? "✓" : "✗")} {requirement.Description}: " +
+                    $"{requirement.Current}/{requirement.Required}");
             }
         }
 
-        foreach (var ability in abilities)
-            menu.AddMenuOption(AbilityStatusText.PreviewTitle(ability), (_, _) => { }, true);
+        foreach (var ability in api.Abilities.GetRaceAbilities(race.Id))
+            menu.AddInfo(AbilityStatusText.PreviewTitle(ability));
 
-        menu.AddMenuOption("Назад", (_, _) => OpenRaceMenu(player));
-
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        menu.Add("← Назад к расам", _ => OpenRaceMenu(player));
+        menus.Open(player, menu);
     }
 
     private void OpenAbilityMenu(CCSPlayerController player)
     {
         var api = _api;
-        if (api is null)
+        var menus = _menus;
+        if (api is null || menus is null)
             return;
 
         var state = api.Players.Get(player.SteamID);
         if (state?.ActiveRaceId is null)
         {
-            player.PrintToChat(" [Warcraft] Сначала выберите расу.");
+            Print(player, "Сначала выберите расу.");
             OpenRaceMenu(player);
             return;
         }
 
         var race = api.Races.Get(state.ActiveRaceId);
-        if (race is null ||
-            !state.Races.TryGetValue(race.Id, out var progress))
-        {
+        if (race is null || !state.Races.TryGetValue(race.Id, out var progress))
             return;
-        }
 
-        var menu = new CenterHtmlMenu(
-            $"Навыки | Очки: {progress.SkillPoints}",
-            this)
-        {
-            ExitButton = true
-        };
+        var menu = menus.Create("НАВЫКИ", $"{race.Name} • очки: {progress.SkillPoints}");
 
         foreach (var status in api.Abilities.GetPlayerAbilities(player.SteamID))
         {
             var abilityId = status.AbilityId;
-
-            menu.AddMenuOption(
+            menu.Add(
                 AbilityStatusText.UpgradeLine(status),
-                (_, _) => OpenAbilityDetails(player, abilityId));
+                _ => OpenAbilityDetails(player, abilityId));
         }
 
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        menu.Add("← Назад", _ => OpenMainMenu(player));
+        menus.Open(player, menu);
     }
 
     private void OpenAbilityDetails(CCSPlayerController player, string abilityId)
     {
         var api = _api;
+        var menus = _menus;
         var status = api?.Abilities.GetPlayerAbilities(player.SteamID)
-            .FirstOrDefault(x => string.Equals(x.AbilityId, abilityId, StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(x =>
+                string.Equals(x.AbilityId, abilityId, StringComparison.OrdinalIgnoreCase));
 
-        if (api is null || status is null)
+        if (api is null || menus is null || status is null)
             return;
 
+        var menu = menus.Create(
+            status.DisplayName.ToUpperInvariant(),
+            $"уровень {status.Level}/{status.MaxLevel}");
+
+        menu.AddInfo($"{AbilityStatusText.Tag(status)}{AbilityStatusText.State(status)}");
+
         foreach (var line in AbilityStatusText.DetailLines(status))
-            Print(player, line);
+            menu.AddInfo(line);
 
-        var menu = new CenterHtmlMenu(status.DisplayName, this)
-        {
-            ExitButton = true
-        };
-
-        menu.AddMenuOption(
-            $"{AbilityStatusText.Tag(status)}Уровень {status.Level}/{status.MaxLevel} | {AbilityStatusText.State(status)}",
-            (_, _) => { },
-            true);
-
-        menu.AddMenuOption(
-            "Улучшить",
-            (_, _) =>
+        menu.Add(
+            status.CanUpgrade ? "Улучшить способность" : "Улучшение недоступно",
+            _ =>
             {
                 var result = api.Progress.UpgradeAbility(player.SteamID, abilityId);
-                Print(player, $"{result.Message} {status.DisplayName}: {result.PreviousLevel}->{result.CurrentLevel}");
+                Print(
+                    player,
+                    $"{result.Message} {status.DisplayName}: " +
+                    $"{result.PreviousLevel}->{result.CurrentLevel}");
                 OpenAbilityDetails(player, abilityId);
             },
             !status.CanUpgrade || !status.HandlerRegistered);
 
-        menu.AddMenuOption("Назад", (_, _) => OpenAbilityMenu(player));
-
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        menu.Add("← Назад к навыкам", _ => OpenAbilityMenu(player));
+        menus.Open(player, menu);
     }
-
-    private static void Print(CCSPlayerController player, string message)
-        => player.PrintToChat($" [Warcraft] {message}");
 
     private void OpenCurrentRaceMenu(CCSPlayerController player)
     {
         var api = _api;
-        if (api is null)
+        var menus = _menus;
+        if (api is null || menus is null)
             return;
 
         var state = api.Players.Get(player.SteamID);
@@ -325,87 +309,54 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             return;
 
         var race = api.Races.Get(state.ActiveRaceId);
-        if (race is null ||
-            !state.Races.TryGetValue(race.Id, out var progress))
-        {
+        if (race is null || !state.Races.TryGetValue(race.Id, out var progress))
             return;
-        }
 
-        var menu = new CenterHtmlMenu(race.Name, this)
-        {
-            ExitButton = true
-        };
-
-        menu.AddMenuOption(
-            $"Уровень: {progress.Level}/{race.MaxLevel}",
-            (_, _) => { },
-            true);
-
-        menu.AddMenuOption(
-            $"XP расы: {progress.Xp}",
-            (_, _) => { },
-            true);
-
-        menu.AddMenuOption(
-            $"Очки навыков: {progress.SkillPoints}",
-            (_, _) => { },
-            true);
+        var menu = menus.Create(race.Name.ToUpperInvariant(), $"уровень {progress.Level}/{race.MaxLevel}");
+        menu.AddInfo($"XP расы: {progress.Xp}");
+        menu.AddInfo($"Очки навыков: {progress.SkillPoints}");
 
         foreach (var status in api.Abilities.GetPlayerAbilities(player.SteamID))
-            menu.AddMenuOption(AbilityStatusText.InfoLine(status), (_, _) => { }, true);
+            menu.AddInfo(AbilityStatusText.InfoLine(status));
 
-        menu.AddMenuOption(
-            "Прокачка способностей",
-            (_, _) => OpenAbilityMenu(player));
-
-        menu.AddMenuOption(
+        menu.Add("Прокачка способностей", _ => OpenAbilityMenu(player));
+        menu.Add(
             "Как использовать способности",
-            (_, _) =>
+            _ =>
             {
-                player.PrintToChat(" [Warcraft] Ультимейт: bind x css_ultimate  (или !ultimate)");
-                player.PrintToChat(" [Warcraft] Активная способность: bind c \"css_ability 1\"  (или !ability 1)");
+                Print(player, "Ультимейт: bind x css_ultimate  (или !ultimate)");
+                Print(player, "Активная способность: bind c "css_ability 1"  (или !ability 1)");
+                OpenCurrentRaceMenu(player);
             });
+        menu.Add("← Назад", _ => OpenMainMenu(player));
 
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        menus.Open(player, menu);
     }
 
     private void OpenStatsMenu(CCSPlayerController player)
     {
         var state = _api?.Players.Get(player.SteamID);
-        if (state is null)
+        var menus = _menus;
+        if (state is null || menus is null)
             return;
-
-        var menu = new CenterHtmlMenu("Статистика", this)
-        {
-            ExitButton = true
-        };
-
-        menu.AddMenuOption(
-            $"Общий XP: {state.GlobalXp}",
-            (_, _) => { },
-            true);
-
-        menu.AddMenuOption(
-            $"Изучено рас: {state.Races.Count}",
-            (_, _) => { },
-            true);
 
         var stats = state.Stats;
         var playTime = TimeSpan.FromSeconds(stats.PlaySeconds);
+        var menu = menus.Create("СТАТИСТИКА", player.PlayerName);
 
-        foreach (var line in new[]
-                 {
-                     $"Убийства: {stats.Kills} | Смерти: {stats.Deaths}",
-                     $"В голову: {stats.Headshots}",
-                     $"Раунды: {stats.RoundsPlayed} | Победы: {stats.RoundsWon}",
-                     $"Время в игре: {(int)playTime.TotalHours} ч {playTime.Minutes} мин"
-                 })
-        {
-            menu.AddMenuOption(line, (_, _) => { }, true);
-        }
+        menu.AddInfo($"Общий XP: {state.GlobalXp}");
+        menu.AddInfo($"Изучено рас: {state.Races.Count}");
+        menu.AddInfo($"Убийства: {stats.Kills}  •  Смерти: {stats.Deaths}");
+        menu.AddInfo($"В голову: {stats.Headshots}");
+        menu.AddInfo($"Раунды: {stats.RoundsPlayed}  •  Победы: {stats.RoundsWon}");
+        menu.AddInfo($"В игре: {(int)playTime.TotalHours} ч {playTime.Minutes} мин");
+        menu.Add("← Назад", _ => OpenMainMenu(player));
 
-        MenuManager.OpenCenterHtmlMenu(this, player, menu);
+        menus.Open(player, menu);
     }
+
+    private static void Print(CCSPlayerController player, string message)
+        => player.PrintToChat($" [Warcraft] {message}");
 
     private static bool IsHuman(CCSPlayerController? player)
         => player is { IsValid: true, IsBot: false } && player.SteamID != 0;
