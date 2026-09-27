@@ -7,3 +7,4 @@ obj/
 *.DotSettings.user
 artifacts/
 .env
+__pycache__/

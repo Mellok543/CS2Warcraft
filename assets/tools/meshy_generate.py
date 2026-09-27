@@ -31,6 +31,9 @@ ASSETS = {
     "entangle_roots": "a snare trap made of a low ring of thick twisted thorny vines and roots coiling on the ground "
                       "around an empty hollow center, no tree, no trunk, no canopy, flat and wide, glowing green "
                       "thorn tips",
+    "turret": "a dwarven engineer auto turret, single object standing on the ground: sturdy tripod legs of riveted "
+              "iron, a rotating brass and steel gun head with a twin barrel cannon pointing forward, glowing orange "
+              "core, gears and pipes, compact",
 }
 
 

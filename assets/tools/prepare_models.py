@@ -26,6 +26,7 @@ MESHY_MODELS = {
     "totem_war": ("totems", 64.0, "height"),
     "totem_shield": ("totems", 64.0, "height"),
     "entangle_roots": ("effects", 72.0, "width"),
+    "turret": ("totems", 56.0, "height"),
 }
 
 VMDL = """<!-- kv3 encoding:text:version{{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d}} format:modeldoc41:version{{12fc9d44-453a-4ae4-b4d9-7e2ac0bbd4e0}} -->

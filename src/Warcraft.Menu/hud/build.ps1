@@ -72,6 +72,22 @@ if (Test-Path $assets) {
     }
 
     Write-Output "Compiled $($models.Count) Warcraft models."
+
+    # Particle systems (assets/tools/make_particles.py): one compiler run for the whole folder.
+    $particleDir = Join-Path $contentAddon "particles\warcraft"
+    if (Test-Path $particleDir) {
+        & $compiler -i (Join-Path $particleDir "*.vpcf")
+        if ($LASTEXITCODE -ne 0) { throw "Particle compilation failed: $particleDir" }
+
+        $particles = Get-ChildItem $particleDir -Filter *.vpcf
+        foreach ($particle in $particles) {
+            $relative = $particle.FullName.Substring($contentAddon.Length).TrimStart('\')
+            $output = Join-Path $gameAddon ($relative + "_c")
+            if (-not (Test-Path $output)) { throw "Compilation finished without expected file: $output" }
+        }
+
+        Write-Output "Compiled $($particles.Count) Warcraft particle systems."
+    }
 }
 
 Write-Output ""
