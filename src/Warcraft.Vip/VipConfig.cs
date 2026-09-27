@@ -13,6 +13,11 @@ internal sealed record VipConfig
     public bool CanAccessVipRaces { get; init; } = true;
     public int ExtraRaceSlots { get; init; }
     public double ShopDiscount { get; init; } = 0.2;
+    public int BonusBuyMoney { get; init; } = 1000;
+    public bool BhopEnabled { get; init; } = true;
+    public double BhopCooldownSeconds { get; init; } = 2.0;
+    public double BhopHorizontalMultiplier { get; init; } = 1.12;
+    public double BhopMaxHorizontalSpeed { get; init; } = 420.0;
 
     public static string ConfigPath =>
         Path.Combine(Server.GameDirectory, "configs", "warcraft", "vip.json");

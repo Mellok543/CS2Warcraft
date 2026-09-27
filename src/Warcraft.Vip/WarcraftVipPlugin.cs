@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Numerics;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -25,6 +27,12 @@ public sealed class WarcraftVipPlugin : BasePlugin
 
     private IWarcraftApi? _api;
     private VipModifierProvider? _provider;
+    private VipConfig? _config;
+    private IDisposable? _jumpSubscription;
+    private IDisposable? _spawnSubscription;
+    private IDisposable? _roundSubscription;
+    private readonly Dictionary<ulong, double> _nextBhopAt = [];
+    private readonly HashSet<ulong> _moneyGrantedThisRound = [];
 
     public override void Load(bool hotReload)
     {
@@ -41,6 +49,7 @@ public sealed class WarcraftVipPlugin : BasePlugin
         }
 
         var config = VipConfig.LoadOrCreate();
+        _config = config;
         _provider = new VipModifierProvider(config);
 
         if (!_api.Modifiers.RegisterProvider(_provider))
@@ -49,6 +58,10 @@ public sealed class WarcraftVipPlugin : BasePlugin
             _provider = null;
             return;
         }
+
+        _jumpSubscription = _api.Events.Subscribe<Warcraft.Api.Events.PlayerJumpEvent>(OnPlayerJump);
+        _spawnSubscription = _api.Events.Subscribe<Warcraft.Api.Events.PlayerSpawnEvent>(OnPlayerSpawn);
+        _roundSubscription = _api.Events.Subscribe<Warcraft.Api.Events.RoundStartEvent>(_ => _moneyGrantedThisRound.Clear());
 
         _api.Modules.Register(new ModuleRegistration(ModuleId, ModuleVersion, "VIP modifiers"));
         _api.Menu.RegisterPage(new MenuPageRegistration(PageId, ModuleId, BuildVipPage));
@@ -59,6 +72,14 @@ public sealed class WarcraftVipPlugin : BasePlugin
 
     public override void Unload(bool hotReload)
     {
+        _jumpSubscription?.Dispose();
+        _spawnSubscription?.Dispose();
+        _roundSubscription?.Dispose();
+        _jumpSubscription = null;
+        _spawnSubscription = null;
+        _roundSubscription = null;
+        _nextBhopAt.Clear();
+        _moneyGrantedThisRound.Clear();
         if (_api is not null)
         {
             _api.Menu.Unregister(MenuEntryId, ModuleId);
@@ -69,6 +90,7 @@ public sealed class WarcraftVipPlugin : BasePlugin
 
         _api = null;
         _provider = null;
+        _config = null;
     }
 
     private void OnVipCommand(CCSPlayerController? player, CommandInfo command)
@@ -108,12 +130,67 @@ public sealed class WarcraftVipPlugin : BasePlugin
         if (perks.ShopDiscount > 0)
             items.Add(Info("Скидка в магазине: " + (perks.ShopDiscount * 100).ToString("0") + "%", "Скидка применяется к ценам Warcraft Shop"));
 
+        if (_config?.BonusBuyMoney > 0)
+            items.Add(Info("+$" + _config.BonusBuyMoney + " к закупке", "Начисляется один раз за раунд при спавне"));
+
+        if (_config?.BhopEnabled == true)
+            items.Add(Info(
+                "Bhop-буст: раз в " + _config.BhopCooldownSeconds.ToString("0.#", CultureInfo.InvariantCulture) + " сек.",
+                "Небольшой горизонтальный импульс на прыжке"));
+
         return new MenuPageDescriptor(
             PageId,
             "VIP",
             isVip ? "СТАТУС: АКТИВЕН" : "СТАТУС: НЕ АКТИВЕН",
             items,
             "root");
+    }
+
+    private void OnPlayerSpawn(Warcraft.Api.Events.PlayerSpawnEvent spawned)
+    {
+        var provider = _provider;
+        var config = _config;
+        if (provider is null || config is null || config.BonusBuyMoney <= 0 ||
+            !provider.IsVip(spawned.SteamId) || !_moneyGrantedThisRound.Add(spawned.SteamId))
+            return;
+
+        var player = Utilities.GetPlayerFromSteamId(spawned.SteamId);
+        var money = player?.InGameMoneyServices;
+        if (player is not { IsValid: true } || money is null)
+            return;
+
+        money.Account = Math.Min(16000, money.Account + config.BonusBuyMoney);
+        Utilities.SetStateChanged(player, "CCSPlayerController", "m_pInGameMoneyServices");
+    }
+
+    private void OnPlayerJump(Warcraft.Api.Events.PlayerJumpEvent jumped)
+    {
+        var provider = _provider;
+        var config = _config;
+        if (provider is null || config is null || !config.BhopEnabled || !provider.IsVip(jumped.SteamId))
+            return;
+
+        var now = Server.CurrentTime;
+        if (_nextBhopAt.GetValueOrDefault(jumped.SteamId) > now)
+            return;
+
+        var player = Utilities.GetPlayerFromSteamId(jumped.SteamId);
+        var pawn = player?.PlayerPawn.Value;
+        var current = pawn?.AbsVelocity;
+        if (player is not { IsValid: true, PawnIsAlive: true } || pawn is not { IsValid: true } || current is null)
+            return;
+
+        var speed = MathF.Sqrt(current.X * current.X + current.Y * current.Y);
+        if (speed < 1f)
+            return;
+
+        var targetSpeed = Math.Min(
+            speed * (float)Math.Max(1.0, config.BhopHorizontalMultiplier),
+            (float)Math.Max(1.0, config.BhopMaxHorizontalSpeed));
+        var scale = targetSpeed / speed;
+
+        pawn.Teleport(velocity: new Vector3(current.X * scale, current.Y * scale, current.Z));
+        _nextBhopAt[jumped.SteamId] = now + Math.Max(0.1, config.BhopCooldownSeconds);
     }
 
     private static MenuPageItemDescriptor Info(string text, string reason)

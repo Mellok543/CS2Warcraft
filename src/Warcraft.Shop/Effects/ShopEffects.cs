@@ -28,7 +28,7 @@ internal sealed class ShopEffectRegistry(IEnumerable<IShopEffect> effects)
         effects.ToDictionary(x => x.Type, StringComparer.OrdinalIgnoreCase);
 
     public static ShopEffectRegistry CreateDefault()
-        => new([new HealEffect(), new ArmorEffect(), new GiveItemEffect(), new XpEffect()]);
+        => new([new HealEffect(), new ArmorEffect(), new GiveItemEffect(), new XpEffect(), new XpBoostEffect()]);
 
     public IEnumerable<string> Types => _effects.Keys.Order();
 
@@ -42,6 +42,9 @@ internal static class EffectJson
 
     public static string? RequirePositive(JsonElement effect, string property)
         => Int(effect, property) > 0 ? null : $"'{property}' must be a positive integer.";
+
+    public static double Double(JsonElement effect, string property, double fallback = 0)
+        => effect.TryGetProperty(property, out var value) && value.TryGetDouble(out var result) ? result : fallback;
 }
 
 /// <summary><c>{ "type": "heal", "amount": 40 }</c> — up to max health.</summary>
@@ -126,5 +129,31 @@ internal sealed class XpEffect : IShopEffect
     {
         var result = context.Api.Progress.AddXp(context.Player.SteamID, EffectJson.Int(effect, "amount"), "магазин");
         return result.Success ? null : result.Message;
+    }
+}
+
+
+/// <summary><c>{ "type": "xp_boost", "multiplier": 2.0, "durationSeconds": 900 }</c></summary>
+internal sealed class XpBoostEffect : IShopEffect
+{
+    private const string Source = "warcraft.shop.xp_boost";
+
+    public string Type => "xp_boost";
+
+    public string? Validate(JsonElement effect)
+    {
+        var multiplier = EffectJson.Double(effect, "multiplier");
+        var duration = EffectJson.Int(effect, "durationSeconds");
+        if (multiplier <= 1.0)
+            return "'multiplier' must be greater than 1.";
+        return duration > 0 ? null : "'durationSeconds' must be a positive integer.";
+    }
+
+    public string? Apply(ShopContext context, JsonElement effect)
+    {
+        var multiplier = EffectJson.Double(effect, "multiplier");
+        var duration = TimeSpan.FromSeconds(EffectJson.Int(effect, "durationSeconds"));
+        context.Api.Modifiers.AddTemporaryXpMultiplier(context.Player.SteamID, multiplier, duration, Source);
+        return null;
     }
 }

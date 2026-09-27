@@ -17,6 +17,7 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
     private const string ModuleId = "warcraft.achievements";
     private const string MenuEntryId = "warcraft.achievements.open";
     private const string RootPageId = "warcraft.achievements.page";
+    private const string CurrencyShopPageId = "warcraft.achievements.shop";
 
     public override string ModuleName => "Warcraft.Achievements";
     public override string ModuleVersion => WarcraftVersion.Current;
@@ -61,6 +62,11 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
             RootPageId,
             ModuleId,
             BuildOverviewPage));
+
+        _api.Menu.RegisterPage(new MenuPageRegistration(
+            CurrencyShopPageId,
+            ModuleId,
+            BuildCurrencyShopPage));
 
         foreach (var category in Enum.GetValues<AchievementCategory>())
         {
@@ -107,6 +113,7 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
         {
             _api.Menu.Unregister(MenuEntryId, ModuleId);
             _api.Menu.UnregisterPage(RootPageId, ModuleId);
+            _api.Menu.UnregisterPage(CurrencyShopPageId, ModuleId);
 
             foreach (var category in Enum.GetValues<AchievementCategory>())
                 _api.Menu.UnregisterPage(PageId(category), ModuleId);
@@ -154,7 +161,11 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
                     $"{CategoryName(category)} — {categoryUnlocked}/{categoryDefinitions.Length}",
                     id => api.Menu.RequestOpenPage(PageId(category), id));
             })
-            .ToArray();
+            .ToList();
+
+        items.Add(new MenuPageItemDescriptor(
+            $"Магазин достижений • {api.Achievements.GetCurrency(steamId)} ✦",
+            id => api.Menu.RequestOpenPage(CurrencyShopPageId, id)));
 
         return new MenuPageDescriptor(
             RootPageId,
@@ -218,11 +229,15 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
         if (player is not { IsValid: true })
             return;
 
+        var reward = CurrencyReward(definition.Rarity);
+        if (reward > 0)
+            _api?.Achievements.AddCurrency(unlocked.SteamId, reward, definition.Id);
+
         var shown = _api?.Menu.RequestNotification(new MenuNotificationRequest(
             unlocked.SteamId,
             $"ДОСТИЖЕНИЕ • {RarityName(definition.Rarity)}",
             definition.Name,
-            definition.Description,
+            definition.Description + (reward > 0 ? $"  •  +{reward} ✦" : string.Empty),
             NotificationStyle(definition.Rarity),
             5.0f)) == true;
 
@@ -251,6 +266,35 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
             AchievementCategory.Abilities => "Способности",
             AchievementCategory.Mastery => "Mastery рас",
             _ => category.ToString()
+        };
+
+    private MenuPageDescriptor? BuildCurrencyShopPage(ulong steamId)
+    {
+        var api = _api;
+        if (api is null)
+            return null;
+
+        return new MenuPageDescriptor(
+            CurrencyShopPageId,
+            "МАГАЗИН ДОСТИЖЕНИЙ",
+            $"БАЛАНС: {api.Achievements.GetCurrency(steamId)} ✦",
+            [new MenuPageItemDescriptor(
+                "Магазин пока пуст",
+                _ => { },
+                false,
+                "Предметы будут добавлены позже")],
+            RootPageId);
+    }
+
+    private static long CurrencyReward(AchievementRarity rarity)
+        => rarity switch
+        {
+            AchievementRarity.Common => 5,
+            AchievementRarity.Rare => 10,
+            AchievementRarity.Epic => 25,
+            AchievementRarity.Legendary => 50,
+            AchievementRarity.Secret => 40,
+            _ => 0
         };
 
     private static MenuNotificationStyle NotificationStyle(AchievementRarity rarity)
