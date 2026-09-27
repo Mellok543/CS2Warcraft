@@ -42,6 +42,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
     private CancellationTokenSource? _lifetime;
     private PersistenceSaveScheduler? _saveScheduler;
     private IDisposable? _stateChangedSubscription;
+    private IDisposable? _roundCooldownResetSubscription;
     private XpRewardService? _xpRewards;
     private AbilityDamageService? _abilityDamage;
     private DiagnosticsService? _diagnostics;
@@ -134,6 +135,12 @@ public sealed class WarcraftCorePlugin : BasePlugin
         _stateChangedSubscription = events.Subscribe<PlayerStateChangedEvent>(
             changed => _saveScheduler?.Schedule(changed.SteamId));
 
+        _roundCooldownResetSubscription = events.Subscribe<RoundStartEvent>(_ =>
+        {
+            foreach (var player in players.GetLoadedPlayers())
+                players.GetRequired(player.SteamId).Cooldowns.Clear();
+        });
+
         _xpRewards = new XpRewardService(players, progress, events, _config);
         _notifier = new PlayerNotifier(events);
 
@@ -181,6 +188,9 @@ public sealed class WarcraftCorePlugin : BasePlugin
 
         _stateChangedSubscription?.Dispose();
         _stateChangedSubscription = null;
+
+        _roundCooldownResetSubscription?.Dispose();
+        _roundCooldownResetSubscription = null;
 
         _xpRewards?.Dispose();
         _xpRewards = null;

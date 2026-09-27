@@ -21,7 +21,8 @@ public sealed record PlayerKillEvent(
     ulong KillerSteamId,
     ulong VictimSteamId,
     bool Headshot,
-    bool TeamKill) : IWarcraftEvent;
+    bool TeamKill,
+    string? Weapon = null) : IWarcraftEvent;
 public sealed record PlayerHurtEvent(ulong VictimSteamId, ulong? AttackerSteamId, float Damage) : IWarcraftEvent;
 public sealed record WeaponFireEvent(ulong SteamId, string Weapon) : IWarcraftEvent;
 public sealed record PlayerJumpEvent(ulong SteamId) : IWarcraftEvent;

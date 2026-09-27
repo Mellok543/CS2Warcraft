@@ -7,5 +7,10 @@
   "bombDefuseXp": 20,
   "autosaveDelayMilliseconds": 1000,
   "gameTickIntervalMilliseconds": 100,
-  "unloadSaveTimeoutSeconds": 5
+  "unloadSaveTimeoutSeconds": 5,
+  "knifeKillBonusXp": 30,
+  "deathPenaltyXp": 8,
+  "roundLossPenaltyXp": 12,
+  "playtimeXp": 20,
+  "playtimeXpIntervalSeconds": 300
 }

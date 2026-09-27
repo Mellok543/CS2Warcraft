@@ -122,7 +122,8 @@ internal sealed class CoreGameEventBridge(
                 killerSteamId.Value,
                 humanVictim.SteamID,
                 @event.Headshot,
-                attacker!.TeamNum == humanVictim.TeamNum));
+                attacker!.TeamNum == humanVictim.TeamNum,
+                @event.Weapon));
         }
 
         var assister = @event.Assister;

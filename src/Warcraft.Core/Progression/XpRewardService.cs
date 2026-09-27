@@ -13,6 +13,9 @@ internal sealed class XpRewardService : IDisposable
     public const string KillReason = "убийство";
     public const string AssistReason = "помощь в убийстве";
     public const string RoundWinReason = "победа в раунде";
+    public const string DeathPenaltyReason = "смерть";
+    public const string RoundLossPenaltyReason = "проигрыш в раунде";
+    public const string KnifeKillReason = "убийство с ножа";
     public const string BombPlantReason = "установка бомбы";
     public const string BombDefuseReason = "разминирование бомбы";
     public const string PlaytimeReason = "время на сервере";
@@ -31,11 +34,14 @@ internal sealed class XpRewardService : IDisposable
         _subscriptions =
         [
             events.Subscribe<PlayerKillEvent>(OnKill),
+            events.Subscribe<PlayerDeathEvent>(e => Penalize(e.SteamId, _config.DeathPenaltyXp, DeathPenaltyReason)),
             events.Subscribe<PlayerAssistEvent>(e => Grant(e.AssisterSteamId, _config.AssistXp, AssistReason)),
             events.Subscribe<PlayerRoundResultEvent>(e =>
             {
                 if (e.Won)
                     Grant(e.SteamId, _config.RoundWinXp, RoundWinReason);
+                else
+                    Penalize(e.SteamId, _config.RoundLossPenaltyXp, RoundLossPenaltyReason);
             }),
             events.Subscribe<BombPlantedEvent>(e => Grant(e.SteamId, _config.BombPlantXp, BombPlantReason)),
             events.Subscribe<BombDefusedEvent>(e => Grant(e.SteamId, _config.BombDefuseXp, BombDefuseReason)),
@@ -81,10 +87,33 @@ internal sealed class XpRewardService : IDisposable
         if (kill.TeamKill)
             return;
 
+        var knife = IsKnife(kill.Weapon);
+        var amount =
+            _config.KillXp +
+            (kill.Headshot ? _config.HeadshotBonusXp : 0) +
+            (knife ? _config.KnifeKillBonusXp : 0);
+
         Grant(
             kill.KillerSteamId,
-            _config.KillXp + (kill.Headshot ? _config.HeadshotBonusXp : 0),
-            kill.Headshot ? KillReason + " в голову" : KillReason);
+            amount,
+            knife ? KnifeKillReason : kill.Headshot ? KillReason + " в голову" : KillReason);
+    }
+
+    private void Penalize(ulong steamId, int amount, string reason)
+    {
+        if (amount <= 0 || _players.TryGetRuntime(steamId) is null)
+            return;
+
+        _progress.AddXp(steamId, -amount, reason);
+    }
+
+    private static bool IsKnife(string? weapon)
+    {
+        if (string.IsNullOrWhiteSpace(weapon))
+            return false;
+
+        return weapon.Contains("knife", StringComparison.OrdinalIgnoreCase) ||
+               weapon.Contains("bayonet", StringComparison.OrdinalIgnoreCase);
     }
 
     private void Grant(ulong steamId, int amount, string reason)

@@ -7,6 +7,9 @@ internal sealed record CoreConfig
 {
     public int KillXp { get; init; } = 25;
     public int HeadshotBonusXp { get; init; } = 10;
+    public int KnifeKillBonusXp { get; init; } = 30;
+    public int DeathPenaltyXp { get; init; } = 8;
+    public int RoundLossPenaltyXp { get; init; } = 12;
     public int AssistXp { get; init; } = 10;
     public int RoundWinXp { get; init; } = 15;
     public int BombPlantXp { get; init; } = 20;
