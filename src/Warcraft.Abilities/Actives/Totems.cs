@@ -16,6 +16,9 @@ internal abstract class TotemAbility(TotemSystem totems) : ActiveAbilityHandler
 {
     protected abstract Color Color { get; }
 
+    /// <summary>Model placed for this totem (see <see cref="WarcraftModels"/>).</summary>
+    protected abstract string Model { get; }
+
     protected abstract void Pulse(Totem totem, PlayerAbilitySnapshot ability, double now);
 
     protected override void Activate(AbilityActivationEvent activation, LivePlayer caster)
@@ -37,7 +40,9 @@ internal abstract class TotemAbility(TotemSystem totems) : ActiveAbilityHandler
                 NextPulse = now,
                 Pulse = (totem, time) => Pulse(totem, ability, time)
             },
-            Color);
+            Color,
+            Model,
+            caster.Pawn.EyeAngles.Y);
 
         Api?.Events.Publish(new AbilityTelemetryEvent(
             activation.SteamId,
@@ -51,6 +56,7 @@ internal abstract class TotemAbility(TotemSystem totems) : ActiveAbilityHandler
 internal sealed class HealingTotemAbility(TotemSystem totems) : TotemAbility(totems)
 {
     public override string Id => "healing_totem";
+    protected override string Model => WarcraftModels.TotemHealing;
     protected override string Description =>
         "Тотем на {duration} с: союзники в радиусе {radius} восстанавливают {amount} HP каждые {interval|1} с. Перезарядка {cooldown} с.";
     protected override string DisplayName => "Тотем исцеления";
@@ -76,6 +82,7 @@ internal sealed class HealingTotemAbility(TotemSystem totems) : TotemAbility(tot
 internal sealed class FlameTotemAbility(TotemSystem totems) : TotemAbility(totems)
 {
     public override string Id => "flame_totem";
+    protected override string Model => WarcraftModels.TotemFlame;
     protected override string Description =>
         "Тотем на {duration} с: враги в радиусе {radius} получают {damage} урона каждые {interval|1} с. Перезарядка {cooldown} с.";
     protected override string DisplayName => "Тотем пламени";
@@ -109,6 +116,7 @@ internal sealed class FlameTotemAbility(TotemSystem totems) : TotemAbility(totem
 internal sealed class FrostTotemAbility(TotemSystem totems, MovementController movement) : TotemAbility(totems)
 {
     public override string Id => "frost_totem";
+    protected override string Model => WarcraftModels.TotemFrost;
     protected override string Description =>
         "Тотем на {duration} с: враги в радиусе {radius} замедлены до x{slow}. Перезарядка {cooldown} с.";
     protected override string DisplayName => "Тотем холода";
@@ -145,6 +153,7 @@ internal sealed class WarTotemAbility(TotemSystem totems, TeamBuffs buffs)
     : BuffTotemAbility(totems, buffs, BuffKind.DamageBonus)
 {
     public override string Id => "war_totem";
+    protected override string Model => WarcraftModels.TotemWar;
     protected override string Description =>
         "Тотем на {duration} с: союзники в радиусе {radius} наносят на {percent%} больше урона. Перезарядка {cooldown} с.";
     protected override string DisplayName => "Тотем войны";
@@ -156,6 +165,7 @@ internal sealed class ShieldTotemAbility(TotemSystem totems, TeamBuffs buffs)
     : BuffTotemAbility(totems, buffs, BuffKind.DamageReduction)
 {
     public override string Id => "shield_totem";
+    protected override string Model => WarcraftModels.TotemShield;
     protected override string Description =>
         "Тотем на {duration} с: союзники в радиусе {radius} получают на {percent%} меньше урона. Перезарядка {cooldown} с.";
     protected override string DisplayName => "Тотем защиты";

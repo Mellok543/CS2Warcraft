@@ -25,7 +25,24 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
     private readonly List<IAbilityHandler> _handlers = [];
     private readonly List<IDisposable> _systems = [];
     private BeamEffects? _beams;
+    private PropEffects? _props;
+    private VisualsConfig _visuals = new();
     private MovementController? _movement;
+
+    public override void Load(bool hotReload)
+    {
+        _visuals = VisualsConfig.LoadOrCreate();
+
+        // Models must be precached on map load; the listener is registered before any map starts.
+        RegisterListener<Listeners.OnServerPrecacheResources>(manifest =>
+        {
+            if (!_visuals.Models)
+                return;
+
+            foreach (var model in WarcraftModels.All)
+                manifest.AddResource(model);
+        });
+    }
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
@@ -47,11 +64,13 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         var beams = new BeamEffects(scheduler);
         var movement = new MovementController();
         _beams = beams;
+        var props = new PropEffects(scheduler, _visuals.Models);
+        _props = props;
         _movement = movement;
         var dots = new DamageOverTime(_api);
         var history = new PositionHistory();
         var buffs = new TeamBuffs();
-        var totems = new TotemSystem(beams);
+        var totems = new TotemSystem(beams, props);
 
         // Buff modifiers must run before ability handlers (cheat_death needs the final damage).
         _systems.AddRange(buffs.Attach(_api.Events, () => Server.CurrentTime));
@@ -85,23 +104,23 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new AdrenalineAbility(movement));
         Register(new KillSpeedAbility(movement));
         Register(new JumpBoostAbility());
-        Register(new HealAuraAbility());
-        Register(new ImmolationAbility());
-        Register(new SlowAuraAbility(movement));
-        Register(new SpeedAuraAbility(movement));
-        Register(new CommandAuraAbility(buffs));
-        Register(new DevotionAuraAbility(buffs));
-        Register(new VampiricAuraAbility(buffs));
+        Register(new HealAuraAbility() { Props = props });
+        Register(new ImmolationAbility() { Props = props });
+        Register(new SlowAuraAbility(movement) { Props = props });
+        Register(new SpeedAuraAbility(movement) { Props = props });
+        Register(new CommandAuraAbility(buffs) { Props = props });
+        Register(new DevotionAuraAbility(buffs) { Props = props });
+        Register(new VampiricAuraAbility(buffs) { Props = props });
         Register(new SecondWindAbility());
 
         // Activatable (ability slot or ultimate)
         Register(new ChainLightningAbility(beams));
         Register(new DashAbility());
         Register(new HealBurstAbility());
-        Register(new DivineShieldAbility());
+        Register(new DivineShieldAbility(props));
         Register(new SprintAbility(movement));
         Register(new WarStompAbility(movement));
-        Register(new EntangleAbility(movement, dots, beams));
+        Register(new EntangleAbility(movement, dots, beams, props));
         Register(new LifeDrainAbility(beams));
         Register(new RecallAbility(history));
         Register(new SwapAbility());
@@ -137,6 +156,7 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
             buffs.Clear();
             totems.Clear();
             beams.PruneInvalid();
+            props.PruneInvalid();
         }));
 
         Logger.LogInformation(
@@ -161,6 +181,8 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         _movement = null;
         _beams?.Dispose();
         _beams = null;
+        _props?.Dispose();
+        _props = null;
 
         _api?.Modules.Unregister("warcraft.abilities");
         _api = null;

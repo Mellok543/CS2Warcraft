@@ -1,3 +1,4 @@
+using System.Drawing;
 using Warcraft.Abilities.Game;
 using Warcraft.Api.Abilities;
 using Warcraft.Api.Combat;
@@ -9,8 +10,15 @@ namespace Warcraft.Abilities.Passives;
 internal abstract class AuraAbility : AbilityHandler
 {
     private readonly Dictionary<ulong, double> _nextPulseAt = [];
+    private AuraVisuals? _visuals;
 
     protected override AbilityKind Kind => AbilityKind.Passive;
+
+    /// <summary>Tint of the ring shown under players with this aura.</summary>
+    protected abstract Color AuraColor { get; }
+
+    /// <summary>Decorative models; null or disabled means no ring.</summary>
+    public PropEffects? Props { get; init; }
 
     /// <summary>Pulse period when the race config has no <c>interval</c>.</summary>
     protected virtual double DefaultInterval => 1.0;
@@ -18,15 +26,28 @@ internal abstract class AuraAbility : AbilityHandler
     protected override void Subscribe(IWarcraftEventBus events)
     {
         Track(events.Subscribe<GameTickEvent>(OnGameTick));
-        Track(events.Subscribe<RoundStartEvent>(_ => _nextPulseAt.Clear()));
+        Track(events.Subscribe<RoundStartEvent>(_ =>
+        {
+            _nextPulseAt.Clear();
+            _visuals?.Clear();
+        }));
+
+        if (Props is not null)
+            _visuals = new AuraVisuals(Props, AuraColor);
     }
 
-    protected override void OnDisposed() => _nextPulseAt.Clear();
+    protected override void OnDisposed()
+    {
+        _nextPulseAt.Clear();
+        _visuals?.Clear();
+    }
 
     protected abstract void Pulse(LivePlayer owner, PlayerAbilitySnapshot ability);
 
     private void OnGameTick(GameTickEvent tick)
     {
+        var owners = new List<LivePlayer>();
+
         foreach (var owner in GamePlayers.AllAliveHumans())
         {
             var steamId = owner.Controller.SteamID;
@@ -35,6 +56,8 @@ internal abstract class AuraAbility : AbilityHandler
                 _nextPulseAt.Remove(steamId);
                 continue;
             }
+
+            owners.Add(owner);
 
             var interval = Math.Max(0.2, AbilityConfigReader.GetLevelDouble(ability, "interval", DefaultInterval));
             if (!_nextPulseAt.TryGetValue(steamId, out var nextAt) || nextAt - tick.ServerTime > interval)
@@ -49,6 +72,8 @@ internal abstract class AuraAbility : AbilityHandler
             _nextPulseAt[steamId] = tick.ServerTime + interval;
             Pulse(owner, ability);
         }
+
+        _visuals?.Sync(owners);
     }
 }
 
@@ -56,6 +81,7 @@ internal abstract class AuraAbility : AbilityHandler
 internal sealed class HealAuraAbility : AuraAbility
 {
     public override string Id => "heal_aura";
+    protected override Color AuraColor => Color.FromArgb(200, 60, 230, 100);
     protected override string Description =>
         "Аура: союзники в радиусе {radius} восстанавливают {amount} HP каждые {interval|1} с.";
     protected override string DisplayName => "Аура исцеления";
@@ -74,6 +100,7 @@ internal sealed class HealAuraAbility : AuraAbility
 internal sealed class ImmolationAbility : AuraAbility
 {
     public override string Id => "immolation";
+    protected override Color AuraColor => Color.FromArgb(220, 255, 110, 20);
     protected override string Description =>
         "Аура: враги в радиусе {radius} получают {damage} урона каждые {interval|1} с.";
     protected override string DisplayName => "Жертвенный огонь";

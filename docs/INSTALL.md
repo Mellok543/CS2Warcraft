@@ -115,6 +115,11 @@ distribute it to clients with MultiAddonManager (client-only addon).
 
 Menu controls: `W`/`S` select, `A`/`D` page, `E` confirm, `R` close.
 
+The same addon carries the ability models (totems, aura rings, divine shield
+bubble, entangle roots — [assets/README.md](../assets/README.md)). The server
+must mount it too; otherwise set `configs/warcraft/visuals.json` →
+`"models": false`.
+
 ## Player commands
 
 | Command | Purpose |

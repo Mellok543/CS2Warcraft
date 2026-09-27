@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Numerics;
+using CounterStrikeSharp.API.Core;
 
 namespace Warcraft.Abilities.Game;
 
@@ -27,20 +28,29 @@ internal sealed class Totem
 /// Owns all placed totems (one per owner and totem type), pulses them on Core
 /// game ticks and draws a pillar and radius ring when placed. Game thread only.
 /// </summary>
-internal sealed class TotemSystem(BeamEffects beams)
+internal sealed class TotemSystem(BeamEffects beams, PropEffects props)
 {
     private const int RingSegments = 12;
     private const float PillarHeight = 90f;
 
     private readonly Dictionary<(ulong Owner, string AbilityId), Totem> _totems = [];
+    private readonly Dictionary<(ulong Owner, string AbilityId), CDynamicProp> _models = [];
 
-    public void Place(Totem totem, Color color)
+    /// <param name="model">Totem model; without it (or with models disabled) a beam pillar is drawn.</param>
+    public void Place(Totem totem, Color color, string? model = null, float yaw = 0)
     {
-        _totems[(totem.OwnerSteamId, totem.AbilityId)] = totem;
+        var key = (totem.OwnerSteamId, totem.AbilityId);
+        _totems[key] = totem;
+        RemoveModel(key);
 
         var lifetime = (float)Math.Max(0.1, totem.Until - totem.NextPulse + totem.Interval);
         var ground = totem.Position with { Z = totem.Position.Z + 4f };
-        beams.Draw(ground, ground with { Z = ground.Z + PillarHeight }, color, 4f, lifetime);
+
+        var prop = model is null ? null : props.Spawn(model, totem.Position, yaw, Color.White, lifetime);
+        if (prop is not null)
+            _models[key] = prop;
+        else
+            beams.Draw(ground, ground with { Z = ground.Z + PillarHeight }, color, 4f, lifetime);
 
         for (var i = 0; i < RingSegments; i++)
         {
@@ -55,6 +65,7 @@ internal sealed class TotemSystem(BeamEffects beams)
             if (now >= totem.Until)
             {
                 _totems.Remove(key);
+                RemoveModel(key);
                 continue;
             }
 
@@ -66,7 +77,18 @@ internal sealed class TotemSystem(BeamEffects beams)
         }
     }
 
-    public void Clear() => _totems.Clear();
+    public void Clear()
+    {
+        _totems.Clear();
+        foreach (var key in _models.Keys.ToArray())
+            RemoveModel(key);
+    }
+
+    private void RemoveModel((ulong Owner, string AbilityId) key)
+    {
+        if (_models.Remove(key, out var prop))
+            props.Remove(prop);
+    }
 
     private static Vector3 Ring(Vector3 center, float radius, int segment)
     {

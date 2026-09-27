@@ -55,6 +55,25 @@ foreach ($resource in $resources) {
     if (-not (Test-Path $output)) { throw "Compilation finished without expected file: $output" }
 }
 
+# Models (totems, aura ring, shield bubble, entangle roots): assets/addon mirrors the addon content root.
+$assets = Join-Path $src "..\..\..\assets\addon"
+if (Test-Path $assets) {
+    $assets = (Resolve-Path $assets).Path
+    Copy-Item (Join-Path $assets "*") $contentAddon -Recurse -Force
+
+    $models = Get-ChildItem (Join-Path $contentAddon "models\warcraft") -Recurse -Filter *.vmdl
+    foreach ($model in $models) {
+        & $compiler -i $model.FullName
+        if ($LASTEXITCODE -ne 0) { throw "Model compilation failed: $($model.FullName)" }
+
+        $relative = $model.FullName.Substring($contentAddon.Length).TrimStart('\')
+        $output = Join-Path $gameAddon ($relative + "_c")
+        if (-not (Test-Path $output)) { throw "Compilation finished without expected file: $output" }
+    }
+
+    Write-Output "Compiled $($models.Count) Warcraft models."
+}
+
 Write-Output ""
 Write-Output "CS2Warcraft UI addon compiled successfully."
 Write-Output "Addon source:   $contentAddon"

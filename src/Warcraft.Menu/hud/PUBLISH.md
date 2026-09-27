@@ -14,6 +14,10 @@ The script compiles warcraft_menu.xml and warcraft_menu.css and also installs lo
 
 Restart the CS2 client after rebuilding because Panorama resources are cached for the session.
 
+The same script also copies `assets/addon` (ability models: totems, aura ring,
+shield bubble, entangle roots) into the addon and compiles every `.vmdl`; see
+[assets/README.md](../../../assets/README.md).
+
 ## Server delivery
 
 Publish one stable Workshop addon for the Warcraft UI and distribute it to clients as a client-only addon through MultiAddonManager.

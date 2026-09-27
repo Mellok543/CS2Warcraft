@@ -51,8 +51,10 @@ internal sealed class HealBurstAbility : ActiveAbilityHandler
 /// Active: temporary damage reduction (1 = invulnerable).
 /// Config: duration (s), percent (default 1), cooldown.
 /// </summary>
-internal sealed class DivineShieldAbility : ActiveAbilityHandler
+internal sealed class DivineShieldAbility(PropEffects props) : ActiveAbilityHandler
 {
+    private static readonly System.Drawing.Color ShieldColor = System.Drawing.Color.FromArgb(200, 255, 220, 120);
+
     private readonly Dictionary<ulong, Shield> _shields = [];
 
     public override string Id => "divine_shield";
@@ -74,6 +76,7 @@ internal sealed class DivineShieldAbility : ActiveAbilityHandler
         var percent = (float)Math.Clamp(AbilityConfigReader.GetLevelDouble(activation.Ability, "percent", 1.0), 0, 1);
 
         _shields[activation.SteamId] = new Shield(Server.CurrentTime + duration, percent);
+        props.Attach(WarcraftModels.ShieldBubble, caster.Pawn, ShieldColor, (float)duration);
         activation.Succeed($"Щит активен {duration:0.#} с.");
     }
 

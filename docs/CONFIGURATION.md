@@ -54,6 +54,12 @@ Items with `price`, `maxPerRound`, `requiresAlive` and an `effect`
 (`heal`, `armor`, `give_item`, `xp`). Reload with `!wc_reload_shop`.
 See [SHOP.md](SHOP.md).
 
+## visuals.json (Warcraft.Abilities)
+
+| Key | Default | Meaning |
+|---|---|---|
+| `models` | true | spawn totem, roots, shield bubble and aura ring models from the Warcraft UI addon; set `false` if the server does not mount the addon (beams only) |
+
 ## races/*.json (Warcraft.Races)
 
 One file per race. Saving a file hot-reloads the whole catalog; any error keeps

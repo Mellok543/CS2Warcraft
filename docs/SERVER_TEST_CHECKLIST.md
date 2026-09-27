@@ -89,6 +89,10 @@ Run this checklist on a real Counter-Strike 2 server before tagging a release.
 - [ ] `css_wc_status` from the server console lists all nine modules with the release version.
 - [ ] A client without the Warcraft UI Workshop addon is documented as unsupported; with the addon `!wc` renders and W/S/A/D/E/R navigate.
 - [ ] Reconnect while the database is slow (or right after connecting, before the load finishes): stored XP, races and achievements are unchanged afterwards.
+- [ ] Totems show their model (healing/flame/frost/war/shield) facing the caster's view, standing on the ground, removed when they expire or are recast.
+- [ ] Aura owners have a tinted ring at their feet that follows them and disappears on death/race change.
+- [ ] Divine shield shows a golden bubble for its duration; entangle shows the roots ring at the target.
+- [ ] With `visuals.json` → `"models": false`, no models spawn and totems use beam pillars.
 - [ ] Using any ability does not advance `mechanic.*` achievements; chain lightning hitting 3 targets unlocks "Цепная реакция".
 - [ ] `Persistence` shows `warcraft.mysql`; with `database.json` disabled it shows the missing-provider warning.
 - [ ] `Health: OK` with the shipped races. Changing an ability id in a race JSON to an unknown id still reloads, and `css_wc_status` then lists it as `has no handler`; a JSON syntax error shows `Last race reload: REJECTED`.

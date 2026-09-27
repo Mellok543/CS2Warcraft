@@ -51,7 +51,7 @@ internal sealed class WarStompAbility(MovementController movement) : ActiveAbili
 /// Active: roots the nearest enemy and damages it every second.
 /// Config: range, duration (s), damage (per second), cooldown.
 /// </summary>
-internal sealed class EntangleAbility(MovementController movement, DamageOverTime dots, BeamEffects beams) : ActiveAbilityHandler
+internal sealed class EntangleAbility(MovementController movement, DamageOverTime dots, BeamEffects beams, PropEffects props) : ActiveAbilityHandler
 {
     private static readonly Color RootColor = Color.FromArgb(255, 60, 200, 60);
 
@@ -76,6 +76,7 @@ internal sealed class EntangleAbility(MovementController movement, DamageOverTim
         movement.Stun(target, 0f, now + duration);
         dots.Apply(activation.SteamId, target.Controller.Slot, Id, damage, (int)Math.Ceiling(duration), 1.0, now);
         beams.Draw(Chest(caster.Position), Chest(target.Position), RootColor, 2f, 0.5f);
+        props.Spawn(WarcraftModels.EntangleRoots, target.Position, Random.Shared.NextSingle() * 360f, Color.White, (float)duration);
 
         activation.Succeed($"{target.Controller.PlayerName} опутан.");
     }

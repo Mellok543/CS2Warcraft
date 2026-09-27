@@ -1,3 +1,4 @@
+using System.Drawing;
 using CounterStrikeSharp.API;
 using Warcraft.Abilities.Game;
 using Warcraft.Api.Abilities;
@@ -22,6 +23,7 @@ internal abstract class ContinuousAura : AuraAbility
 internal sealed class SlowAuraAbility(MovementController movement) : ContinuousAura
 {
     public override string Id => "slow_aura";
+    protected override Color AuraColor => Color.FromArgb(200, 110, 200, 255);
     protected override string Description => "Аура: враги в радиусе {radius} двигаются со скоростью x{slow}.";
     protected override string DisplayName => "Аура холода";
 
@@ -39,6 +41,7 @@ internal sealed class SlowAuraAbility(MovementController movement) : ContinuousA
 internal sealed class SpeedAuraAbility(MovementController movement) : ContinuousAura
 {
     public override string Id => "speed_aura";
+    protected override Color AuraColor => Color.FromArgb(200, 240, 240, 140);
     protected override string Description => "Аура: союзники в радиусе {radius} быстрее в x{multiplier}.";
     protected override string DisplayName => "Аура скорости";
 
@@ -79,6 +82,7 @@ internal abstract class BuffAura(TeamBuffs buffs, BuffKind kind) : ContinuousAur
 internal sealed class CommandAuraAbility(TeamBuffs buffs) : BuffAura(buffs, BuffKind.DamageBonus)
 {
     public override string Id => "command_aura";
+    protected override Color AuraColor => Color.FromArgb(200, 230, 50, 50);
     protected override string Description => "Аура: союзники в радиусе {radius} наносят на {percent%} больше урона.";
     protected override string DisplayName => "Командная аура";
 }
@@ -87,6 +91,7 @@ internal sealed class CommandAuraAbility(TeamBuffs buffs) : BuffAura(buffs, Buff
 internal sealed class DevotionAuraAbility(TeamBuffs buffs) : BuffAura(buffs, BuffKind.DamageReduction)
 {
     public override string Id => "devotion_aura";
+    protected override Color AuraColor => Color.FromArgb(200, 245, 210, 80);
     protected override string Description => "Аура: союзники в радиусе {radius} получают на {percent%} меньше урона.";
     protected override string DisplayName => "Аура преданности";
 }
@@ -95,6 +100,7 @@ internal sealed class DevotionAuraAbility(TeamBuffs buffs) : BuffAura(buffs, Buf
 internal sealed class VampiricAuraAbility(TeamBuffs buffs) : BuffAura(buffs, BuffKind.Lifesteal)
 {
     public override string Id => "vampiric_aura";
+    protected override Color AuraColor => Color.FromArgb(220, 170, 0, 45);
     protected override string Description => "Аура: союзники в радиусе {radius} лечатся на {percent%} от урона.";
     protected override string DisplayName => "Вампирская аура";
 }
