@@ -61,28 +61,54 @@ internal sealed class EffectKit(IGameScheduler scheduler, BeamEffects beams, Pro
 
     private void DrawJaggedLightning(Vector3 from, Vector3 to, Color fallback, float width, float lifetime)
     {
-        var distance = Vector3.Distance(from, to);
+        var delta = to - from;
+        var distance = delta.Length();
         if (distance < 1f)
             return;
 
-        // Native CBeam amplitude gives Source's beam renderer actual lightning noise,
-        // unlike manually chaining straight segments.
-        var amplitude = Math.Clamp(distance * 0.055f, 14f, 32f);
-        var core = Color.FromArgb(255, 225, 240, 255);
-
-        beams.DrawLightning(from, to, fallback, Math.Max(width, 3.5f), lifetime, amplitude);
-        beams.DrawLightning(from, to, core, Math.Max(1.0f, width * 0.32f), lifetime, amplitude * 0.65f);
-
-        // Add short-lived electrical flashes along the bolt without control points.
-        var flashCount = Math.Clamp((int)(distance / 180f), 2, 4);
-        for (var i = 1; i <= flashCount; i++)
+        // When particles are unavailable, keep a minimal beam fallback.
+        if (!particles.Enabled)
         {
-            var t = i / (float)(flashCount + 1);
-            var point = Vector3.Lerp(from, to, t);
-            particles.Play(WarcraftParticles.Flash(FxColor.Storm), point, 0.8f);
+            beams.Draw(from, to, fallback, Math.Max(width, 2.5f), lifetime);
+            return;
         }
 
+        var direction = Vector3.Normalize(delta);
+        var reference = MathF.Abs(direction.Z) < 0.9f ? Vector3.UnitZ : Vector3.UnitY;
+        var right = Vector3.Normalize(Vector3.Cross(direction, reference));
+        var up = Vector3.Normalize(Vector3.Cross(right, direction));
+
+        var points = Math.Clamp((int)MathF.Ceiling(distance / 55f), 10, 16);
+        var jitter = Math.Clamp(distance * 0.028f, 7f, 22f);
+
+        // Start flash.
+        particles.Play(WarcraftParticles.Flash(FxColor.Storm), from, 0.7f);
+
+        for (var i = 1; i < points; i++)
+        {
+            var t = i / (float)points;
+            var basePoint = Vector3.Lerp(from, to, t);
+            var envelope = MathF.Sin(MathF.PI * t);
+
+            var side = ((float)Random.Shared.NextDouble() * 2f - 1f) * jitter * envelope;
+            var vertical = ((float)Random.Shared.NextDouble() * 2f - 1f) * jitter * 0.7f * envelope;
+            var point = basePoint + right * side + up * vertical;
+
+            // Alternate two different one-shot systems to create a continuous noisy arc.
+            if ((i & 1) == 0)
+                particles.Play(WarcraftParticles.Flash(FxColor.Storm), point, 0.65f);
+            else
+                particles.Play(WarcraftParticles.Sparks(FxColor.Storm), point, 0.75f);
+
+            // Every fourth node gets a stronger local burst, making forks/knuckles visible.
+            if (i % 4 == 0)
+                particles.Play(WarcraftParticles.Burst(FxColor.Storm), point, 0.9f);
+        }
+
+        // Impact end of the discharge.
+        particles.Play(WarcraftParticles.Burst(FxColor.Storm), to, 1.1f);
         particles.Play(WarcraftParticles.Sparks(FxColor.Storm), to, 1.0f);
+        particles.Play(WarcraftParticles.Flash(FxColor.Storm), to, 0.8f);
     }
 
     /// <summary>
