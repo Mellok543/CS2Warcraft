@@ -1,4 +1,5 @@
 using Warcraft.Api.Abilities;
+using Warcraft.Api.Achievements;
 using Warcraft.Api.Combat;
 using Warcraft.Api.Diagnostics;
 using Warcraft.Api.Events;
@@ -18,6 +19,7 @@ public interface IWarcraftApi
     IProgressApi Progress { get; }
     IRacesApi Races { get; }
     IAbilitiesApi Abilities { get; }
+    IAchievementsApi Achievements { get; }
     IWarcraftEventBus Events { get; }
     IPersistenceApi Persistence { get; }
     IModifiersApi Modifiers { get; }

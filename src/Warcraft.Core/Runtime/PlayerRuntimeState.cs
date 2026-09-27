@@ -1,3 +1,4 @@
+using Warcraft.Api.Achievements;
 using Warcraft.Api.Persistence;
 using Warcraft.Api.Players;
 
@@ -18,6 +19,9 @@ internal sealed class PlayerRuntimeState
 
     public PlayerStatsRuntime Stats { get; init; } = new();
 
+    public Dictionary<string, AchievementProgressRuntime> Achievements { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
     public PlayerStateSnapshot ToSnapshot(DateTimeOffset now)
         => new(
             SteamId,
@@ -36,7 +40,8 @@ internal sealed class PlayerRuntimeState
             GlobalXp = GlobalXp,
             ActiveRaceId = ActiveRaceId,
             Races = Races.Values.Select(x => x.ToPersistence()).ToArray(),
-            Stats = Stats.ToPersistence(now)
+            Stats = Stats.ToPersistence(now),
+            Achievements = Achievements.Select(x => x.Value.ToPersistence(x.Key)).ToArray()
         };
 }
 
@@ -109,5 +114,24 @@ internal sealed class RaceProgressRuntime
             Xp = Xp,
             SkillPoints = SkillPoints,
             AbilityLevels = new Dictionary<string, int>(AbilityLevels, StringComparer.OrdinalIgnoreCase)
+        };
+}
+
+internal sealed class AchievementProgressRuntime
+{
+    public long Progress { get; set; }
+    public bool Unlocked { get; set; }
+    public DateTimeOffset? UnlockedAt { get; set; }
+
+    public AchievementProgressSnapshot ToSnapshot()
+        => new(Progress, Unlocked, UnlockedAt);
+
+    public AchievementProgressPersistenceDto ToPersistence(string achievementId)
+        => new()
+        {
+            AchievementId = achievementId,
+            Progress = Progress,
+            Unlocked = Unlocked,
+            UnlockedAt = UnlockedAt
         };
 }

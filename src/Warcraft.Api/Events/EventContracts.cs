@@ -114,6 +114,11 @@ public sealed record AbilityActivatedEvent(
     bool IsUltimate,
     DateTimeOffset? ReadyAt) : IWarcraftEvent;
 
+public sealed record AchievementUnlockedEvent(
+    ulong SteamId,
+    string AchievementId,
+    DateTimeOffset UnlockedAt) : IWarcraftEvent;
+
 public sealed record PlayerStateChangedEvent(
     ulong SteamId,
     string Reason) : IWarcraftEvent;

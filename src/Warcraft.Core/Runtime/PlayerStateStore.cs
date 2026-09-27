@@ -89,6 +89,16 @@ internal sealed class PlayerStateStore(TimeProvider? time = null) : IPlayersApi
                     current.Stats.SessionStartedAt)
             };
 
+            foreach (var achievement in persisted.Achievements)
+            {
+                player.Achievements[achievement.AchievementId] = new AchievementProgressRuntime
+                {
+                    Progress = achievement.Progress,
+                    Unlocked = achievement.Unlocked,
+                    UnlockedAt = achievement.UnlockedAt
+                };
+            }
+
             foreach (var race in persisted.Races)
             {
                 var runtime = new RaceProgressRuntime

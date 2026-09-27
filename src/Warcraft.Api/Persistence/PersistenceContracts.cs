@@ -39,6 +39,7 @@ public sealed record PlayerPersistenceDto
     public string? ActiveRaceId { get; init; }
     public IReadOnlyCollection<RaceProgressPersistenceDto> Races { get; init; } = [];
     public PlayerStatsPersistenceDto Stats { get; init; } = new();
+    public IReadOnlyCollection<AchievementProgressPersistenceDto> Achievements { get; init; } = [];
 }
 
 /// <summary>Absolute lifetime totals; the storage provider overwrites stored values.</summary>
