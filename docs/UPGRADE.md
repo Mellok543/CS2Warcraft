@@ -13,7 +13,7 @@
    version and `Health: OK`.
 
 Database schema changes are additive and applied automatically on start
-(e.g. `wc_player_stats.rounds_played`). Progress is never dropped by an upgrade.
+(e.g. `wc_player_stats.rounds_played`, `wc_achievement_progress`). Progress is never dropped by an upgrade.
 
 ## Configs are not overwritten
 
@@ -45,7 +45,7 @@ CounterStrikeSharp hot reload is supported per plugin with these rules:
 | Reloaded plugin | What to do |
 |---|---|
 | `Warcraft.Races` | nothing — the catalog reloads atomically |
-| `Warcraft.Abilities`, `Menu`, `Admin`, `Vip`, `Shop`, `Database` | nothing — they unregister and re-register through Core |
+| `Warcraft.Abilities`, `Menu`, `Admin`, `Vip`, `Shop`, `Achievements`, `Database` | nothing — they unregister and re-register through Core |
 | `Warcraft.Core` | reload **every** `Warcraft.*` plugin afterwards (or change map/restart): other modules keep the previous Core API instance |
 
 `Warcraft.Core` saves every connected player on unload (bounded by

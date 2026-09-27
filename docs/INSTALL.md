@@ -35,7 +35,8 @@ addons/counterstrikesharp/
    ├─ Warcraft.Menu/                      ← !wc menu
    ├─ Warcraft.Admin/                     ← admin commands
    ├─ Warcraft.Vip/                       ← optional VIP modifiers
-   └─ Warcraft.Shop/                      ← optional item shop (+ defaults/shop.json)
+   ├─ Warcraft.Shop/                      ← optional item shop (+ defaults/shop.json)
+   └─ Warcraft.Achievements/              ← optional achievements and race mastery
 ```
 
 Rules:
@@ -44,8 +45,8 @@ Rules:
   inside a plugin folder gives that plugin its own `IWarcraftApi` type and the
   `warcraft:core` capability cannot be resolved.
 - Never copy `bin/` folders from a build directly.
-- `Warcraft.Vip` and `Warcraft.Shop` can be left out; every other module is
-  needed for normal gameplay. Without `Warcraft.Database` progress lives only
+- `Warcraft.Vip`, `Warcraft.Shop` and `Warcraft.Achievements` can be left out;
+  every other module is needed for normal gameplay. Without `Warcraft.Database` progress lives only
   in memory.
 
 ## 3. First start
@@ -96,12 +97,23 @@ explicitly even for `@css/root` admins.
 From the server console:
 
 ```text
-css_plugins list      → eight Warcraft.* plugins loaded
+css_plugins list      → nine Warcraft.* plugins loaded
 css_wc_status         → Core version, modules, persistence provider, race health
 ```
 
 `css_wc_status` must show `Persistence: warcraft.mysql` and `Health: OK`.
 Then walk through [SERVER_TEST_CHECKLIST.md](SERVER_TEST_CHECKLIST.md).
+
+## Client UI (Panorama menu)
+
+`Warcraft.Menu` renders `!wc`, the shop, VIP and achievement pages as a
+Panorama HUD (`panorama/layout/custom_game/warcraft_menu.xml`). The layout is
+**client-side content**: players must have the Warcraft UI Workshop addon, or
+the menu opens invisibly. Build and publish it once as described in
+[src/Warcraft.Menu/hud/PUBLISH.md](../src/Warcraft.Menu/hud/PUBLISH.md) and
+distribute it to clients with MultiAddonManager (client-only addon).
+
+Menu controls: `W`/`S` select, `A`/`D` page, `E` confirm, `R` close.
 
 ## Player commands
 
@@ -113,3 +125,4 @@ Then walk through [SERVER_TEST_CHECKLIST.md](SERVER_TEST_CHECKLIST.md).
 | `!ability 1` / `bind c "css_ability 1"` | activate active ability in slot 1 |
 | `!shop` | item shop |
 | `!vip` | VIP status |
+| `!achievements` / `!ach` | achievements and race mastery |

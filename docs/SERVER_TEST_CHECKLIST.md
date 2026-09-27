@@ -86,7 +86,10 @@ Run this checklist on a real Counter-Strike 2 server before tagging a release.
 
 ## Diagnostics
 
-- [ ] `css_wc_status` from the server console lists all eight modules with the release version.
+- [ ] `css_wc_status` from the server console lists all nine modules with the release version.
+- [ ] A client without the Warcraft UI Workshop addon is documented as unsupported; with the addon `!wc` renders and W/S/A/D/E/R navigate.
+- [ ] Reconnect while the database is slow (or right after connecting, before the load finishes): stored XP, races and achievements are unchanged afterwards.
+- [ ] Using any ability does not advance `mechanic.*` achievements; chain lightning hitting 3 targets unlocks "Цепная реакция".
 - [ ] `Persistence` shows `warcraft.mysql`; with `database.json` disabled it shows the missing-provider warning.
 - [ ] `Health: OK` with the shipped races. Changing an ability id in a race JSON to an unknown id still reloads, and `css_wc_status` then lists it as `has no handler`; a JSON syntax error shows `Last race reload: REJECTED`.
 - [ ] The race health line is logged by Warcraft.Races after startup and after each reload.

@@ -17,6 +17,7 @@ The project uses a contract-first modular architecture:
 - `Warcraft.Vip` — VIP modifiers registered through Core.
 - `Warcraft.Admin` — admin commands through Core API.
 - `Warcraft.Shop` — shop integration through Core API.
+- `Warcraft.Achievements` — achievements and race mastery (progress stored by Core).
 
 No feature module may directly mutate another module or player persistence.
 

@@ -1,3 +1,5 @@
+using Warcraft.Api.Events;
+
 namespace Warcraft.Achievements;
 
 internal enum AchievementCategory
@@ -35,7 +37,29 @@ internal enum AchievementMetric
     BombDefuses,
     AbilityUses,
     UltimateUses,
-    RaceLevel
+    RaceLevel,
+
+    /// <summary>Driven by <see cref="Warcraft.Api.Events.AbilityTelemetryEvent"/>; see <see cref="AbilityTelemetryRule"/>.</summary>
+    AbilityTelemetry
+}
+
+internal enum TelemetryAggregate
+{
+    /// <summary>Progress accumulates telemetry amounts (damage, healing, kills, uses).</summary>
+    Sum,
+
+    /// <summary>Progress is the best single telemetry amount (e.g. targets hit by one cast).</summary>
+    Max
+}
+
+/// <summary>Which ability telemetry feeds an achievement. Data, not code: no per-ability switch.</summary>
+internal sealed record AbilityTelemetryRule(
+    IReadOnlySet<string> AbilityIds,
+    Warcraft.Api.Events.AbilityTelemetryKind Kind,
+    TelemetryAggregate Aggregate = TelemetryAggregate.Sum)
+{
+    public bool Matches(Warcraft.Api.Events.AbilityTelemetryEvent telemetry)
+        => telemetry.Kind == Kind && AbilityIds.Contains(telemetry.AbilityId);
 }
 
 internal sealed record AchievementDefinition(
@@ -47,7 +71,8 @@ internal sealed record AchievementDefinition(
     AchievementMetric Metric,
     long Target,
     bool Secret = false,
-    string? RaceId = null);
+    string? RaceId = null,
+    AbilityTelemetryRule? Telemetry = null);
 
 internal static class AchievementCatalog
 {
@@ -107,22 +132,22 @@ internal static class AchievementCatalog
             A("ability.ultimate_1", "Высшая сила", "Впервые успешно применить ultimate.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.UltimateUses, 1),
             A("ability.ultimate_100", "Абсолютная мощь", "Успешно применить ultimate 100 раз.", AchievementCategory.Abilities, AchievementRarity.Legendary, AchievementMetric.UltimateUses, 100),
 
-            A("mechanic.chain_three", "Цепная реакция", "Одной Цепной молнией поразить минимум 3 цели.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.AbilityUses, 1),
-            A("mechanic.chain_kills_25", "Громовержец", "Убить 25 врагов Цепной молнией.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 25),
-            A("mechanic.reflect_damage_1000", "Возмездие", "Отразить суммарно 1 000 урона.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.AbilityUses, 1000),
-            A("mechanic.reflect_kill", "Сам себя наказал", "Убить врага отражённым уроном.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 1, true),
-            A("mechanic.vamp_heal_5000", "Кровопийца", "Восстановить 5 000 HP вампиризмом.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 5000),
-            A("mechanic.reduction_10000", "Крепче стали", "Предотвратить 10 000 урона пассивным снижением.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 10000),
-            A("mechanic.divine_1000", "Под защитой света", "Поглотить 1 000 урона Божественным щитом.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.AbilityUses, 1000),
-            A("mechanic.second_wind_25", "Второе дыхание", "25 раз пережить критический момент благодаря Второму дыханию.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 25),
-            A("mechanic.life_drain_heal_2000", "Пожиратель жизни", "Восстановить 2 000 HP Похищением жизни.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.AbilityUses, 2000),
-            A("mechanic.totems_100", "Тотемист", "Установить 100 тотемов.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.AbilityUses, 100),
-            A("mechanic.healing_totem_5000", "Дух целителя", "Восстановить союзникам 5 000 HP Тотемом исцеления.", AchievementCategory.Teamwork, AchievementRarity.Epic, AchievementMetric.AbilityUses, 5000),
-            A("mechanic.flame_totem_5000", "Огненный идол", "Нанести 5 000 урона Тотемом пламени.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 5000),
-            A("mechanic.flame_totem_kills_25", "Жертвенный костёр", "Убить 25 врагов Тотемом пламени.", AchievementCategory.Abilities, AchievementRarity.Legendary, AchievementMetric.AbilityUses, 25),
-            A("mechanic.shield_totem_5000", "Хранитель племени", "Предотвратить 5 000 урона союзникам Тотемом защиты.", AchievementCategory.Teamwork, AchievementRarity.Epic, AchievementMetric.AbilityUses, 5000),
-            A("mechanic.devotion_10000", "Аура защитника", "Предотвратить союзникам 10 000 урона Аурой преданности.", AchievementCategory.Teamwork, AchievementRarity.Legendary, AchievementMetric.AbilityUses, 10000),
-            A("mechanic.vampiric_aura_5000", "Кровавая поддержка", "Восстановить союзникам 5 000 HP Вампирской аурой.", AchievementCategory.Teamwork, AchievementRarity.Epic, AchievementMetric.AbilityUses, 5000)
+            T("mechanic.chain_three", "Цепная реакция", "Одной Цепной молнией поразить минимум 3 цели.", AchievementCategory.Abilities, AchievementRarity.Rare, 3, AbilityTelemetryKind.TargetsHit, TelemetryAggregate.Max, "chain_lightning"),
+            T("mechanic.chain_kills_25", "Громовержец", "Убить 25 врагов Цепной молнией.", AchievementCategory.Abilities, AchievementRarity.Epic, 25, AbilityTelemetryKind.Kill, TelemetryAggregate.Sum, "chain_lightning"),
+            T("mechanic.reflect_damage_1000", "Возмездие", "Отразить суммарно 1 000 урона.", AchievementCategory.Abilities, AchievementRarity.Rare, 1000, AbilityTelemetryKind.DamageDealt, TelemetryAggregate.Sum, "reflect_damage"),
+            Secret(T("mechanic.reflect_kill", "Сам себя наказал", "Убить врага отражённым уроном.", AchievementCategory.Abilities, AchievementRarity.Epic, 1, AbilityTelemetryKind.Kill, TelemetryAggregate.Sum, "reflect_damage")),
+            T("mechanic.vamp_heal_5000", "Кровопийца", "Восстановить 5 000 HP вампиризмом.", AchievementCategory.Abilities, AchievementRarity.Epic, 5000, AbilityTelemetryKind.Healing, TelemetryAggregate.Sum, "vampirism"),
+            T("mechanic.reduction_10000", "Крепче стали", "Предотвратить 10 000 урона пассивным снижением.", AchievementCategory.Abilities, AchievementRarity.Epic, 10000, AbilityTelemetryKind.DamagePrevented, TelemetryAggregate.Sum, "damage_reduction"),
+            T("mechanic.divine_1000", "Под защитой света", "Поглотить 1 000 урона Божественным щитом.", AchievementCategory.Abilities, AchievementRarity.Rare, 1000, AbilityTelemetryKind.DamagePrevented, TelemetryAggregate.Sum, "divine_shield"),
+            T("mechanic.second_wind_25", "Второе дыхание", "25 раз пережить критический момент благодаря Второму дыханию.", AchievementCategory.Abilities, AchievementRarity.Epic, 25, AbilityTelemetryKind.Triggered, TelemetryAggregate.Sum, "second_wind"),
+            T("mechanic.life_drain_heal_2000", "Пожиратель жизни", "Восстановить 2 000 HP Похищением жизни.", AchievementCategory.Abilities, AchievementRarity.Rare, 2000, AbilityTelemetryKind.Healing, TelemetryAggregate.Sum, "life_drain"),
+            T("mechanic.totems_100", "Тотемист", "Установить 100 тотемов.", AchievementCategory.Abilities, AchievementRarity.Rare, 100, AbilityTelemetryKind.TotemPlaced, TelemetryAggregate.Sum, "healing_totem", "flame_totem", "frost_totem", "war_totem", "shield_totem"),
+            T("mechanic.healing_totem_5000", "Дух целителя", "Восстановить союзникам 5 000 HP Тотемом исцеления.", AchievementCategory.Teamwork, AchievementRarity.Epic, 5000, AbilityTelemetryKind.Healing, TelemetryAggregate.Sum, "healing_totem"),
+            T("mechanic.flame_totem_5000", "Огненный идол", "Нанести 5 000 урона Тотемом пламени.", AchievementCategory.Abilities, AchievementRarity.Epic, 5000, AbilityTelemetryKind.DamageDealt, TelemetryAggregate.Sum, "flame_totem"),
+            T("mechanic.flame_totem_kills_25", "Жертвенный костёр", "Убить 25 врагов Тотемом пламени.", AchievementCategory.Abilities, AchievementRarity.Legendary, 25, AbilityTelemetryKind.Kill, TelemetryAggregate.Sum, "flame_totem"),
+            T("mechanic.shield_totem_5000", "Хранитель племени", "Предотвратить 5 000 урона союзникам Тотемом защиты.", AchievementCategory.Teamwork, AchievementRarity.Epic, 5000, AbilityTelemetryKind.DamagePrevented, TelemetryAggregate.Sum, "shield_totem"),
+            T("mechanic.devotion_10000", "Аура защитника", "Предотвратить союзникам 10 000 урона Аурой преданности.", AchievementCategory.Teamwork, AchievementRarity.Legendary, 10000, AbilityTelemetryKind.DamagePrevented, TelemetryAggregate.Sum, "devotion_aura"),
+            T("mechanic.vampiric_aura_5000", "Кровавая поддержка", "Восстановить союзникам 5 000 HP Вампирской аурой.", AchievementCategory.Teamwork, AchievementRarity.Epic, 5000, AbilityTelemetryKind.Healing, TelemetryAggregate.Sum, "vampiric_aura")
         };
 
         foreach (var race in api.Races.GetAll().OrderBy(x => x.Name))
@@ -152,4 +177,30 @@ internal static class AchievementCatalog
         long target,
         bool secret = false)
         => new(id, name, description, category, rarity, metric, target, secret);
+
+    private static AchievementDefinition T(
+        string id,
+        string name,
+        string description,
+        AchievementCategory category,
+        AchievementRarity rarity,
+        long target,
+        AbilityTelemetryKind kind,
+        TelemetryAggregate aggregate,
+        params string[] abilityIds)
+        => new(
+            id,
+            name,
+            description,
+            category,
+            rarity,
+            AchievementMetric.AbilityTelemetry,
+            target,
+            Telemetry: new AbilityTelemetryRule(
+                abilityIds.ToHashSet(StringComparer.OrdinalIgnoreCase),
+                kind,
+                aggregate));
+
+    private static AchievementDefinition Secret(AchievementDefinition definition)
+        => definition with { Secret = true };
 }

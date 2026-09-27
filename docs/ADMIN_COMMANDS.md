@@ -32,9 +32,9 @@ database directly.
 ## Reading `css_wc_status`
 
 ```text
-[Warcraft] Core 0.6.0 | players loaded: 12
+[Warcraft] Core 0.6.1 | players loaded: 12
 [Warcraft] Persistence: warcraft.mysql
-[Warcraft] Modules: warcraft.abilities 0.6.0, warcraft.admin 0.6.0, ...
+[Warcraft] Modules: warcraft.abilities 0.6.1, warcraft.achievements 0.6.1, ...
 [Warcraft] Abilities registered: 59 | races loaded: 30
 [Warcraft] Races: starter 3 [human, orc, undead], locked 26, VIP 1 [shadow]
 [Warcraft] Last race reload: OK from plugin-load at 12:00:01 UTC, errors: 0

@@ -27,6 +27,7 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
     private IWarcraftApi? _api;
     private AchievementTracker? _tracker;
     private IDisposable? _unlockSubscription;
+    private IDisposable? _catalogSubscription;
     private IReadOnlyList<AchievementDefinition> _definitions = [];
 
     public override void Load(bool hotReload)
@@ -50,6 +51,11 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
 
         _tracker = new AchievementTracker(_api, () => _definitions);
         _unlockSubscription = _api.Events.Subscribe<AchievementUnlockedEvent>(OnUnlocked);
+        _catalogSubscription = _api.Events.Subscribe<RaceCatalogReloadedEvent>(reload =>
+        {
+            if (reload.Success)
+                RefreshDefinitions();
+        });
 
         _api.Menu.RegisterPage(new MenuPageRegistration(
             RootPageId,
@@ -90,6 +96,9 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
     {
         _unlockSubscription?.Dispose();
         _unlockSubscription = null;
+
+        _catalogSubscription?.Dispose();
+        _catalogSubscription = null;
 
         _tracker?.Dispose();
         _tracker = null;
