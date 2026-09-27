@@ -10,6 +10,8 @@ internal sealed class PanoramaMenuRenderer(
 {
     private const string RootPanelId = "wc_menu_root";
     private const string NotificationPanelId = "wc_notification_root";
+    private const string ProgressPanelId = "wc_progress_root";
+    private const string ProgressFillId = "wc_progress_fill";
     private readonly HashSet<int> _visiblePlayers = [];
     private CCSCustomHudLayout? _entity;
 
@@ -100,6 +102,39 @@ internal sealed class PanoramaMenuRenderer(
             return;
 
         SetClass(player, NotificationPanelId, "shown", false);
+    }
+
+    public void ShowProgress(
+        CCSPlayerController player,
+        string race,
+        int level,
+        long xp,
+        long requiredXp,
+        bool isMaxLevel)
+    {
+        if (!EnsureReady() || !player.IsValid || player.IsBot)
+            return;
+
+        SetText(player, "wc_progress_race", race.ToUpperInvariant());
+        SetText(player, "wc_progress_level", isMaxLevel ? $"УР. {level} • MAX" : $"УР. {level}");
+        SetText(player, "wc_progress_xp", isMaxLevel ? "МАКСИМАЛЬНЫЙ УРОВЕНЬ" : $"{xp} / {requiredXp} XP");
+
+        var step = isMaxLevel || requiredXp <= 0
+            ? 20
+            : Math.Clamp((int)Math.Floor(xp * 20d / requiredXp), 0, 20);
+
+        for (var index = 0; index <= 20; index++)
+            SetClass(player, ProgressFillId, $"p{index}", index == step);
+
+        SetClass(player, ProgressPanelId, "shown", true);
+    }
+
+    public void HideProgress(CCSPlayerController player)
+    {
+        if (!IsReady || !player.IsValid)
+            return;
+
+        SetClass(player, ProgressPanelId, "shown", false);
     }
 
     public void SetText(CCSPlayerController player, string panelId, string value, string variable = "text")

@@ -124,3 +124,45 @@
 .wc-notification.legendary .wc-notification-icon Label { color: #f4c45f; }
 .wc-notification.secret .wc-notification-accent { background-color: #d65870; }
 .wc-notification.secret .wc-notification-icon Label { color: #ed758c; }
+
+
+.wc-progress {
+    visibility: collapse; opacity: 0; position: -4000px 0px 0px;
+    width: 360px; horizontal-align: center; vertical-align: bottom;
+    margin-bottom: 52px; padding: 9px 12px 8px 12px;
+    flow-children: down;
+    background-color: #090b10e8;
+    border: 1px solid #6d8fbd3f;
+    box-shadow: #000000a0 0px 4px 16px 1px;
+    transform: translateY(12px);
+    transition-property: opacity, transform;
+    transition-duration: 0.18s;
+}
+.wc-progress.shown { visibility: visible; opacity: 1; position: 0px 0px 0px; transform: translateY(0px); }
+.wc-progress-head { width: 100%; flow-children: right; }
+.wc-progress-race { width: fill-parent-flow(1.0); color: #e7ebf1; font-size: 11px; font-weight: bold; letter-spacing: 1px; }
+.wc-progress-level { color: #f1c563; font-size: 11px; font-weight: bold; letter-spacing: 0.8px; }
+.wc-progress-track { width: 100%; height: 7px; margin-top: 6px; background-color: #171c24; border: 1px solid #ffffff12; }
+.wc-progress-fill { height: 100%; background-color: #d5a642; box-shadow: #d5a64255 0px 0px 8px 0px; transition-property: width; transition-duration: 0.18s; }
+.wc-progress-xp { width: 100%; margin-top: 4px; color: #8d98a7; font-size: 8px; text-align: right; letter-spacing: 0.6px; }
+.wc-progress-fill.p0 { width: 0%; }
+.wc-progress-fill.p1 { width: 5%; }
+.wc-progress-fill.p2 { width: 10%; }
+.wc-progress-fill.p3 { width: 15%; }
+.wc-progress-fill.p4 { width: 20%; }
+.wc-progress-fill.p5 { width: 25%; }
+.wc-progress-fill.p6 { width: 30%; }
+.wc-progress-fill.p7 { width: 35%; }
+.wc-progress-fill.p8 { width: 40%; }
+.wc-progress-fill.p9 { width: 45%; }
+.wc-progress-fill.p10 { width: 50%; }
+.wc-progress-fill.p11 { width: 55%; }
+.wc-progress-fill.p12 { width: 60%; }
+.wc-progress-fill.p13 { width: 65%; }
+.wc-progress-fill.p14 { width: 70%; }
+.wc-progress-fill.p15 { width: 75%; }
+.wc-progress-fill.p16 { width: 80%; }
+.wc-progress-fill.p17 { width: 85%; }
+.wc-progress-fill.p18 { width: 90%; }
+.wc-progress-fill.p19 { width: 95%; }
+.wc-progress-fill.p20 { width: 100%; }

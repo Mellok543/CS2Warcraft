@@ -111,6 +111,18 @@ internal sealed class WarcraftMenuService
         }
     }
 
+    public void ShowProgress(
+        CCSPlayerController player,
+        string race,
+        int level,
+        long xp,
+        long requiredXp,
+        bool isMaxLevel)
+        => _renderer.ShowProgress(player, race, level, xp, requiredXp, isMaxLevel);
+
+    public void HideProgress(CCSPlayerController player)
+        => _renderer.HideProgress(player);
+
     public void HandleClientDisconnect(int playerSlot)
     {
         _activeMenus.Remove(playerSlot);

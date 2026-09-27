@@ -55,6 +55,17 @@
             </Panel>
         </Panel>
 
+        <Panel id="wc_progress_root" class="wc-progress" hittest="false">
+            <Panel class="wc-progress-head" hittest="false">
+                <Label id="wc_progress_race" class="wc-progress-race" text="{s:text}" />
+                <Label id="wc_progress_level" class="wc-progress-level" text="{s:text}" />
+            </Panel>
+            <Panel class="wc-progress-track" hittest="false">
+                <Panel id="wc_progress_fill" class="wc-progress-fill p0" hittest="false" />
+            </Panel>
+            <Label id="wc_progress_xp" class="wc-progress-xp" text="{s:text}" />
+        </Panel>
+
         <Panel id="wc_notification_root" class="wc-notification" hittest="false">
             <Panel class="wc-notification-accent" hittest="false" />
             <Panel class="wc-notification-body" hittest="false">
