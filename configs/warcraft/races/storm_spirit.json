@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 36,
+    "totalLevel": 100,
     "races": {
-      "frost_mage": 5
-    }
+      "frost_mage": 10
+    },
+    "playtimeHours": 70,
+    "globalXp": 100000
   },
   "abilities": [
     {
@@ -17,7 +19,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "multiplier": [1.05, 1.1, 1.15]
+        "multiplier": [
+          1.05,
+          1.1,
+          1.15
+        ]
       },
       "conditions": {}
     },
@@ -27,7 +33,11 @@
       "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
-        "chance": [0.05, 0.09, 0.13]
+        "chance": [
+          0.05,
+          0.09,
+          0.13
+        ]
       },
       "conditions": {}
     },
@@ -37,10 +47,19 @@
       "maxLevel": 2,
       "unlockLevel": 3,
       "config": {
-        "damage": [18, 25],
+        "damage": [
+          18,
+          25
+        ],
         "range": 450,
-        "jumps": [1, 2],
-        "cooldown": [15, 12]
+        "jumps": [
+          1,
+          2
+        ],
+        "cooldown": [
+          15,
+          12
+        ]
       },
       "conditions": {}
     }

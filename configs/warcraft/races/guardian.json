@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 36,
+    "totalLevel": 100,
     "races": {
-      "crusader": 5
-    }
+      "crusader": 10
+    },
+    "playtimeHours": 70,
+    "globalXp": 100000
   },
   "abilities": [
     {
@@ -17,7 +19,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "percent": [0.06, 0.1, 0.15]
+        "percent": [
+          0.06,
+          0.1,
+          0.15
+        ]
       },
       "conditions": {}
     },
@@ -27,7 +33,10 @@
       "maxLevel": 2,
       "unlockLevel": 2,
       "config": {
-        "health": [20, 40]
+        "health": [
+          20,
+          40
+        ]
       },
       "conditions": {}
     },
@@ -47,10 +56,16 @@
       "maxLevel": 2,
       "unlockLevel": 4,
       "config": {
-        "range": [600, 800],
+        "range": [
+          600,
+          800
+        ],
         "force": 750,
         "upForce": 250,
-        "cooldown": [18, 14]
+        "cooldown": [
+          18,
+          14
+        ]
       },
       "conditions": {}
     }

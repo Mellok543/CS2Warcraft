@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 24,
+    "totalLevel": 60,
     "races": {
-      "night_elf": 5
-    }
+      "night_elf": 8
+    },
+    "playtimeHours": 35,
+    "globalXp": 50000
   },
   "abilities": [
     {

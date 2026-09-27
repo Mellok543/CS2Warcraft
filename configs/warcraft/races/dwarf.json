@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 36,
+    "totalLevel": 100,
     "races": {
-      "goblin": 6
-    }
+      "goblin": 10
+    },
+    "playtimeHours": 70,
+    "globalXp": 100000
   },
   "abilities": [
     {
@@ -17,7 +19,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "percent": [0.3, 0.5, 0.7]
+        "percent": [
+          0.3,
+          0.5,
+          0.7
+        ]
       },
       "conditions": {}
     },
@@ -27,7 +33,15 @@
       "maxLevel": 2,
       "unlockLevel": 2,
       "config": {
-        "items": [["weapon_hegrenade"], ["weapon_hegrenade", "weapon_molotov"]]
+        "items": [
+          [
+            "weapon_hegrenade"
+          ],
+          [
+            "weapon_hegrenade",
+            "weapon_molotov"
+          ]
+        ]
       },
       "conditions": {}
     },
@@ -37,8 +51,14 @@
       "maxLevel": 2,
       "unlockLevel": 3,
       "config": {
-        "armor": [50, 100],
-        "helmet": [0, 1]
+        "armor": [
+          50,
+          100
+        ],
+        "helmet": [
+          0,
+          1
+        ]
       },
       "conditions": {}
     },

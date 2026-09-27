@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 36,
+    "totalLevel": 100,
     "races": {
-      "druid": 6
-    }
+      "druid": 10
+    },
+    "playtimeHours": 70,
+    "globalXp": 100000
   },
   "abilities": [
     {
@@ -17,7 +19,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "amount": [1, 2, 3],
+        "amount": [
+          1,
+          2,
+          3
+        ],
         "radius": 350,
         "interval": 2
       },
@@ -29,7 +35,10 @@
       "maxLevel": 2,
       "unlockLevel": 2,
       "config": {
-        "chance": [0.06, 0.12]
+        "chance": [
+          0.06,
+          0.12
+        ]
       },
       "conditions": {}
     },
@@ -39,10 +48,15 @@
       "maxLevel": 2,
       "unlockLevel": 3,
       "config": {
-        "alpha": [140, 90]
+        "alpha": [
+          140,
+          90
+        ]
       },
       "conditions": {
-        "weaponTypes": ["knife"]
+        "weaponTypes": [
+          "knife"
+        ]
       }
     },
     {

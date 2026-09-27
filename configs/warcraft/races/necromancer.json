@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 36,
+    "totalLevel": 100,
     "races": {
-      "vampire_lord": 5
-    }
+      "vampire_lord": 10
+    },
+    "playtimeHours": 70,
+    "globalXp": 100000
   },
   "abilities": [
     {
@@ -17,10 +19,19 @@
       "maxLevel": 2,
       "unlockLevel": 1,
       "config": {
-        "range": [500, 650],
-        "damage": [20, 30],
-        "healPercent": 1.0,
-        "cooldown": [18, 14]
+        "range": [
+          500,
+          650
+        ],
+        "damage": [
+          20,
+          30
+        ],
+        "healPercent": 1,
+        "cooldown": [
+          18,
+          14
+        ]
       },
       "conditions": {}
     },
@@ -30,7 +41,10 @@
       "maxLevel": 2,
       "unlockLevel": 2,
       "config": {
-        "percent": [0.06, 0.12],
+        "percent": [
+          0.06,
+          0.12
+        ],
         "radius": 350
       },
       "conditions": {}
@@ -41,7 +55,11 @@
       "maxLevel": 3,
       "unlockLevel": 3,
       "config": {
-        "chance": [0.2, 0.3, 0.4],
+        "chance": [
+          0.2,
+          0.3,
+          0.4
+        ],
         "delay": 3
       },
       "conditions": {}
@@ -53,7 +71,10 @@
     "maxLevel": 2,
     "unlockLevel": 6,
     "config": {
-      "cooldown": [60, 45]
+      "cooldown": [
+        60,
+        45
+      ]
     },
     "conditions": {}
   }
