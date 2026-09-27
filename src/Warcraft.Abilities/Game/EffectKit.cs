@@ -70,8 +70,8 @@ internal sealed class EffectKit(IGameScheduler scheduler, BeamEffects beams, Pro
         var amplitude = Math.Clamp(distance * 0.055f, 14f, 32f);
         var core = Color.FromArgb(255, 225, 240, 255);
 
-        beams.Draw(from, to, fallback, Math.Max(width, 3.5f), lifetime, amplitude);
-        beams.Draw(from, to, core, Math.Max(1.0f, width * 0.32f), lifetime, amplitude * 0.65f);
+        beams.DrawLightning(from, to, fallback, Math.Max(width, 3.5f), lifetime, amplitude);
+        beams.DrawLightning(from, to, core, Math.Max(1.0f, width * 0.32f), lifetime, amplitude * 0.65f);
 
         // Add short-lived electrical flashes along the bolt without control points.
         var flashCount = Math.Clamp((int)(distance / 180f), 2, 4);

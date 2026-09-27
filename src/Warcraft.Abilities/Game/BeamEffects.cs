@@ -44,6 +44,51 @@ internal sealed class BeamEffects(IGameScheduler scheduler) : IDisposable
         });
     }
 
+    public void DrawLightning(
+        Vector3 from,
+        Vector3 to,
+        Color color,
+        float width,
+        float lifetimeSeconds,
+        float noiseAmplitude)
+    {
+        var beam = Utilities.CreateEntityByName<CEnvBeam>("env_beam");
+        if (beam is null)
+        {
+            Draw(from, to, color, width, lifetimeSeconds, noiseAmplitude);
+            return;
+        }
+
+        beam.Render = color;
+        beam.Width = width;
+        beam.EndWidth = Math.Max(1f, width * 0.65f);
+        beam.BoltWidth = width;
+        beam.Amplitude = Math.Max(0f, noiseAmplitude);
+        beam.NoiseAmplitude = Math.Max(0f, noiseAmplitude);
+        beam.Life = Math.Max(0.05f, lifetimeSeconds);
+        beam.Active = 1;
+
+        beam.Teleport(
+            new Vector(from.X, from.Y, from.Z),
+            new QAngle(0, 0, 0),
+            new Vector(0, 0, 0));
+
+        beam.EndPos.X = to.X;
+        beam.EndPos.Y = to.Y;
+        beam.EndPos.Z = to.Z;
+
+        beam.DispatchSpawn();
+        beam.AcceptInput("TurnOn");
+        _active.Add(beam);
+
+        scheduler.Schedule(lifetimeSeconds, () =>
+        {
+            _active.Remove(beam);
+            if (beam.IsValid)
+                beam.Remove();
+        });
+    }
+
     /// <summary>Drops wrappers of beams already destroyed by a map change (their timers stopped).</summary>
     public void PruneInvalid() => _active.RemoveWhere(beam => !beam.IsValid);
 
