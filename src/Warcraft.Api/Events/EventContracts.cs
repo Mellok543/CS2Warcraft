@@ -114,6 +114,23 @@ public sealed record AbilityActivatedEvent(
     bool IsUltimate,
     DateTimeOffset? ReadyAt) : IWarcraftEvent;
 
+public enum AbilityTelemetryKind
+{
+    DamageDealt,
+    Kill,
+    Healing,
+    DamagePrevented,
+    TargetsHit,
+    Triggered,
+    TotemPlaced
+}
+
+public sealed record AbilityTelemetryEvent(
+    ulong SteamId,
+    string AbilityId,
+    AbilityTelemetryKind Kind,
+    long Amount = 1) : IWarcraftEvent;
+
 public sealed record AchievementUnlockedEvent(
     ulong SteamId,
     string AchievementId,

@@ -45,11 +45,17 @@ internal sealed class ReflectDamageAbility : AbilityHandler
 
         if (GamePlayers.FindAlive(attacker) is { } target)
         {
-            Api?.Combat.DealAbilityDamage(new AbilityDamageRequest(
+            var result = Api?.Combat.DealAbilityDamage(new AbilityDamageRequest(
                 @event.VictimSteamId,
                 target.Controller.Slot,
                 reflected,
                 Id));
+
+            if (result is { Applied: true, HealthRemoved: > 0 })
+                Api?.Events.Publish(new AbilityTelemetryEvent(@event.VictimSteamId, Id, AbilityTelemetryKind.DamageDealt, result.HealthRemoved));
+
+            if (result is { Killed: true })
+                Api?.Events.Publish(new AbilityTelemetryEvent(@event.VictimSteamId, Id, AbilityTelemetryKind.Kill));
         }
     }
 }

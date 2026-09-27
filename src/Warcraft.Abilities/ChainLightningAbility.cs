@@ -58,11 +58,17 @@ internal sealed class ChainLightningAbility(BeamEffects beams) : ActiveAbilityHa
         {
             var to = victim.Position;
             beams.Draw(Lift(from), Lift(to), BoltColor, 3f, 0.35f);
-            Api?.Combat.DealAbilityDamage(new AbilityDamageRequest(
+            var result = Api?.Combat.DealAbilityDamage(new AbilityDamageRequest(
                 @event.SteamId,
                 victim.Controller.Slot,
                 (int)Math.Round(currentDamage),
                 Id));
+
+            if (result is { Applied: true, HealthRemoved: > 0 })
+                Api?.Events.Publish(new AbilityTelemetryEvent(@event.SteamId, Id, AbilityTelemetryKind.DamageDealt, result.HealthRemoved));
+
+            if (result is { Killed: true })
+                Api?.Events.Publish(new AbilityTelemetryEvent(@event.SteamId, Id, AbilityTelemetryKind.Kill));
 
             hits++;
             if (hits > jumps)
@@ -73,6 +79,7 @@ internal sealed class ChainLightningAbility(BeamEffects beams) : ActiveAbilityHa
             target = TakeNearest(enemies, from, range);
         }
 
+        Api?.Events.Publish(new AbilityTelemetryEvent(@event.SteamId, Id, AbilityTelemetryKind.TargetsHit, hits));
         @event.Succeed($"Цепная молния поразила целей: {hits}.");
     }
 

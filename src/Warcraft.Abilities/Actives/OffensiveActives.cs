@@ -117,7 +117,13 @@ internal sealed class LifeDrainAbility(BeamEffects beams) : ActiveAbilityHandler
             return;
         }
 
-        PlayerHealth.Heal(caster.Pawn, (int)Math.Round(result.HealthRemoved * healPercent));
+        var healed = PlayerHealth.Heal(caster.Pawn, (int)Math.Round(result.HealthRemoved * healPercent));
+        if (result.HealthRemoved > 0)
+            Api?.Events.Publish(new AbilityTelemetryEvent(activation.SteamId, Id, AbilityTelemetryKind.DamageDealt, result.HealthRemoved));
+        if (result.Killed)
+            Api?.Events.Publish(new AbilityTelemetryEvent(activation.SteamId, Id, AbilityTelemetryKind.Kill));
+        if (healed > 0)
+            Api?.Events.Publish(new AbilityTelemetryEvent(activation.SteamId, Id, AbilityTelemetryKind.Healing, healed));
         beams.Draw(Chest(target.Position), Chest(caster.Position), DrainColor, 2.5f, 0.4f);
         activation.Succeed($"Похищено {result.HealthRemoved} HP.");
     }

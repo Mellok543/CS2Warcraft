@@ -26,11 +26,19 @@ internal sealed class HealBurstAbility : ActiveAbilityHandler
             : [caster];
 
         var healed = 0;
+        var restored = 0;
         foreach (var target in targets.Where(x => x.Pawn.Health < x.Pawn.MaxHealth))
         {
-            PlayerHealth.Heal(target.Pawn, amount);
+            var actual = PlayerHealth.Heal(target.Pawn, amount);
+            if (actual <= 0)
+                continue;
+
             healed++;
+            restored += actual;
         }
+
+        if (restored > 0)
+            Api?.Events.Publish(new AbilityTelemetryEvent(activation.SteamId, Id, AbilityTelemetryKind.Healing, restored));
 
         if (healed == 0)
             activation.Fail("Все уже здоровы.");
@@ -80,7 +88,11 @@ internal sealed class DivineShieldAbility : ActiveAbilityHandler
             return;
         }
 
+        var before = @event.Damage;
         @event.Damage *= 1f - shield.Percent;
+        var prevented = Math.Max(0, (long)Math.Round(before - @event.Damage));
+        if (prevented > 0)
+            Api?.Events.Publish(new AbilityTelemetryEvent(@event.VictimSteamId, Id, AbilityTelemetryKind.DamagePrevented, prevented));
     }
 
     private readonly record struct Shield(double Until, float Percent);

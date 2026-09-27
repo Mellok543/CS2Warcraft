@@ -6,17 +6,19 @@ namespace Warcraft.Abilities.Game;
 /// <summary>Health manipulation used by ability effects. Game thread only.</summary>
 internal static class PlayerHealth
 {
-    public static void Heal(CCSPlayerPawn pawn, int amount, int? cap = null)
+    public static int Heal(CCSPlayerPawn pawn, int amount, int? cap = null)
     {
         if (amount <= 0 || pawn.Health <= 0)
-            return;
+            return 0;
 
         var limit = cap ?? pawn.MaxHealth;
         if (pawn.Health >= limit)
-            return;
+            return 0;
 
+        var before = pawn.Health;
         pawn.Health = Math.Min(limit, pawn.Health + amount);
         Utilities.SetStateChanged(pawn, "CBaseEntity", "m_iHealth");
+        return pawn.Health - before;
     }
 
     public static void SetMaxAndCurrent(CCSPlayerPawn pawn, int value)

@@ -27,6 +27,10 @@ internal sealed class DamageReductionAbility : AbilityHandler
             return;
 
         var percent = Math.Clamp(AbilityConfigReader.GetLevelDouble(ability, "percent"), 0.0, MaxReduction);
+        var before = @event.Damage;
         @event.Damage *= (float)(1.0 - percent);
+        var prevented = Math.Max(0, (long)Math.Round(before - @event.Damage));
+        if (prevented > 0)
+            Api?.Events.Publish(new AbilityTelemetryEvent(@event.VictimSteamId, Id, AbilityTelemetryKind.DamagePrevented, prevented));
     }
 }
