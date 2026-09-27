@@ -1,0 +1,58 @@
+<root>
+    <styles>
+        <include src="s2r://panorama/styles/custom_game/warcraft_menu.vcss_c" />
+    </styles>
+    <Panel class="wc-ui-screen" hittest="false">
+        <Panel id="wc_menu_root" class="wc-menu-window" hittest="false">
+            <Panel class="wc-menu-frame" hittest="false">
+                <Panel class="wc-menu-accent" hittest="false" />
+                <Panel class="wc-menu-accent-soft" hittest="false" />
+                <Panel class="wc-menu-content" hittest="false">
+                    <Panel class="wc-brand" hittest="false">
+                        <Panel class="wc-brand-icon" hittest="false"><Label text="W" /></Panel>
+                        <Panel class="wc-brand-copy" hittest="false">
+                            <Panel class="wc-brand-title-row" hittest="false">
+                                <Label class="wc-brand-mark" text="CS2" />
+                                <Label class="wc-brand-name" text="WARCRAFT" />
+                            </Panel>
+                            <Label class="wc-brand-subtitle" text="RACES • SKILLS • POWER" />
+                        </Panel>
+                        <Panel class="wc-brand-rune" hittest="false"><Label text="◈" /></Panel>
+                    </Panel>
+                    <Panel class="wc-header" hittest="false">
+                        <Panel class="wc-title-wrap" hittest="false">
+                            <Label id="wc_menu_title" class="wc-title" text="{s:text}" />
+                            <Label id="wc_menu_subtitle" class="wc-subtitle" text="{s:text}" />
+                        </Panel>
+                        <Panel class="wc-page-pill" hittest="false">
+                            <Label id="wc_menu_page" class="wc-page" text="{s:text}" />
+                        </Panel>
+                    </Panel>
+                    <Panel class="wc-separator" hittest="false" />
+                    <Panel class="wc-rows" hittest="false">
+                        <Panel id="wc_menu_row_0" class="wc-row"><Panel class="wc-row-accent" /><Label id="wc_menu_row_0_text" class="wc-row-text" text="{s:text}" /><Label class="wc-row-arrow" text="›" /></Panel>
+                        <Panel id="wc_menu_row_1" class="wc-row"><Panel class="wc-row-accent" /><Label id="wc_menu_row_1_text" class="wc-row-text" text="{s:text}" /><Label class="wc-row-arrow" text="›" /></Panel>
+                        <Panel id="wc_menu_row_2" class="wc-row"><Panel class="wc-row-accent" /><Label id="wc_menu_row_2_text" class="wc-row-text" text="{s:text}" /><Label class="wc-row-arrow" text="›" /></Panel>
+                        <Panel id="wc_menu_row_3" class="wc-row"><Panel class="wc-row-accent" /><Label id="wc_menu_row_3_text" class="wc-row-text" text="{s:text}" /><Label class="wc-row-arrow" text="›" /></Panel>
+                        <Panel id="wc_menu_row_4" class="wc-row"><Panel class="wc-row-accent" /><Label id="wc_menu_row_4_text" class="wc-row-text" text="{s:text}" /><Label class="wc-row-arrow" text="›" /></Panel>
+                        <Panel id="wc_menu_row_5" class="wc-row"><Panel class="wc-row-accent" /><Label id="wc_menu_row_5_text" class="wc-row-text" text="{s:text}" /><Label class="wc-row-arrow" text="›" /></Panel>
+                        <Panel id="wc_menu_row_6" class="wc-row"><Panel class="wc-row-accent" /><Label id="wc_menu_row_6_text" class="wc-row-text" text="{s:text}" /><Label class="wc-row-arrow" text="›" /></Panel>
+                    </Panel>
+                    <Panel class="wc-separator footer" hittest="false" />
+                    <Panel class="wc-footer" hittest="false">
+                        <Panel class="wc-controls" hittest="false">
+                            <Panel class="wc-key"><Label text="W" /></Panel>
+                            <Panel class="wc-key"><Label text="S" /></Panel>
+                            <Label class="wc-key-caption" text="ВЫБОР" />
+                            <Panel class="wc-key action"><Label text="E" /></Panel>
+                            <Label class="wc-key-caption" text="ОТКРЫТЬ" />
+                            <Panel class="wc-key close"><Label text="R" /></Panel>
+                            <Label class="wc-key-caption" text="ЗАКРЫТЬ" />
+                        </Panel>
+                        <Label id="wc_menu_status" class="wc-status" text="{s:text}" />
+                    </Panel>
+                </Panel>
+            </Panel>
+        </Panel>
+    </Panel>
+</root>
