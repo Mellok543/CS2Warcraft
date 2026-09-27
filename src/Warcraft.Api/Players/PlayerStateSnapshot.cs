@@ -4,6 +4,7 @@ public sealed record PlayerStateSnapshot(
     ulong SteamId,
     string Name,
     long GlobalXp,
+    long AchievementCurrency,
     string? ActiveRaceId,
     IReadOnlyDictionary<string, RaceProgressSnapshot> Races,
     IReadOnlyDictionary<string, DateTimeOffset> Cooldowns,

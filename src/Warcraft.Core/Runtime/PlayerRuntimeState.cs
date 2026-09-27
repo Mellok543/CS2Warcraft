@@ -9,6 +9,7 @@ internal sealed class PlayerRuntimeState
     public required ulong SteamId { get; init; }
     public required string Name { get; set; }
     public long GlobalXp { get; set; }
+    public long AchievementCurrency { get; set; }
     public string? ActiveRaceId { get; set; }
 
     public Dictionary<string, RaceProgressRuntime> Races { get; } =
@@ -34,6 +35,7 @@ internal sealed class PlayerRuntimeState
             SteamId,
             Name,
             GlobalXp,
+            AchievementCurrency,
             ActiveRaceId,
             Races.ToDictionary(x => x.Key, x => x.Value.ToSnapshot(), StringComparer.OrdinalIgnoreCase),
             new Dictionary<string, DateTimeOffset>(Cooldowns, StringComparer.OrdinalIgnoreCase),
@@ -45,6 +47,7 @@ internal sealed class PlayerRuntimeState
             SteamId = SteamId,
             Name = Name,
             GlobalXp = GlobalXp,
+            AchievementCurrency = AchievementCurrency,
             ActiveRaceId = ActiveRaceId,
             Races = Races.Values.Select(x => x.ToPersistence()).ToArray(),
             Stats = Stats.ToPersistence(now),

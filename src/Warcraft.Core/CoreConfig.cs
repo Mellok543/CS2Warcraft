@@ -11,6 +11,8 @@ internal sealed record CoreConfig
     public int RoundWinXp { get; init; } = 15;
     public int BombPlantXp { get; init; } = 20;
     public int BombDefuseXp { get; init; } = 20;
+    public int PlaytimeXp { get; init; } = 20;
+    public int PlaytimeXpIntervalSeconds { get; init; } = 300;
     public int AutosaveDelayMilliseconds { get; init; } = 1000;
     public int GameTickIntervalMilliseconds { get; init; } = 100;
 

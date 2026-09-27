@@ -36,6 +36,7 @@ public sealed record PlayerPersistenceDto
     public required ulong SteamId { get; init; }
     public required string Name { get; init; }
     public long GlobalXp { get; init; }
+    public long AchievementCurrency { get; init; }
     public string? ActiveRaceId { get; init; }
     public IReadOnlyCollection<RaceProgressPersistenceDto> Races { get; init; } = [];
     public PlayerStatsPersistenceDto Stats { get; init; } = new();

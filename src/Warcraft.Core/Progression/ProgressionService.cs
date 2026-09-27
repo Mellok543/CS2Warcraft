@@ -46,7 +46,7 @@ internal sealed class ProgressionService(
 
         while (progress.Level < race.MaxLevel)
         {
-            var required = RequiredXp(progress.Level);
+            var required = GetRequiredXpForLevel(progress.Level);
             if (progress.Xp < required)
                 break;
 
@@ -212,6 +212,6 @@ internal sealed class ProgressionService(
         return progress;
     }
 
-    private static long RequiredXp(int currentLevel)
-        => checked(100L * currentLevel * currentLevel);
+    public long GetRequiredXpForLevel(int currentLevel)
+        => checked(100L * Math.Max(1, currentLevel) * Math.Max(1, currentLevel));
 }

@@ -4,6 +4,9 @@ public interface IAchievementsApi
 {
     AchievementProgressSnapshot GetProgress(ulong steamId, string achievementId);
     IReadOnlyDictionary<string, AchievementProgressSnapshot> GetAll(ulong steamId);
+    long GetCurrency(ulong steamId);
+    bool AddCurrency(ulong steamId, long amount, string reason);
+    bool SpendCurrency(ulong steamId, long amount, string reason);
 
     AchievementMutationResult AddProgress(
         ulong steamId,

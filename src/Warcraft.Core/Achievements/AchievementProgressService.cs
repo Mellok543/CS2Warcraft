@@ -20,6 +20,29 @@ internal sealed class AchievementProgressService(
         return progress.ToSnapshot();
     }
 
+    public long GetCurrency(ulong steamId)
+        => players.TryGetRuntime(steamId)?.AchievementCurrency ?? 0;
+
+    public bool AddCurrency(ulong steamId, long amount, string reason)
+    {
+        if (amount <= 0 || players.TryGetRuntime(steamId) is not { } player)
+            return false;
+
+        player.AchievementCurrency = checked(player.AchievementCurrency + amount);
+        events.Publish(new PlayerStateChangedEvent(steamId, $"achievement-currency:{reason}"));
+        return true;
+    }
+
+    public bool SpendCurrency(ulong steamId, long amount, string reason)
+    {
+        if (amount <= 0 || players.TryGetRuntime(steamId) is not { } player || player.AchievementCurrency < amount)
+            return false;
+
+        player.AchievementCurrency -= amount;
+        events.Publish(new PlayerStateChangedEvent(steamId, $"achievement-currency:{reason}"));
+        return true;
+    }
+
     public IReadOnlyDictionary<string, AchievementProgressSnapshot> GetAll(ulong steamId)
     {
         var player = players.TryGetRuntime(steamId);

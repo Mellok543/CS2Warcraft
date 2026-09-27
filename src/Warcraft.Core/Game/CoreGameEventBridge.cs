@@ -237,7 +237,7 @@ internal sealed class CoreGameEventBridge(
         apiAccessor()?.Events.Publish(new DamagePostEvent(
             victimController!.SteamID,
             GetAttackerSteamId(damageInfo),
-            result.DamageDealt > 0 ? result.DamageDealt : result.HealthLost,
+            result.HealthLost > 0 ? result.HealthLost : result.DamageDealt,
             GetAttackerWeapon(damageInfo),
             ToDamageKind(damageInfo)));
     }

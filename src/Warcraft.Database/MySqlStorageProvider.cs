@@ -42,6 +42,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
                 steam_id BIGINT UNSIGNED NOT NULL,
                 name VARCHAR(128) NOT NULL,
                 global_xp BIGINT NOT NULL DEFAULT 0,
+                achievement_currency BIGINT NOT NULL DEFAULT 0,
                 active_race_id VARCHAR(64) NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -112,6 +113,13 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
 
         await EnsureColumnAsync(
             connection,
+            "wc_players",
+            "achievement_currency",
+            "ALTER TABLE wc_players ADD COLUMN achievement_currency BIGINT NOT NULL DEFAULT 0 AFTER global_xp;",
+            cancellationToken);
+
+        await EnsureColumnAsync(
+            connection,
             "wc_player_stats",
             "rounds_played",
             "ALTER TABLE wc_player_stats ADD COLUMN rounds_played BIGINT NOT NULL DEFAULT 0 AFTER headshots;",
@@ -157,11 +165,12 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
 
         string name;
         long globalXp;
+        long achievementCurrency;
         string? activeRaceId;
 
         await using (var command = new MySqlCommand(
             """
-            SELECT name, global_xp, active_race_id
+            SELECT name, global_xp, achievement_currency, active_race_id
             FROM wc_players
             WHERE steam_id = @steamId;
             """,
@@ -175,7 +184,8 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
 
             name = reader.GetString(0);
             globalXp = reader.GetInt64(1);
-            activeRaceId = reader.IsDBNull(2) ? null : reader.GetString(2);
+            achievementCurrency = reader.GetInt64(2);
+            activeRaceId = reader.IsDBNull(3) ? null : reader.GetString(3);
         }
 
         var races = new Dictionary<string, MutableRaceProgress>(
@@ -285,6 +295,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             SteamId = steamId,
             Name = name,
             GlobalXp = globalXp,
+            AchievementCurrency = achievementCurrency,
             ActiveRaceId = activeRaceId,
             Stats = stats,
             Achievements = achievements,
@@ -332,11 +343,12 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
     {
         await using var command = new MySqlCommand(
             """
-            INSERT INTO wc_players (steam_id, name, global_xp, active_race_id)
-            VALUES (@steamId, @name, @globalXp, @activeRaceId)
+            INSERT INTO wc_players (steam_id, name, global_xp, achievement_currency, active_race_id)
+            VALUES (@steamId, @name, @globalXp, @achievementCurrency, @activeRaceId)
             ON DUPLICATE KEY UPDATE
                 name = VALUES(name),
                 global_xp = VALUES(global_xp),
+                achievement_currency = VALUES(achievement_currency),
                 active_race_id = VALUES(active_race_id);
             """,
             connection,
@@ -345,6 +357,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
         command.Parameters.AddWithValue("@steamId", player.SteamId);
         command.Parameters.AddWithValue("@name", player.Name);
         command.Parameters.AddWithValue("@globalXp", player.GlobalXp);
+        command.Parameters.AddWithValue("@achievementCurrency", player.AchievementCurrency);
         command.Parameters.AddWithValue(
             "@activeRaceId",
             (object?)player.ActiveRaceId ?? DBNull.Value);
