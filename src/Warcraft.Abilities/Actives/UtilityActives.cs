@@ -29,7 +29,9 @@ internal sealed class RecallAbility(PositionHistory history) : ActiveAbilityHand
             return;
         }
 
+        Fx?.Smoke(caster.Position, FxColor.Arcane);
         caster.Pawn.Teleport(position: position.Value, velocity: Vector3.Zero);
+        Fx?.Column(position.Value, FxColor.Arcane);
         activation.Succeed();
     }
 }
@@ -55,6 +57,10 @@ internal sealed class SwapAbility : ActiveAbilityHandler
         var targetPosition = target.Position;
         caster.Pawn.Teleport(position: targetPosition, velocity: Vector3.Zero);
         target.Pawn.Teleport(position: casterPosition, velocity: Vector3.Zero);
+        Fx?.Smoke(casterPosition, FxColor.Arcane);
+        Fx?.Smoke(targetPosition, FxColor.Arcane);
+        Fx?.Line(EffectKit.Chest(casterPosition), EffectKit.Chest(targetPosition), FxColor.Arcane,
+            System.Drawing.Color.MediumPurple, 2f, 0.4f);
 
         activation.Succeed($"Вы поменялись местами с {target.Controller.PlayerName}.");
     }
@@ -81,6 +87,9 @@ internal sealed class PullAbility : ActiveAbilityHandler
         }
 
         target.Pawn.Teleport(velocity: Push.Towards(target.Position, caster.Position, force, upForce));
+        Fx?.Line(EffectKit.Chest(caster.Position), EffectKit.Chest(target.Position), FxColor.Arcane,
+            System.Drawing.Color.MediumPurple, 3f, 0.4f);
+        Fx?.BurstOn(target, FxColor.Arcane);
         activation.Succeed($"{target.Controller.PlayerName} притянут.");
     }
 }
@@ -107,6 +116,7 @@ internal sealed class RepulseAbility : ActiveAbilityHandler
             return;
         }
 
+        Fx?.Nova(caster.Position, FxColor.Arcane);
         foreach (var target in targets)
         {
             target.Pawn.Teleport(velocity: Push.Towards(caster.Position, target.Position, force, upForce));
@@ -156,6 +166,7 @@ internal sealed class CloakAbility : ActiveAbilityHandler
 
         _cloaked[caster.Controller.Slot] = new Cloak(Server.CurrentTime + duration, alpha);
         PlayerRender.SetAlpha(caster.Pawn, alpha);
+        Fx?.Smoke(caster.Position, FxColor.Shadow);
         activation.Succeed($"Маскировка на {duration:0.#} с.");
     }
 
@@ -168,7 +179,11 @@ internal sealed class CloakAbility : ActiveAbilityHandler
             {
                 _cloaked.Remove(slot);
                 if (player is { } visible)
+                {
                     PlayerRender.SetAlpha(visible.Pawn, PlayerRender.Opaque);
+                    Fx?.Smoke(visible.Position, FxColor.Shadow);
+                }
+
                 continue;
             }
 
@@ -211,9 +226,11 @@ internal sealed class BattleCryAbility : ActiveAbilityHandler
             .Where(x => !x.Controller.IsBot && x.Controller.SteamID != 0)
             .ToArray();
 
+        Fx?.Nova(caster.Position, FxColor.War);
         foreach (var ally in allies)
         {
             _buffs[ally.Controller.SteamID] = new Buff(until, percent);
+            Fx?.Status(Id, ally, WarcraftParticles.Body(FxColor.War), duration);
             if (ally.Controller.SteamID != activation.SteamId)
                 ally.Controller.PrintToChat($" [Warcraft] Боевой клич: +{percent * 100:0}% урона на {duration:0.#} с.");
         }
@@ -267,6 +284,15 @@ internal sealed class ResurrectAbility : ActiveAbilityHandler
         }
 
         dead.Respawn();
+        var slot = dead.Slot;
+        Fx?.BurstOn(caster, FxColor.Holy);
+
+        // The respawned pawn reaches its spawn point on the next frame.
+        Server.NextFrame(() =>
+        {
+            if (GamePlayers.FindAliveBySlot(slot) is { } revived)
+                Fx?.Column(revived.Position, FxColor.Holy);
+        });
         dead.PrintToChat($" [Warcraft] Вас воскресил {caster.Controller.PlayerName}!");
         activation.Succeed($"Воскрешён {dead.PlayerName}.");
     }

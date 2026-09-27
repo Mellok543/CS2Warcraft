@@ -1,3 +1,4 @@
+using Warcraft.Abilities.Game;
 using Warcraft.Api;
 using Warcraft.Api.Abilities;
 using Warcraft.Api.Events;
@@ -7,6 +8,7 @@ namespace Warcraft.Abilities;
 internal interface IAbilityHandler : IDisposable
 {
     string Id { get; }
+    void UseEffects(EffectKit effects);
     void Register(IWarcraftApi api);
 }
 
@@ -27,6 +29,11 @@ internal abstract class AbilityHandler : IAbilityHandler
     protected virtual string? DisplayName => null;
 
     protected IWarcraftApi? Api { get; private set; }
+
+    /// <summary>Shared visuals; set by the plugin before <see cref="Register"/>, null in isolation.</summary>
+    protected EffectKit? Fx { get; private set; }
+
+    public void UseEffects(EffectKit effects) => Fx = effects;
 
     public void Register(IWarcraftApi api)
     {

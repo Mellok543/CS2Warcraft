@@ -43,6 +43,8 @@ internal sealed class SecondWindAbility : AbilityHandler
         Api?.Events.Publish(new AbilityTelemetryEvent(@event.VictimSteamId, Id, AbilityTelemetryKind.Triggered));
         if (healed > 0)
             Api?.Events.Publish(new AbilityTelemetryEvent(@event.VictimSteamId, Id, AbilityTelemetryKind.Healing, healed));
+        Fx?.Nova(victim.Position, FxColor.Heal);
+        Fx?.BurstOn(victim, FxColor.Heal);
         victim.Controller.PrintToChat(" [Warcraft] Второе дыхание!");
     }
 }

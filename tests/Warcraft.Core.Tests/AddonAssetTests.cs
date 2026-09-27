@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Warcraft.Abilities.Game;
 
 namespace Warcraft.Core.Tests;
 
@@ -52,6 +53,29 @@ public sealed partial class AddonAssetTests
             Assert.DoesNotContain(
                 "g_vColorTint \"[1.000000 1.000000 1.000000 0.000000]\"",
                 material);
+        }
+    }
+
+    [GeneratedRegex("resource:\"(?<path>particles/[a-z_/]+\\.vpcf)\"")]
+    private static partial Regex ParticleReference();
+
+    [Fact]
+    public void ParticleRegistryMatchesGeneratedSystems()
+    {
+        var root = FindRepositoryRoot();
+        var directory = Path.Combine(root, "assets", "addon", "particles", "warcraft");
+        var generated = Directory.GetFiles(directory, "*.vpcf")
+            .Select(x => $"particles/warcraft/{Path.GetFileName(x)}")
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        // Every generated system is precached, and every path the server plays exists.
+        Assert.Equal(generated, WarcraftParticles.All.Order(StringComparer.Ordinal).ToArray());
+
+        foreach (var file in Directory.GetFiles(directory, "*.vpcf"))
+        {
+            foreach (Match child in ParticleReference().Matches(File.ReadAllText(file)))
+                Assert.Contains(child.Groups["path"].Value, generated);
         }
     }
 

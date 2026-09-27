@@ -3,7 +3,7 @@ using CounterStrikeSharp.API;
 
 namespace Warcraft.Abilities;
 
-/// <summary>configs/warcraft/visuals.json — decorative ability models from the Warcraft UI addon.</summary>
+/// <summary>configs/warcraft/visuals.json — ability models and particles from the Warcraft UI addon.</summary>
 internal sealed record VisualsConfig
 {
     /// <summary>
@@ -11,6 +11,12 @@ internal sealed record VisualsConfig
     /// mounted on the server and on clients; set to false to fall back to beams only.
     /// </summary>
     public bool Models { get; init; } = true;
+
+    /// <summary>
+    /// Play particle effects (bursts, auras, lightning, shockwaves). Same addon requirement;
+    /// false falls back to beams for rays and hides the rest.
+    /// </summary>
+    public bool Particles { get; init; } = true;
 
     public static string ConfigPath =>
         Path.Combine(Server.GameDirectory, "configs", "warcraft", "visuals.json");

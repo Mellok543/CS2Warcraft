@@ -35,7 +35,11 @@ internal sealed class HealBurstAbility : ActiveAbilityHandler
 
             healed++;
             restored += actual;
+            Fx?.BurstOn(target, FxColor.Heal);
         }
+
+        if (healed > 0)
+            Fx?.Nova(caster.Position, FxColor.Heal);
 
         if (restored > 0)
             Api?.Events.Publish(new AbilityTelemetryEvent(activation.SteamId, Id, AbilityTelemetryKind.Healing, restored));
@@ -51,7 +55,7 @@ internal sealed class HealBurstAbility : ActiveAbilityHandler
 /// Active: temporary damage reduction (1 = invulnerable).
 /// Config: duration (s), percent (default 1), cooldown.
 /// </summary>
-internal sealed class DivineShieldAbility(PropEffects props) : ActiveAbilityHandler
+internal sealed class DivineShieldAbility : ActiveAbilityHandler
 {
     private static readonly System.Drawing.Color ShieldColor = System.Drawing.Color.FromArgb(200, 255, 220, 120);
 
@@ -76,7 +80,9 @@ internal sealed class DivineShieldAbility(PropEffects props) : ActiveAbilityHand
         var percent = (float)Math.Clamp(AbilityConfigReader.GetLevelDouble(activation.Ability, "percent", 1.0), 0, 1);
 
         _shields[activation.SteamId] = new Shield(Server.CurrentTime + duration, percent);
-        props.Attach(WarcraftModels.ShieldBubble, caster.Pawn, ShieldColor, (float)duration);
+        Fx?.Props.Attach(WarcraftModels.ShieldBubble, caster.Pawn, ShieldColor, (float)duration);
+        Fx?.BurstOn(caster, FxColor.Holy);
+        Fx?.Status(Id, caster, WarcraftParticles.Body(FxColor.Holy), duration);
         activation.Succeed($"Щит активен {duration:0.#} с.");
     }
 
@@ -115,6 +121,8 @@ internal sealed class SprintAbility(MovementController movement) : ActiveAbility
         var duration = Math.Clamp(AbilityConfigReader.GetLevelDouble(activation.Ability, "duration", 4), 0.1, 30);
 
         movement.Boost(caster.Controller.Slot, multiplier, Server.CurrentTime + duration);
+        Fx?.Smoke(caster.Position, FxColor.Storm);
+        Fx?.Status(Id, caster, WarcraftParticles.Body(FxColor.Storm), duration);
         activation.Succeed();
     }
 }

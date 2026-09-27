@@ -21,8 +21,11 @@ internal sealed class KillHealAbility : AbilityHandler
         if (kill.TeamKill || GetUsable(kill.KillerSteamId) is not { } ability)
             return;
 
-        if (GamePlayers.FindAlive(kill.KillerSteamId) is { } killer)
-            PlayerHealth.Heal(killer.Pawn, AbilityConfigReader.GetLevelInt(ability, "amount"));
+        if (GamePlayers.FindAlive(kill.KillerSteamId) is not { } killer)
+            return;
+
+        if (PlayerHealth.Heal(killer.Pawn, AbilityConfigReader.GetLevelInt(ability, "amount")) > 0)
+            Fx?.BurstOn(killer, FxColor.Blood);
     }
 }
 
@@ -109,6 +112,13 @@ internal sealed class ReincarnationAbility(IGameScheduler scheduler) : AbilityHa
 
             player.Respawn();
             player.PrintToChat(" [Warcraft] Вы переродились!");
+
+            // The respawned pawn reaches its spawn point on the next frame.
+            Server.NextFrame(() =>
+            {
+                if (GamePlayers.FindAlive(steamId) is { } reborn)
+                    Fx?.Column(reborn.Position, FxColor.Holy);
+            });
         });
     }
 }

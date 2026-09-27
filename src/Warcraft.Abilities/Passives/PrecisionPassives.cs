@@ -158,6 +158,8 @@ internal sealed class CheatDeathAbility : AbilityHandler
 
         _usedThisRound.Add(@event.VictimSteamId);
         @event.Damage = Math.Max(0, victim.Pawn.Health - 1);
+        Fx?.BurstOn(victim, FxColor.Holy);
+        Fx?.Column(victim.Position, FxColor.Holy);
         victim.Controller.PrintToChat(" [Warcraft] Обман смерти спас вас!");
     }
 }

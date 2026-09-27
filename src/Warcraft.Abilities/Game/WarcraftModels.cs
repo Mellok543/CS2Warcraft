@@ -11,6 +11,7 @@ internal static class WarcraftModels
     public const string TotemFrost = "models/warcraft/totems/totem_frost/totem_frost.vmdl";
     public const string TotemWar = "models/warcraft/totems/totem_war/totem_war.vmdl";
     public const string TotemShield = "models/warcraft/totems/totem_shield/totem_shield.vmdl";
+    public const string Turret = "models/warcraft/totems/turret/turret.vmdl";
 
     public const string EntangleRoots = "models/warcraft/effects/entangle_roots/entangle_roots.vmdl";
     public const string AuraRing = "models/warcraft/effects/aura_ring/aura_ring.vmdl";
@@ -18,7 +19,7 @@ internal static class WarcraftModels
 
     public static IReadOnlyList<string> All { get; } =
     [
-        TotemHealing, TotemFlame, TotemFrost, TotemWar, TotemShield,
+        TotemHealing, TotemFlame, TotemFrost, TotemWar, TotemShield, Turret,
         EntangleRoots, AuraRing, ShieldBubble
     ];
 }

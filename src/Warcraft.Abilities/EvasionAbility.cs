@@ -1,3 +1,4 @@
+using Warcraft.Abilities.Game;
 using Warcraft.Api.Abilities;
 using Warcraft.Api.Events;
 
@@ -29,7 +30,11 @@ internal sealed class EvasionAbility : AbilityHandler
             return;
 
         var chance = Math.Clamp(AbilityConfigReader.GetLevelDouble(ability, "chance"), 0.0, 1.0);
-        if (Random.Shared.NextDouble() < chance)
-            @event.Damage = 0;
+        if (Random.Shared.NextDouble() >= chance)
+            return;
+
+        @event.Damage = 0;
+        if (Fx is { } fx && fx.Throttle(Id, @event.VictimSteamId, 0.4) && GamePlayers.FindAlive(@event.VictimSteamId) is { } victim)
+            fx.BurstOn(victim, FxColor.Shadow);
     }
 }

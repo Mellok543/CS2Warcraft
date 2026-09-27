@@ -17,8 +17,11 @@ internal abstract class AuraAbility : AbilityHandler
     /// <summary>Tint of the ring shown under players with this aura.</summary>
     protected abstract Color AuraColor { get; }
 
-    /// <summary>Decorative models; null or disabled means no ring.</summary>
-    public PropEffects? Props { get; init; }
+    /// <summary>Colour of the aura's particles.</summary>
+    protected abstract FxColor FxColor { get; }
+
+    /// <summary>Particle loop attached to players with this aura.</summary>
+    protected virtual string Ambient => WarcraftParticles.Motes(FxColor);
 
     /// <summary>Pulse period when the race config has no <c>interval</c>.</summary>
     protected virtual double DefaultInterval => 1.0;
@@ -32,8 +35,8 @@ internal abstract class AuraAbility : AbilityHandler
             _visuals?.Clear();
         }));
 
-        if (Props is not null)
-            _visuals = new AuraVisuals(Props, AuraColor);
+        if (Fx is not null)
+            _visuals = new AuraVisuals(Fx, AuraColor, Ambient);
     }
 
     protected override void OnDisposed()
@@ -82,6 +85,7 @@ internal sealed class HealAuraAbility : AuraAbility
 {
     public override string Id => "heal_aura";
     protected override Color AuraColor => Color.FromArgb(200, 60, 230, 100);
+    protected override FxColor FxColor => FxColor.Heal;
     protected override string Description =>
         "Аура: союзники в радиусе {radius} восстанавливают {amount} HP каждые {interval|1} с.";
     protected override string DisplayName => "Аура исцеления";
@@ -101,6 +105,8 @@ internal sealed class ImmolationAbility : AuraAbility
 {
     public override string Id => "immolation";
     protected override Color AuraColor => Color.FromArgb(220, 255, 110, 20);
+    protected override FxColor FxColor => FxColor.Fire;
+    protected override string Ambient => WarcraftParticles.FlamesRing;
     protected override string Description =>
         "Аура: враги в радиусе {radius} получают {damage} урона каждые {interval|1} с.";
     protected override string DisplayName => "Жертвенный огонь";
@@ -112,8 +118,11 @@ internal sealed class ImmolationAbility : AuraAbility
 
         foreach (var enemy in GamePlayers.EnemiesAround(owner, owner.Position, radius).ToArray())
         {
-            Api?.Combat.DealAbilityDamage(
+            var result = Api?.Combat.DealAbilityDamage(
                 new AbilityDamageRequest(owner.Controller.SteamID, enemy.Controller.Slot, damage, Id));
+
+            if (result is { Applied: true, HealthRemoved: > 0 })
+                Fx?.SparksOn(enemy, FxColor.Fire);
         }
     }
 }

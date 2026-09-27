@@ -47,5 +47,7 @@ internal sealed class BashAbility(MovementController movement) : AbilityHandler
         var duration = Math.Clamp(AbilityConfigReader.GetLevelDouble(ability, "duration", 0.5), 0.05, 5.0);
         var slow = (float)Math.Clamp(AbilityConfigReader.GetLevelDouble(ability, "slow", 0.0), 0.0, 1.0);
         movement.Stun(victim, slow, Server.CurrentTime + duration);
+        Fx?.BurstOn(victim, FxColor.Storm);
+        Fx?.Status(Id, victim, WarcraftParticles.Body(FxColor.Storm), duration);
     }
 }

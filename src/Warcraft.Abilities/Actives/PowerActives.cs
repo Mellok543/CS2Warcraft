@@ -8,7 +8,7 @@ using Warcraft.Api.Events;
 namespace Warcraft.Abilities.Actives;
 
 /// <summary>Active: heavy single-target strike on the nearest enemy. Config: range, damage, cooldown.</summary>
-internal sealed class SmiteAbility(BeamEffects beams) : ActiveAbilityHandler
+internal sealed class SmiteAbility : ActiveAbilityHandler
 {
     private static readonly Color BoltColor = Color.FromArgb(255, 255, 230, 120);
 
@@ -29,7 +29,9 @@ internal sealed class SmiteAbility(BeamEffects beams) : ActiveAbilityHandler
         }
 
         Api?.Combat.DealAbilityDamage(new AbilityDamageRequest(activation.SteamId, target.Controller.Slot, damage, Id));
-        beams.Draw(Lift(target.Position, 400f), Lift(target.Position, 0f), BoltColor, 5f, 0.3f);
+        Fx?.Line(Lift(target.Position, 400f), Lift(target.Position, 40f), FxColor.Holy, BoltColor, 5f, 0.3f);
+        Fx?.Column(target.Position, FxColor.Holy);
+        Fx?.Nova(target.Position, FxColor.Holy);
         activation.Succeed($"Кара поразила {target.Controller.PlayerName}.");
     }
 
@@ -65,6 +67,8 @@ internal sealed class RageAbility(TeamBuffs buffs, MovementController movement) 
         if (multiplier > 1f)
             movement.Boost(caster.Controller.Slot, multiplier, until);
 
+        Fx?.Nova(caster.Position, FxColor.War);
+        Fx?.Status(Id, caster, WarcraftParticles.FlamesRage, until - now);
         activation.Succeed("Ярость!");
     }
 }

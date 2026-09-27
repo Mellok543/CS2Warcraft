@@ -37,7 +37,11 @@ internal sealed class VampirismAbility : AbilityHandler
             return;
 
         var healed = PlayerHealth.Heal(player.Pawn, Math.Max(1, (int)Math.Round(@event.FinalDamage * percent)));
-        if (healed > 0)
-            Api?.Events.Publish(new AbilityTelemetryEvent(attacker, Id, AbilityTelemetryKind.Healing, healed));
+        if (healed <= 0)
+            return;
+
+        Api?.Events.Publish(new AbilityTelemetryEvent(attacker, Id, AbilityTelemetryKind.Healing, healed));
+        if (Fx is { } fx && fx.Throttle(Id, attacker, 0.6))
+            fx.BurstOn(player, FxColor.Blood);
     }
 }

@@ -13,7 +13,7 @@ namespace Warcraft.Abilities;
 /// Config: damage, range, jumps, optional damageFalloff (multiplier per jump).
 /// Cooldown (<c>cooldown</c>) and all eligibility checks are enforced by Core.
 /// </summary>
-internal sealed class ChainLightningAbility(BeamEffects beams) : ActiveAbilityHandler
+internal sealed class ChainLightningAbility : ActiveAbilityHandler
 {
     private const float ChestHeight = 48f;
     private static readonly Color BoltColor = Color.FromArgb(255, 120, 170, 255);
@@ -57,7 +57,9 @@ internal sealed class ChainLightningAbility(BeamEffects beams) : ActiveAbilityHa
         while (target is { } victim)
         {
             var to = victim.Position;
-            beams.Draw(Lift(from), Lift(to), BoltColor, 3f, 0.35f);
+            Fx?.Line(Lift(from), Lift(to), FxColor.Storm, BoltColor, 3f, 0.35f);
+            Fx?.SparksOn(victim, FxColor.Storm);
+            Fx?.Status(Id, victim, WarcraftParticles.Body(FxColor.Storm), 0.6);
             var result = Api?.Combat.DealAbilityDamage(new AbilityDamageRequest(
                 @event.SteamId,
                 victim.Controller.Slot,

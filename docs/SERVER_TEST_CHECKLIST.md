@@ -93,6 +93,12 @@ Run this checklist on a real Counter-Strike 2 server before tagging a release.
 - [ ] Aura owners have a tinted ring at their feet that follows them and disappears on death/race change.
 - [ ] Divine shield shows a golden bubble for its duration; entangle shows the roots ring at the target.
 - [ ] With `visuals.json` → `"models": false`, no models spawn and totems use beam pillars.
+- [ ] Particles (addon mounted): totems show a shimmering circle exactly at their radius plus ambient effects (green motes, fire in the flame bowl, falling snow, red/gold motes); the engineer turret turns towards its target and fires a tracer with sparks.
+- [ ] Auras show rising coloured motes around the owner (immolation: a ring of flames).
+- [ ] Chain lightning draws jagged blue bolts between targets; smite drops a golden bolt and pillar; life drain, pull and swap draw red/violet rays; war stomp, repulse, battle cry and heal burst show a shockwave along the ground.
+- [ ] Status effects follow the player and end with the effect: poison (green), stun from bash/war stomp (blue), frost totem slow, rage flames, divine shield sparkles, sprint, battle cry buff.
+- [ ] Level up shows a golden pillar on the player; resurrect and reincarnation show a pillar at the respawn point.
+- [ ] With `visuals.json` → `"particles": false`, rays fall back to beams and totems draw beam rings; nothing else is spawned.
 - [ ] Using any ability does not advance `mechanic.*` achievements; chain lightning hitting 3 targets unlocks "Цепная реакция".
 - [ ] `Persistence` shows `warcraft.mysql`; with `database.json` disabled it shows the missing-provider warning.
 - [ ] `Health: OK` with the shipped races. Changing an ability id in a race JSON to an unknown id still reloads, and `css_wc_status` then lists it as `has no handler`; a JSON syntax error shows `Last race reload: REJECTED`.

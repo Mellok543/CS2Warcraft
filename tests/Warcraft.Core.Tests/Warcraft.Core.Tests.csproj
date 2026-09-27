@@ -13,6 +13,7 @@
     <ProjectReference Include="../../src/Warcraft.Core/Warcraft.Core.csproj" />
     <ProjectReference Include="../../src/Warcraft.Api/Warcraft.Api.csproj" />
     <ProjectReference Include="../../src/Warcraft.Achievements/Warcraft.Achievements.csproj" />
+    <ProjectReference Include="../../src/Warcraft.Abilities/Warcraft.Abilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>

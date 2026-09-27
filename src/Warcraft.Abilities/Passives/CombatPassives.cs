@@ -94,13 +94,17 @@ internal sealed class PoisonAbility(DamageOverTime dots) : AbilityHandler
             return;
         }
 
+        var ticks = AbilityConfigReader.GetLevelInt(ability, "ticks", 3);
+        var interval = AbilityConfigReader.GetLevelDouble(ability, "interval", 1.0);
+
         dots.Apply(
             attacker,
             victim.Controller.Slot,
             Id,
             AbilityConfigReader.GetLevelInt(ability, "damage"),
-            AbilityConfigReader.GetLevelInt(ability, "ticks", 3),
-            AbilityConfigReader.GetLevelDouble(ability, "interval", 1.0),
+            ticks,
+            interval,
             Server.CurrentTime);
+        Fx?.Status(Id, victim, WarcraftParticles.Body(FxColor.Poison), Math.Max(0.5, ticks * interval));
     }
 }

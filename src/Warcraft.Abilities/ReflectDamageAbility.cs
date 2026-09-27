@@ -52,7 +52,11 @@ internal sealed class ReflectDamageAbility : AbilityHandler
                 Id));
 
             if (result is { Applied: true, HealthRemoved: > 0 })
+            {
                 Api?.Events.Publish(new AbilityTelemetryEvent(@event.VictimSteamId, Id, AbilityTelemetryKind.DamageDealt, result.HealthRemoved));
+                if (Fx is { } fx && fx.Throttle(Id, @event.VictimSteamId, 0.25))
+                    fx.SparksOn(target, FxColor.Holy);
+            }
 
             if (result is { Killed: true })
                 Api?.Events.Publish(new AbilityTelemetryEvent(@event.VictimSteamId, Id, AbilityTelemetryKind.Kill));

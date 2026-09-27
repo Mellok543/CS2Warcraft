@@ -58,7 +58,8 @@ See [SHOP.md](SHOP.md).
 
 | Key | Default | Meaning |
 |---|---|---|
-| `models` | true | spawn totem, roots, shield bubble and aura ring models from the Warcraft UI addon; set `false` if the server does not mount the addon (beams only) |
+| `models` | true | spawn totem, turret, roots, shield bubble and aura ring models from the Warcraft UI addon; set `false` if the server does not mount the addon |
+| `particles` | true | play ability particle effects from the same addon (bursts, auras, lightning, shockwaves, status effects); `false` falls back to beams for rays and totem areas |
 
 ## races/*.json (Warcraft.Races)
 

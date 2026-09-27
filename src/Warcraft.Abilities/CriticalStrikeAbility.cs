@@ -1,3 +1,4 @@
+using Warcraft.Abilities.Game;
 using Warcraft.Api.Abilities;
 using Warcraft.Api.Events;
 
@@ -35,5 +36,8 @@ internal sealed class CriticalStrikeAbility : AbilityHandler
 
         var multiplier = Math.Max(1.0, AbilityConfigReader.GetLevelDouble(ability, "damageMultiplier", 1.0));
         @event.Damage *= (float)multiplier;
+
+        if (Fx is { } fx && fx.Throttle(Id, attacker, 0.15) && GamePlayers.FindAlive(@event.VictimSteamId) is { } victim)
+            fx.SparksOn(victim, FxColor.War);
     }
 }

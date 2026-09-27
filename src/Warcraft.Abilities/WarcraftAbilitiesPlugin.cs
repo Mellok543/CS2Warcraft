@@ -26,21 +26,29 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
     private readonly List<IDisposable> _systems = [];
     private BeamEffects? _beams;
     private PropEffects? _props;
+    private ParticleEffects? _particles;
     private VisualsConfig _visuals = new();
     private MovementController? _movement;
+    private EffectKit? _fx;
 
     public override void Load(bool hotReload)
     {
         _visuals = VisualsConfig.LoadOrCreate();
 
-        // Models must be precached on map load; the listener is registered before any map starts.
+        // Addon resources must be precached on map load; the listener is registered before any map starts.
         RegisterListener<Listeners.OnServerPrecacheResources>(manifest =>
         {
-            if (!_visuals.Models)
-                return;
+            if (_visuals.Models)
+            {
+                foreach (var model in WarcraftModels.All)
+                    manifest.AddResource(model);
+            }
 
-            foreach (var model in WarcraftModels.All)
-                manifest.AddResource(model);
+            if (_visuals.Particles)
+            {
+                foreach (var particle in WarcraftParticles.All)
+                    manifest.AddResource(particle);
+            }
         });
     }
 
@@ -66,11 +74,15 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         _beams = beams;
         var props = new PropEffects(scheduler, _visuals.Models);
         _props = props;
+        var particles = new ParticleEffects(scheduler, _visuals.Particles);
+        _particles = particles;
+        _fx = new EffectKit(scheduler, beams, props, particles);
+        var fx = _fx;
         _movement = movement;
         var dots = new DamageOverTime(_api);
         var history = new PositionHistory();
         var buffs = new TeamBuffs();
-        var totems = new TotemSystem(beams, props);
+        var totems = new TotemSystem(fx);
 
         // Buff modifiers must run before ability handlers (cheat_death needs the final damage).
         _systems.AddRange(buffs.Attach(_api.Events, () => Server.CurrentTime));
@@ -104,24 +116,24 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new AdrenalineAbility(movement));
         Register(new KillSpeedAbility(movement));
         Register(new JumpBoostAbility());
-        Register(new HealAuraAbility() { Props = props });
-        Register(new ImmolationAbility() { Props = props });
-        Register(new SlowAuraAbility(movement) { Props = props });
-        Register(new SpeedAuraAbility(movement) { Props = props });
-        Register(new CommandAuraAbility(buffs) { Props = props });
-        Register(new DevotionAuraAbility(buffs) { Props = props });
-        Register(new VampiricAuraAbility(buffs) { Props = props });
+        Register(new HealAuraAbility());
+        Register(new ImmolationAbility());
+        Register(new SlowAuraAbility(movement));
+        Register(new SpeedAuraAbility(movement));
+        Register(new CommandAuraAbility(buffs));
+        Register(new DevotionAuraAbility(buffs));
+        Register(new VampiricAuraAbility(buffs));
         Register(new SecondWindAbility());
 
         // Activatable (ability slot or ultimate)
-        Register(new ChainLightningAbility(beams));
+        Register(new ChainLightningAbility());
         Register(new DashAbility());
         Register(new HealBurstAbility());
-        Register(new DivineShieldAbility(props));
+        Register(new DivineShieldAbility());
         Register(new SprintAbility(movement));
         Register(new WarStompAbility(movement));
-        Register(new EntangleAbility(movement, dots, beams, props));
-        Register(new LifeDrainAbility(beams));
+        Register(new EntangleAbility(movement, dots));
+        Register(new LifeDrainAbility());
         Register(new RecallAbility(history));
         Register(new SwapAbility());
         Register(new PullAbility());
@@ -134,8 +146,8 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new FrostTotemAbility(totems, movement));
         Register(new WarTotemAbility(totems, buffs));
         Register(new ShieldTotemAbility(totems, buffs));
-        Register(new TurretTotemAbility(totems, beams));
-        Register(new SmiteAbility(beams));
+        Register(new TurretTotemAbility(totems));
+        Register(new SmiteAbility());
         Register(new RageAbility(buffs, movement));
 
         // Must be the last DamagePreEvent subscriber: it needs the final damage.
@@ -156,8 +168,26 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
             history.Clear();
             buffs.Clear();
             totems.Clear();
+            fx.Clear();
             beams.PruneInvalid();
             props.PruneInvalid();
+            particles.PruneInvalid();
+        }));
+        _systems.Add(_api.Events.Subscribe<PlayerXpGainedEvent>(xp =>
+        {
+            if (!xp.LeveledUp)
+                return;
+
+            // XP can be granted off the game thread (e.g. after a storage load).
+            var steamId = xp.SteamId;
+            Server.NextFrame(() =>
+            {
+                if (GamePlayers.FindAlive(steamId) is not { } player)
+                    return;
+
+                fx.Column(player.Position, FxColor.Holy);
+                fx.Nova(player.Position, FxColor.Holy);
+            });
         }));
 
         Logger.LogInformation(
@@ -184,6 +214,9 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         _beams = null;
         _props?.Dispose();
         _props = null;
+        _particles?.Dispose();
+        _particles = null;
+        _fx = null;
 
         _api?.Modules.Unregister("warcraft.abilities");
         _api = null;
@@ -196,6 +229,9 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
 
         try
         {
+            if (_fx is not null)
+                handler.UseEffects(_fx);
+
             handler.Register(_api);
             _handlers.Add(handler);
         }

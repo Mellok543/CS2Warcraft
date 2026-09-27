@@ -4,18 +4,18 @@ using CounterStrikeSharp.API.Core;
 namespace Warcraft.Abilities.Game;
 
 /// <summary>
-/// A glowing ring under each player whose aura is active, tinted per aura.
+/// A glowing ring and a particle loop on each player whose aura is active, tinted per aura.
 /// One instance per aura ability; <see cref="Sync"/> is called every aura tick
 /// with the owners that currently have the aura, everything else is removed
 /// (death, lost condition, race change). Game thread only.
 /// </summary>
-internal sealed class AuraVisuals(PropEffects props, Color color)
+internal sealed class AuraVisuals(EffectKit fx, Color color, string ambient)
 {
-    private readonly Dictionary<int, (CCSPlayerPawn Pawn, CDynamicProp Ring)> _rings = [];
+    private readonly Dictionary<int, Attached> _attached = [];
 
     public void Sync(IReadOnlyCollection<LivePlayer> owners)
     {
-        if (!props.Enabled)
+        if (!fx.Props.Enabled && !fx.Particles.Enabled)
             return;
 
         var active = new HashSet<int>();
@@ -26,32 +26,43 @@ internal sealed class AuraVisuals(PropEffects props, Color color)
             active.Add(slot);
 
             // A respawn gives the player a new pawn: re-attach to it.
-            if (_rings.TryGetValue(slot, out var existing) &&
-                existing.Ring.IsValid &&
-                existing.Pawn.Handle == owner.Pawn.Handle)
+            if (_attached.TryGetValue(slot, out var existing) &&
+                existing.Pawn.Handle == owner.Pawn.Handle &&
+                existing.Ring?.IsValid != false &&
+                existing.Particle?.IsValid != false)
             {
                 continue;
             }
 
-            if (_rings.Remove(slot, out var stale))
-                props.Remove(stale.Ring);
+            if (_attached.Remove(slot, out var stale))
+                Detach(stale);
 
-            if (props.Attach(WarcraftModels.AuraRing, owner.Pawn, color) is { } ring)
-                _rings[slot] = (owner.Pawn, ring);
+            _attached[slot] = new Attached(
+                owner.Pawn,
+                fx.Props.Attach(WarcraftModels.AuraRing, owner.Pawn, color),
+                fx.Particles.Follow(ambient, owner.Pawn));
         }
 
-        foreach (var slot in _rings.Keys.Where(x => !active.Contains(x)).ToArray())
+        foreach (var slot in _attached.Keys.Where(x => !active.Contains(x)).ToArray())
         {
-            props.Remove(_rings[slot].Ring);
-            _rings.Remove(slot);
+            Detach(_attached[slot]);
+            _attached.Remove(slot);
         }
     }
 
     public void Clear()
     {
-        foreach (var (_, ring) in _rings.Values)
-            props.Remove(ring);
+        foreach (var attached in _attached.Values)
+            Detach(attached);
 
-        _rings.Clear();
+        _attached.Clear();
     }
+
+    private void Detach(Attached attached)
+    {
+        fx.Props.Remove(attached.Ring);
+        fx.Particles.Stop(attached.Particle);
+    }
+
+    private readonly record struct Attached(CCSPlayerPawn Pawn, CDynamicProp? Ring, CParticleSystem? Particle);
 }

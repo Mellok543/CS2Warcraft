@@ -34,10 +34,14 @@ internal sealed class WarStompAbility(MovementController movement) : ActiveAbili
         }
 
         var until = Server.CurrentTime + stun;
+        Fx?.Nova(caster.Position, FxColor.War);
         foreach (var target in targets)
         {
             if (stun > 0)
+            {
                 movement.Stun(target, slow, until);
+                Fx?.Status(Id, target, WarcraftParticles.Body(FxColor.Storm), stun);
+            }
 
             Api?.Combat.DealAbilityDamage(
                 new AbilityDamageRequest(activation.SteamId, target.Controller.Slot, damage, Id));
@@ -51,7 +55,7 @@ internal sealed class WarStompAbility(MovementController movement) : ActiveAbili
 /// Active: roots the nearest enemy and damages it every second.
 /// Config: range, duration (s), damage (per second), cooldown.
 /// </summary>
-internal sealed class EntangleAbility(MovementController movement, DamageOverTime dots, BeamEffects beams, PropEffects props) : ActiveAbilityHandler
+internal sealed class EntangleAbility(MovementController movement, DamageOverTime dots) : ActiveAbilityHandler
 {
     private static readonly Color RootColor = Color.FromArgb(255, 60, 200, 60);
 
@@ -75,8 +79,10 @@ internal sealed class EntangleAbility(MovementController movement, DamageOverTim
         var now = Server.CurrentTime;
         movement.Stun(target, 0f, now + duration);
         dots.Apply(activation.SteamId, target.Controller.Slot, Id, damage, (int)Math.Ceiling(duration), 1.0, now);
-        beams.Draw(Chest(caster.Position), Chest(target.Position), RootColor, 2f, 0.5f);
-        props.Spawn(WarcraftModels.EntangleRoots, target.Position, Random.Shared.NextSingle() * 360f, Color.White, (float)duration);
+        Fx?.Line(Chest(caster.Position), Chest(target.Position), FxColor.Nature, RootColor, 2f, 0.5f);
+        Fx?.Nova(target.Position, FxColor.Nature);
+        Fx?.Status(Id, target, WarcraftParticles.Body(FxColor.Nature), duration);
+        Fx?.Props.Spawn(WarcraftModels.EntangleRoots, target.Position, Random.Shared.NextSingle() * 360f, Color.White, (float)duration);
 
         activation.Succeed($"{target.Controller.PlayerName} опутан.");
     }
@@ -88,7 +94,7 @@ internal sealed class EntangleAbility(MovementController movement, DamageOverTim
 /// Active: drains health from the nearest enemy.
 /// Config: range, damage, healPercent (share of dealt damage returned, default 1), cooldown.
 /// </summary>
-internal sealed class LifeDrainAbility(BeamEffects beams) : ActiveAbilityHandler
+internal sealed class LifeDrainAbility : ActiveAbilityHandler
 {
     private static readonly Color DrainColor = Color.FromArgb(255, 200, 30, 40);
 
@@ -125,7 +131,10 @@ internal sealed class LifeDrainAbility(BeamEffects beams) : ActiveAbilityHandler
             Api?.Events.Publish(new AbilityTelemetryEvent(activation.SteamId, Id, AbilityTelemetryKind.Kill));
         if (healed > 0)
             Api?.Events.Publish(new AbilityTelemetryEvent(activation.SteamId, Id, AbilityTelemetryKind.Healing, healed));
-        beams.Draw(Chest(target.Position), Chest(caster.Position), DrainColor, 2.5f, 0.4f);
+        Fx?.Line(Chest(target.Position), Chest(caster.Position), FxColor.Blood, DrainColor, 2.5f, 0.4f);
+        Fx?.BurstOn(target, FxColor.Blood);
+        if (healed > 0)
+            Fx?.BurstOn(caster, FxColor.Heal);
         activation.Succeed($"Похищено {result.HealthRemoved} HP.");
     }
 
