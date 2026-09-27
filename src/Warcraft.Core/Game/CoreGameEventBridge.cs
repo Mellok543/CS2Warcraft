@@ -16,7 +16,7 @@ internal sealed class CoreGameEventBridge(
     CoreConfig config)
 {
     private readonly Dictionary<int, ulong> _creditedKills = [];
-    private readonly Dictionary<int, PendingDamagePost> _pendingDamagePosts = [];
+    private readonly Dictionary<uint, PendingDamagePost> _pendingDamagePosts = [];
     private int _ticksSinceGameTick;
 
     public HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
