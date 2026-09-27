@@ -61,47 +61,25 @@ internal sealed class EffectKit(IGameScheduler scheduler, BeamEffects beams, Pro
 
     private void DrawJaggedLightning(Vector3 from, Vector3 to, Color fallback, float width, float lifetime)
     {
-        var delta = to - from;
-        var distance = delta.Length();
+        var distance = Vector3.Distance(from, to);
         if (distance < 1f)
             return;
 
-        var direction = Vector3.Normalize(delta);
-        var segmentCount = Math.Clamp((int)MathF.Ceiling(distance / 110f), 5, 8);
+        // Native CBeam amplitude gives Source's beam renderer actual lightning noise,
+        // unlike manually chaining straight segments.
+        var amplitude = Math.Clamp(distance * 0.055f, 14f, 32f);
+        var core = Color.FromArgb(255, 225, 240, 255);
 
-        var reference = MathF.Abs(direction.Z) < 0.9f
-            ? Vector3.UnitZ
-            : Vector3.UnitY;
+        beams.Draw(from, to, fallback, Math.Max(width, 3.5f), lifetime, amplitude);
+        beams.Draw(from, to, core, Math.Max(1.0f, width * 0.32f), lifetime, amplitude * 0.65f);
 
-        var right = Vector3.Normalize(Vector3.Cross(direction, reference));
-        var up = Vector3.Normalize(Vector3.Cross(right, direction));
-        var jitter = Math.Clamp(distance * 0.035f, 8f, 26f);
-
-        var points = new Vector3[segmentCount + 1];
-        points[0] = from;
-        points[^1] = to;
-
-        for (var i = 1; i < segmentCount; i++)
+        // Add short-lived electrical flashes along the bolt without control points.
+        var flashCount = Math.Clamp((int)(distance / 180f), 2, 4);
+        for (var i = 1; i <= flashCount; i++)
         {
-            var t = i / (float)segmentCount;
-            var center = Vector3.Lerp(from, to, t);
-            var falloff = MathF.Sin(MathF.PI * t);
-
-            var side = ((float)Random.Shared.NextDouble() * 2f - 1f) * jitter * falloff;
-            var vertical = ((float)Random.Shared.NextDouble() * 2f - 1f) * jitter * 0.7f * falloff;
-
-            points[i] = center + right * side + up * vertical;
-
-            if ((i & 1) == 1)
-                particles.Play(WarcraftParticles.Flash(FxColor.Storm), points[i], 0.9f);
-        }
-
-        var core = Color.FromArgb(255, 220, 235, 255);
-
-        for (var i = 0; i < segmentCount; i++)
-        {
-            beams.Draw(points[i], points[i + 1], fallback, width, lifetime);
-            beams.Draw(points[i], points[i + 1], core, Math.Max(0.8f, width * 0.35f), lifetime);
+            var t = i / (float)(flashCount + 1);
+            var point = Vector3.Lerp(from, to, t);
+            particles.Play(WarcraftParticles.Flash(FxColor.Storm), point, 0.8f);
         }
 
         particles.Play(WarcraftParticles.Sparks(FxColor.Storm), to, 1.0f);

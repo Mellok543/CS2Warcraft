@@ -13,7 +13,13 @@ internal sealed class BeamEffects(IGameScheduler scheduler) : IDisposable
     // Removal timers die with the plugin, so live beams are tracked for unload.
     private readonly HashSet<CBeam> _active = [];
 
-    public void Draw(Vector3 from, Vector3 to, Color color, float width, float lifetimeSeconds)
+    public void Draw(
+        Vector3 from,
+        Vector3 to,
+        Color color,
+        float width,
+        float lifetimeSeconds,
+        float amplitude = 0f)
     {
         var beam = Utilities.CreateEntityByName<CBeam>("beam");
         if (beam is null)
@@ -22,6 +28,7 @@ internal sealed class BeamEffects(IGameScheduler scheduler) : IDisposable
         beam.Render = color;
         beam.Width = width;
         beam.EndWidth = width;
+        beam.Amplitude = Math.Max(0f, amplitude);
         beam.Teleport(new Vector(from.X, from.Y, from.Z), new QAngle(0, 0, 0), new Vector(0, 0, 0));
         beam.EndPos.X = to.X;
         beam.EndPos.Y = to.Y;
