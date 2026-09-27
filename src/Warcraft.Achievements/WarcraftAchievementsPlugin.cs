@@ -218,8 +218,19 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
         if (player is not { IsValid: true })
             return;
 
-        player.PrintToChat(
-            $" [Warcraft] ★ Достижение разблокировано: {definition.Name} [{RarityName(definition.Rarity)}]");
+        var shown = _api?.Menu.RequestNotification(new MenuNotificationRequest(
+            unlocked.SteamId,
+            $"ДОСТИЖЕНИЕ • {RarityName(definition.Rarity)}",
+            definition.Name,
+            definition.Description,
+            NotificationStyle(definition.Rarity),
+            5.0f)) == true;
+
+        if (!shown)
+        {
+            player.PrintToChat(
+                $" [Warcraft] ★ Достижение разблокировано: {definition.Name} [{RarityName(definition.Rarity)}]");
+        }
     }
 
     private void RefreshDefinitions()
@@ -240,6 +251,17 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
             AchievementCategory.Abilities => "Способности",
             AchievementCategory.Mastery => "Mastery рас",
             _ => category.ToString()
+        };
+
+    private static MenuNotificationStyle NotificationStyle(AchievementRarity rarity)
+        => rarity switch
+        {
+            AchievementRarity.Common => MenuNotificationStyle.Common,
+            AchievementRarity.Rare => MenuNotificationStyle.Rare,
+            AchievementRarity.Epic => MenuNotificationStyle.Epic,
+            AchievementRarity.Legendary => MenuNotificationStyle.Legendary,
+            AchievementRarity.Secret => MenuNotificationStyle.Secret,
+            _ => MenuNotificationStyle.Common
         };
 
     private static string RarityName(AchievementRarity rarity)
