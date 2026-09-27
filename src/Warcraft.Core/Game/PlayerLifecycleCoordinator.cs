@@ -100,11 +100,12 @@ internal sealed class PlayerLifecycleCoordinator(
         try
         {
             var persisted = await persistence.LoadPlayerAsync(steamId, lifetimeToken);
-            if (persisted is null)
-                return;
 
+            // Only after this point may the player's state be saved (see PlayerRuntimeState.IsLoaded).
             await gameThread
-                .InvokeAsync(() => players.RestoreIfLoaded(persisted, currentName))
+                .InvokeAsync(() => persisted is null
+                    ? players.MarkLoaded(steamId)
+                    : players.RestoreIfLoaded(persisted, currentName))
                 .WaitAsync(lifetimeToken);
         }
         catch (OperationCanceledException) when (lifetimeToken.IsCancellationRequested)
@@ -114,7 +115,8 @@ internal sealed class PlayerLifecycleCoordinator(
         {
             logger.LogError(
                 exception,
-                "Failed to load Warcraft state for {SteamId}.",
+                "Failed to load Warcraft state for {SteamId}. Progress of this session will not be saved " +
+                "(to protect stored progress) until the player reconnects.",
                 steamId);
         }
     }

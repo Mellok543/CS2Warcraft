@@ -51,6 +51,7 @@ public sealed class PersistenceSaveSchedulerTests
     {
         var core = new TestCore();
         core.Players.Upsert(Player, "player");
+        core.Players.MarkLoaded(Player);
 
         var persistence = new PersistenceCoordinator();
         var provider = new RecordingProvider { SaveDuration = saveDuration };

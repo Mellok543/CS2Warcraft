@@ -19,6 +19,13 @@ internal sealed class PlayerRuntimeState
 
     public PlayerStatsRuntime Stats { get; init; } = new();
 
+    /// <summary>
+    /// True once stored progress was restored (or the storage confirmed a new
+    /// player). Until then the state is a placeholder and must never be saved,
+    /// otherwise it would overwrite and prune the player's stored progress.
+    /// </summary>
+    public bool IsLoaded { get; set; }
+
     public Dictionary<string, AchievementProgressRuntime> Achievements { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 

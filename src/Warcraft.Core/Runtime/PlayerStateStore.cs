@@ -84,6 +84,7 @@ internal sealed class PlayerStateStore(TimeProvider? time = null) : IPlayersApi
                 Name = currentName,
                 GlobalXp = persisted.GlobalXp,
                 ActiveRaceId = persisted.ActiveRaceId,
+                IsLoaded = true,
                 Stats = PlayerStatsRuntime.FromPersistence(
                     persisted.Stats,
                     current.Stats.SessionStartedAt)
@@ -120,24 +121,39 @@ internal sealed class PlayerStateStore(TimeProvider? time = null) : IPlayersApi
         }
     }
 
+    /// <summary>Marks a connected player whose storage has no record yet (new player).</summary>
+    internal bool MarkLoaded(ulong steamId)
+    {
+        lock (_sync)
+        {
+            if (!_players.TryGetValue(steamId, out var player))
+                return false;
+
+            player.IsLoaded = true;
+            return true;
+        }
+    }
+
+    /// <summary>Persistence snapshot, or null while the player's stored progress is not loaded yet.</summary>
     internal PlayerPersistenceDto? GetPersistenceSnapshot(ulong steamId)
     {
         var now = _time.GetUtcNow();
 
         lock (_sync)
         {
-            return _players.TryGetValue(steamId, out var player)
+            return _players.TryGetValue(steamId, out var player) && player.IsLoaded
                 ? player.ToPersistence(now)
                 : null;
         }
     }
 
+    /// <summary>Snapshots of loaded players only; placeholders are never persisted.</summary>
     internal IReadOnlyCollection<PlayerPersistenceDto> GetPersistenceSnapshots()
     {
         var now = _time.GetUtcNow();
 
         lock (_sync)
-            return _players.Values.Select(x => x.ToPersistence(now)).ToArray();
+            return _players.Values.Where(x => x.IsLoaded).Select(x => x.ToPersistence(now)).ToArray();
     }
 
     internal bool Remove(ulong steamId)
