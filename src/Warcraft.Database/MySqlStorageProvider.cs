@@ -312,6 +312,44 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
         };
     }
 
+    public async ValueTask<IReadOnlyList<PlayerLeaderboardEntry>> LoadLevelLeaderboardAsync(
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new MySqlCommand(
+            """
+            SELECT
+                p.steam_id,
+                p.name,
+                p.global_xp,
+                COALESCE(SUM(r.level), 0) AS total_levels
+            FROM wc_players p
+            LEFT JOIN wc_race_progress r ON r.steam_id = p.steam_id
+            GROUP BY p.steam_id, p.name, p.global_xp
+            ORDER BY total_levels DESC, p.global_xp DESC, p.name ASC
+            LIMIT @limit;
+            """,
+            connection);
+
+        command.Parameters.AddWithValue("@limit", Math.Clamp(limit, 1, 100));
+
+        var result = new List<PlayerLeaderboardEntry>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            result.Add(new PlayerLeaderboardEntry(
+                reader.GetFieldValue<ulong>(0),
+                reader.GetString(1),
+                reader.GetInt64(2),
+                reader.GetInt64(3)));
+        }
+
+        return result;
+    }
+
     public async ValueTask SavePlayerAsync(
         PlayerPersistenceDto player,
         CancellationToken cancellationToken = default)

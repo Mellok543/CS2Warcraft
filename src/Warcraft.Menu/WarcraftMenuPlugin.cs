@@ -182,7 +182,7 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             new("Прокачка способностей", _ => OpenAbilityMenu(player), race is null,
                 "Прокачка доступна после выбора расы"),
             new("Профиль", _ => OpenProfileMenu(player)),
-            new("Топ уровней", _ => OpenTopLevelsMenu(player))
+            new("Топ уровней", _ => _ = OpenTopLevelsMenuAsync(player.SteamID))
         };
 
         foreach (var entry in api.Menu.GetEntries("root", player.SteamID))
@@ -409,43 +409,71 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         menus.Open(player, "ПРОФИЛЬ", player.PlayerName.ToUpperInvariant(), options);
     }
 
-    private void OpenTopLevelsMenu(CCSPlayerController player)
+    private async Task OpenTopLevelsMenuAsync(ulong requesterSteamId)
     {
         var api = _api;
-        var menus = _menus;
-        if (api is null || menus is null)
+        if (api is null)
             return;
 
-        var leaders = api.Players.GetLoadedPlayers()
-            .Select(state => new
-            {
-                State = state,
-                TotalLevels = state.Races.Values.Sum(x => x.Level)
-            })
-            .OrderByDescending(x => x.TotalLevels)
-            .ThenByDescending(x => x.State.GlobalXp)
-            .ThenBy(x => x.State.Name)
-            .Take(10)
-            .ToArray();
+        Warcraft.Api.Persistence.PlayerLeaderboardEntry[] leaders;
 
-        var options = new List<WarcraftHudMenuOption>();
-
-        for (var index = 0; index < leaders.Length; index++)
+        if (api.Persistence.HasProvider)
         {
-            var leader = leaders[index];
-            options.Add(new WarcraftHudMenuOption(
-                $"{index + 1}. {leader.State.Name} — {leader.TotalLevels} ур. • {leader.State.GlobalXp} XP",
-                _ => { },
-                true,
-                "Сумма уровней всех рас игрока"));
+            try
+            {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                leaders = (await api.Persistence.LoadLevelLeaderboardAsync(10, timeout.Token)).ToArray();
+            }
+            catch (Exception exception)
+            {
+                Logger.LogWarning(exception, "Failed to load global Warcraft leaderboard; using online fallback.");
+                leaders = BuildOnlineLeaderboard(api);
+            }
+        }
+        else
+        {
+            leaders = BuildOnlineLeaderboard(api);
         }
 
-        if (leaders.Length == 0)
-            options.Add(new WarcraftHudMenuOption("Нет игроков в рейтинге", _ => { }, true, "Рейтинг пока пуст"));
+        Server.NextFrame(() =>
+        {
+            var player = Utilities.GetPlayerFromSteamId(requesterSteamId);
+            var menus = _menus;
+            if (player is not { IsValid: true, IsBot: false } || menus is null)
+                return;
 
-        options.Add(new WarcraftHudMenuOption("← Назад", _ => OpenMainMenu(player)));
-        menus.Open(player, "ТОП УРОВНЕЙ", "ИГРОКИ ОНЛАЙН", options);
+            var options = new List<WarcraftHudMenuOption>();
+
+            for (var index = 0; index < leaders.Length; index++)
+            {
+                var leader = leaders[index];
+                options.Add(new WarcraftHudMenuOption(
+                    $"{index + 1}. {leader.Name} — {leader.TotalRaceLevels} ур. • {leader.GlobalXp} XP",
+                    _ => { },
+                    true,
+                    "Сумма уровней всех рас игрока"));
+            }
+
+            if (leaders.Length == 0)
+                options.Add(new WarcraftHudMenuOption("Нет игроков в рейтинге", _ => { }, true, "Рейтинг пока пуст"));
+
+            options.Add(new WarcraftHudMenuOption("← Назад", _ => OpenMainMenu(player)));
+            menus.Open(player, "ТОП УРОВНЕЙ", api.Persistence.HasProvider ? "ALL-TIME • TOP 10" : "ОНЛАЙН • TOP 10", options);
+        });
     }
+
+    private static Warcraft.Api.Persistence.PlayerLeaderboardEntry[] BuildOnlineLeaderboard(IWarcraftApi api)
+        => api.Players.GetLoadedPlayers()
+            .Select(state => new Warcraft.Api.Persistence.PlayerLeaderboardEntry(
+                state.SteamId,
+                state.Name,
+                state.GlobalXp,
+                state.Races.Values.Sum(x => (long)x.Level)))
+            .OrderByDescending(x => x.TotalRaceLevels)
+            .ThenByDescending(x => x.GlobalXp)
+            .ThenBy(x => x.Name)
+            .Take(10)
+            .ToArray();
 
     private void RefreshProgressHud(ulong steamId)
     {

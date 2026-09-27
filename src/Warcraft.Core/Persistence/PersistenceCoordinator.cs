@@ -83,6 +83,11 @@ internal sealed class PersistenceCoordinator : IPersistenceApi
         CancellationToken cancellationToken = default)
         => GetProvider().SavePlayerAsync(player, cancellationToken);
 
+    public ValueTask<IReadOnlyList<PlayerLeaderboardEntry>> LoadLevelLeaderboardAsync(
+        int limit,
+        CancellationToken cancellationToken = default)
+        => GetProvider().LoadLevelLeaderboardAsync(Math.Clamp(limit, 1, 100), cancellationToken);
+
     private IWarcraftStorageProvider GetProvider()
     {
         lock (_sync)

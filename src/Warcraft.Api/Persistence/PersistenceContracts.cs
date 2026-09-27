@@ -16,6 +16,10 @@ public interface IPersistenceApi
     ValueTask SavePlayerAsync(
         PlayerPersistenceDto player,
         CancellationToken cancellationToken = default);
+
+    ValueTask<IReadOnlyList<PlayerLeaderboardEntry>> LoadLevelLeaderboardAsync(
+        int limit,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IWarcraftStorageProvider
@@ -29,7 +33,18 @@ public interface IWarcraftStorageProvider
     ValueTask SavePlayerAsync(
         PlayerPersistenceDto player,
         CancellationToken cancellationToken = default);
+
+    ValueTask<IReadOnlyList<PlayerLeaderboardEntry>> LoadLevelLeaderboardAsync(
+        int limit,
+        CancellationToken cancellationToken = default)
+        => ValueTask.FromResult<IReadOnlyList<PlayerLeaderboardEntry>>([]);
 }
+
+public sealed record PlayerLeaderboardEntry(
+    ulong SteamId,
+    string Name,
+    long GlobalXp,
+    long TotalRaceLevels);
 
 public sealed record PlayerPersistenceDto
 {
