@@ -45,8 +45,7 @@ internal sealed class RaceCatalogService(
 
         var vipLocked = race.VipOnly && !modifiers.GetCombined(steamId).CanAccessVipRaces;
         var unlocked = player.Races.ContainsKey(race.Id);
-        var playSeconds = players.Get(steamId)?.Stats.PlaySeconds ?? 0;
-        var requirements = RaceRequirementEvaluator.Evaluate(player, race.Requirements, Get, playSeconds);
+        var requirements = RaceRequirementEvaluator.Evaluate(player, race.Requirements, Get);
 
         return new RaceAvailability(
             !vipLocked && (unlocked || requirements.All(x => x.IsMet)),

@@ -77,15 +77,18 @@ placeholders: [ABILITIES.md](ABILITIES.md).
 
 ## Progression balance
 
-The default race tree is paced in four unlock tiers after starter races. Production race configs use `totalLevel`, `globalXp`, parent-race level, and `playtimeHours` together.
+Race unlocks are progression-based, never time-gated. The default catalog combines total race levels, lifetime Global XP, and parent-race levels.
 
-| Tier | Total race levels | Global XP | Minimum playtime |
+The target pacing for a normal non-boosted player is roughly 70–100 hours to reach the final race tier. This is an economy target, not a hard timer: highly effective players or XP boosts may progress faster.
+
+| Tier | Total race levels | Global XP | Parent race |
 | --- | ---: | ---: | ---: |
-| II | 10 | 5,000 | 5 h |
-| III | 30 | 20,000 | 15 h |
-| IV | 60 | 50,000 | 35 h |
-| V | 100 | 100,000 | 70 h |
+| II | 10 | 15,000 | level 5 |
+| III | 30 | 50,000 | level 7 |
+| IV | 60 | 110,000 | level 8 |
+| V | 100 | 220,000 | level 10 |
 
-The final tier cannot be unlocked before 70 recorded hours even with VIP or temporary XP multipliers.
+Race-level XP uses `150 * level²` for each next level. A race therefore needs 42,750 XP to progress from level 1 to level 10.
 
-`jump_boost` also supports `maxSpeed` and `cooldown`; both are used to prevent repeated long jumps from compounding into unlimited bhop acceleration.
+`jump_boost` supports `maxSpeed` and `cooldown`; both prevent repeated long jumps from compounding into unlimited bhop acceleration.
+

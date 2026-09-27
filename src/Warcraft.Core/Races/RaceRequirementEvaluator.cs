@@ -9,8 +9,7 @@ internal static class RaceRequirementEvaluator
     public static IReadOnlyList<RaceRequirementProgress> Evaluate(
         PlayerRuntimeState player,
         RaceRequirements? requirements,
-        Func<string, RaceDefinition?> findRace,
-        long playSeconds)
+        Func<string, RaceDefinition?> findRace)
     {
         if (requirements is null || requirements.IsEmpty)
             return [];
@@ -27,14 +26,6 @@ internal static class RaceRequirementEvaluator
 
         if (requirements.GlobalXp > 0)
             result.Add(new RaceRequirementProgress("Общий опыт", player.GlobalXp, requirements.GlobalXp));
-
-        if (requirements.PlaytimeHours > 0)
-        {
-            result.Add(new RaceRequirementProgress(
-                "Время на сервере (ч)",
-                Math.Max(0, playSeconds) / 3600,
-                requirements.PlaytimeHours));
-        }
 
         foreach (var (raceId, level) in requirements.Races)
         {
@@ -57,7 +48,7 @@ internal static class RaceRequirementEvaluator
         if (requirements is null)
             return;
 
-        if (requirements.TotalLevel < 0 || requirements.GlobalXp < 0 || requirements.PlaytimeHours < 0)
+        if (requirements.TotalLevel < 0 || requirements.GlobalXp < 0)
             errors.Add($"Race '{race.Id}' requirements must not be negative.");
 
         foreach (var (raceId, level) in requirements.Races)

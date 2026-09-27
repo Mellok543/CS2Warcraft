@@ -25,14 +25,11 @@ public sealed record RaceRequirements
     /// <summary>Lifetime XP of the player.</summary>
     public long GlobalXp { get; init; }
 
-    /// <summary>Minimum recorded server playtime, in whole hours.</summary>
-    public int PlaytimeHours { get; init; }
-
     /// <summary>Minimum level per race id, e.g. { "orc": 5 }.</summary>
     public IReadOnlyDictionary<string, int> Races { get; init; } =
         new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-    public bool IsEmpty => TotalLevel <= 0 && GlobalXp <= 0 && PlaytimeHours <= 0 && Races.Count == 0;
+    public bool IsEmpty => TotalLevel <= 0 && GlobalXp <= 0 && Races.Count == 0;
 }
 
 public sealed record RaceAbilityDefinition

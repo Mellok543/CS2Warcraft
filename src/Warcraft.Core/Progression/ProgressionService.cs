@@ -213,5 +213,8 @@ internal sealed class ProgressionService(
     }
 
     public long GetRequiredXpForLevel(int currentLevel)
-        => checked(100L * Math.Max(1, currentLevel) * Math.Max(1, currentLevel));
+    {
+        var level = Math.Max(1, currentLevel);
+        return checked(150L * level * level);
+    }
 }
