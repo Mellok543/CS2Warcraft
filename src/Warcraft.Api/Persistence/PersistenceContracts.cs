@@ -62,3 +62,12 @@ public sealed record RaceProgressPersistenceDto
     public IReadOnlyDictionary<string, int> AbilityLevels { get; init; } =
         new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 }
+
+
+public sealed record AchievementProgressPersistenceDto
+{
+    public required string AchievementId { get; init; }
+    public long Progress { get; init; }
+    public bool Unlocked { get; init; }
+    public DateTimeOffset? UnlockedAt { get; init; }
+}

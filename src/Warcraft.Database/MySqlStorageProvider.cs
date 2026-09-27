@@ -89,7 +89,20 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
                     ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
             """
-        };
+,
+            """
+            CREATE TABLE IF NOT EXISTS wc_achievement_progress (
+                steam_id BIGINT UNSIGNED NOT NULL,
+                achievement_id VARCHAR(96) NOT NULL,
+                progress BIGINT NOT NULL DEFAULT 0,
+                unlocked TINYINT(1) NOT NULL DEFAULT 0,
+                unlocked_at DATETIME(6) NULL,
+                PRIMARY KEY (steam_id, achievement_id),
+                CONSTRAINT fk_wc_achievement_progress_player
+                    FOREIGN KEY (steam_id) REFERENCES wc_players(steam_id)
+                    ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            """        };
 
         foreach (var sql in commands)
         {
@@ -240,6 +253,33 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             }
         }
 
+        var achievements = new List<AchievementProgressPersistenceDto>();
+
+        await using (var command = new MySqlCommand(
+            """
+            SELECT achievement_id, progress, unlocked, unlocked_at
+            FROM wc_achievement_progress
+            WHERE steam_id = @steamId;
+            """,
+            connection))
+        {
+            command.Parameters.AddWithValue("@steamId", steamId);
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                achievements.Add(new AchievementProgressPersistenceDto
+                {
+                    AchievementId = reader.GetString(0),
+                    Progress = reader.GetInt64(1),
+                    Unlocked = reader.GetBoolean(2),
+                    UnlockedAt = reader.IsDBNull(3)
+                        ? null
+                        : new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime(3), DateTimeKind.Utc))
+                });
+            }
+        }
+
         return new PlayerPersistenceDto
         {
             SteamId = steamId,
@@ -247,6 +287,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             GlobalXp = globalXp,
             ActiveRaceId = activeRaceId,
             Stats = stats,
+            Achievements = achievements,
             Races = races.Values
                 .Select(x => new RaceProgressPersistenceDto
                 {
@@ -273,6 +314,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             await UpsertPlayerAsync(connection, transaction, player, cancellationToken);
             await UpsertProgressAndPruneAsync(connection, transaction, player, cancellationToken);
             await UpsertStatsAsync(connection, transaction, player, cancellationToken);
+            await UpsertAchievementsAndPruneAsync(connection, transaction, player, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
         catch
@@ -502,6 +544,69 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             delete.Parameters.AddWithValue(names[i], raceIds[i]);
 
         await delete.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task UpsertAchievementsAndPruneAsync(
+        MySqlConnection connection,
+        MySqlTransaction transaction,
+        PlayerPersistenceDto player,
+        CancellationToken cancellationToken)
+    {
+        var achievements = player.Achievements.ToArray();
+
+        foreach (var achievement in achievements)
+        {
+            await using var upsert = new MySqlCommand(
+                """
+                INSERT INTO wc_achievement_progress
+                    (steam_id, achievement_id, progress, unlocked, unlocked_at)
+                VALUES
+                    (@steamId, @achievementId, @progress, @unlocked, @unlockedAt)
+                ON DUPLICATE KEY UPDATE
+                    progress = VALUES(progress),
+                    unlocked = VALUES(unlocked),
+                    unlocked_at = VALUES(unlocked_at);
+                """,
+                connection,
+                transaction);
+
+            upsert.Parameters.AddWithValue("@steamId", player.SteamId);
+            upsert.Parameters.AddWithValue("@achievementId", achievement.AchievementId);
+            upsert.Parameters.AddWithValue("@progress", achievement.Progress);
+            upsert.Parameters.AddWithValue("@unlocked", achievement.Unlocked);
+            upsert.Parameters.AddWithValue(
+                "@unlockedAt",
+                achievement.UnlockedAt?.UtcDateTime ?? (object)DBNull.Value);
+
+            await upsert.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        if (achievements.Length == 0)
+        {
+            await using var deleteAll = new MySqlCommand(
+                "DELETE FROM wc_achievement_progress WHERE steam_id = @steamId;",
+                connection,
+                transaction);
+            deleteAll.Parameters.AddWithValue("@steamId", player.SteamId);
+            await deleteAll.ExecuteNonQueryAsync(cancellationToken);
+            return;
+        }
+
+        var names = achievements.Select((_, index) => $"@achievement{index}").ToArray();
+        await using var prune = new MySqlCommand(
+            $"""
+            DELETE FROM wc_achievement_progress
+            WHERE steam_id = @steamId
+              AND achievement_id NOT IN ({string.Join(", ", names)});
+            """,
+            connection,
+            transaction);
+
+        prune.Parameters.AddWithValue("@steamId", player.SteamId);
+        for (var index = 0; index < achievements.Length; index++)
+            prune.Parameters.AddWithValue(names[index], achievements[index].AchievementId);
+
+        await prune.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private sealed class MutableRaceProgress
