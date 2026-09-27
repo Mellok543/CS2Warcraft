@@ -58,7 +58,14 @@ public sealed class ArchitectureTests
     [Fact]
     public void SharedContractAssemblyHasTheConfiguredProductVersion()
     {
-        Assert.Equal("0.6.0", Warcraft.Api.WarcraftVersion.Current);
+        var root = FindRepositoryRoot();
+        var props = XDocument.Load(Path.Combine(root, "Directory.Build.props"));
+        var configured = props
+            .Descendants("VersionPrefix")
+            .Select(x => x.Value.Trim())
+            .First(x => !string.IsNullOrWhiteSpace(x));
+
+        Assert.Equal(configured, Warcraft.Api.WarcraftVersion.Current);
     }
 
     private static string FindRepositoryRoot()
