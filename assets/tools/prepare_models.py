@@ -19,6 +19,8 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "addon"))
 # name: (group, size in game units, measured axis in OBJ space: "height" = Y, "width" = max(X, Z))
 # Models whose generated shape is standing although it must lie on the ground (rotated -90 deg about X).
 LAY_FLAT = {"entangle_roots"}
+# Faces below this share of the height are dropped (Meshy kept a stem under the mushroom hat).
+CLIP_BELOW = {"hat_mushroom": 0.36}
 MESHY_MODELS = {
     "totem_healing": ("totems", 64.0, "height"),
     "totem_flame": ("totems", 64.0, "height"),
@@ -27,6 +29,27 @@ MESHY_MODELS = {
     "totem_shield": ("totems", 64.0, "height"),
     "entangle_roots": ("effects", 72.0, "width"),
     "turret": ("totems", 56.0, "height"),
+    # Cosmetics, sized for a CS2 player (head ~16 units wide); "max" = longest side.
+    "hat_wizard": ("cosmetics/hats", 16.0, "width"),
+    "hat_viking": ("cosmetics/hats", 16.0, "width"),
+    "hat_crown": ("cosmetics/hats", 16.0, "width"),
+    "hat_cat_headset": ("cosmetics/hats", 16.0, "width"),
+    "hat_mushroom": ("cosmetics/hats", 16.0, "width"),
+    "backpack_loot_sack": ("cosmetics/backpacks", 24.0, "max"),
+    "backpack_jetpack": ("cosmetics/backpacks", 24.0, "max"),
+    "backpack_quiver": ("cosmetics/backpacks", 24.0, "max"),
+    "backpack_mimic": ("cosmetics/backpacks", 24.0, "max"),
+    "backpack_capybara": ("cosmetics/backpacks", 24.0, "max"),
+    "pet_dragon": ("cosmetics/pets", 16.0, "max"),
+    "pet_owl": ("cosmetics/pets", 16.0, "max"),
+    "pet_capybara": ("cosmetics/pets", 16.0, "max"),
+    "pet_axolotl": ("cosmetics/pets", 16.0, "max"),
+    "pet_cowboy_frog": ("cosmetics/pets", 16.0, "max"),
+    "mask_kitsune": ("cosmetics/masks", 11.0, "width"),
+    "mask_oni": ("cosmetics/masks", 11.0, "width"),
+    "mask_cyber": ("cosmetics/masks", 11.0, "width"),
+    "mask_plague": ("cosmetics/masks", 11.0, "width"),
+    "mask_orc": ("cosmetics/masks", 11.0, "width"),
 }
 
 VMDL = """<!-- kv3 encoding:text:version{{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d}} format:modeldoc41:version{{12fc9d44-453a-4ae4-b4d9-7e2ac0bbd4e0}} -->
@@ -138,9 +161,18 @@ def normalize_obj(source, target, name, size, measure):
                  lay_flat(line, "vn") if line.startswith("vn ") else line
                  for line in lines]
     vertices = [tuple(map(float, line.split()[1:4])) for line in lines if line.startswith("v ")]
+    if name in CLIP_BELOW:
+        bottom = min(v[1] for v in vertices)
+        cut = bottom + CLIP_BELOW[name] * (max(v[1] for v in vertices) - bottom)
+        lines = [line for line in lines if not line.startswith("f ") or
+                 all(vertices[int(part.split("/")[0]) - 1][1] >= cut for part in line.split()[1:])]
+        used = {int(part.split("/")[0]) - 1 for line in lines if line.startswith("f ") for part in line.split()[1:]}
+        vertices = [vertices[i] for i in sorted(used)]
     lo = [min(v[i] for v in vertices) for i in range(3)]
     hi = [max(v[i] for v in vertices) for i in range(3)]
-    extent = hi[1] - lo[1] if measure == "height" else max(hi[0] - lo[0], hi[2] - lo[2])
+    extent = (hi[1] - lo[1] if measure == "height" else
+              max(hi[i] - lo[i] for i in range(3)) if measure == "max" else
+              max(hi[0] - lo[0], hi[2] - lo[2]))
     scale = size / extent
     cx, cz = (lo[0] + hi[0]) / 2, (lo[2] + hi[2]) / 2
 
@@ -163,8 +195,9 @@ def build_meshy(meshy_dir):
         source = os.path.join(meshy_dir, name)
         directory = write_model_files(group, name, OPAQUE_VMAT)
         dims = normalize_obj(os.path.join(source, "model.obj"), os.path.join(directory, f"{name}.obj"), name, size, measure)
-        # Meshy delivers 2048px atlases; 1024px is plenty for props of this size.
-        downscale_png(os.path.join(source, "texture.png"), os.path.join(directory, f"{name}_color.png"))
+        # Meshy delivers 2048px atlases; 1024px is plenty for props, 512px for small cosmetics.
+        factor = 4 if group.startswith("cosmetics") else 2
+        downscale_png(os.path.join(source, "texture.png"), os.path.join(directory, f"{name}_color.png"), factor)
         print(f"{group}/{name}: {dims} units")
 
 

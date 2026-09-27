@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 
 API = "https://api.meshy.ai/openapi/v2/text-to-3d"
@@ -34,6 +35,27 @@ ASSETS = {
     "turret": "a dwarven engineer auto turret, single object standing on the ground: sturdy tripod legs of riveted "
               "iron, a rotating brass and steel gun head with a twin barrel cannon pointing forward, glowing orange "
               "core, gears and pipes, compact",
+    # Cosmetics (hats, backpacks, shoulder pets, masks) — not wired to gameplay yet.
+    "hat_wizard": "a single hat on its own, no head, no mannequin, no face: tall pointed purple wizard hat with a wide brim, silver stars and a glowing blue gem buckle",
+    "hat_viking": "a single hat on its own, no head, no mannequin, no face: iron viking helmet with two big curved horns, leather trim and brass rivets",
+    "hat_crown": "a single hat on its own, no head, no mannequin, no face: ornate royal golden crown with red rubies and blue sapphires",
+    "hat_cat_headset": "a single hat on its own, no head, no mannequin, no face: trendy gamer headset with cute cat ears glowing pink and cyan RGB lights",
+    "hat_mushroom": "a wearable hat only, no head, no stem, no ground, no grass: wide dome shaped red mushroom cap with white spots worn as a hat, hollow underside, trendy cottagecore style",
+    "backpack_loot_sack": "a single backpack on its own, no person, straps at the back: goblin loot sack stuffed with gold coins, a sword hilt and a scroll sticking out, patched cloth",
+    "backpack_jetpack": "a single backpack on its own, no person, straps at the back: dwarven steampunk jetpack with two brass rocket thrusters, pipes and a pressure gauge",
+    "backpack_quiver": "a single backpack on its own, no person, straps at the back: elven leather quiver full of arrows with green feathers and golden leaf ornaments",
+    "backpack_mimic": "a single backpack on its own, no person, straps at the back: treasure chest mimic backpack with sharp teeth and a long tongue, wooden chest with gold bands",
+    "backpack_capybara": "a single backpack on its own, no person, straps at the back: trendy cute plush capybara backpack, soft brown fur, calm sleepy face, small orange on its head",
+    "pet_dragon": "a small creature sitting calmly, compact rounded pose to sit on a player's shoulder, single creature: baby red dragon with small wings, big eyes and tiny horns",
+    "pet_owl": "a small creature sitting calmly, compact rounded pose to sit on a player's shoulder, single creature: snowy white owl with big golden eyes and fluffy feathers",
+    "pet_capybara": "a small cute capybara lying down relaxed on its belly, barrel shaped body, short legs tucked in, blunt square snout, small round ears, brown fur, a small orange fruit balanced on its head, calm sleepy half closed eyes, trendy meme style, single creature",
+    "pet_axolotl": "a small creature sitting calmly, compact rounded pose to sit on a player's shoulder, single creature: trendy cute pink axolotl with frilly gills and a happy smile",
+    "pet_cowboy_frog": "a small creature sitting calmly, compact rounded pose to sit on a player's shoulder, single creature: trendy cute green frog wearing a tiny brown cowboy hat",
+    "mask_kitsune": "a single face mask on its own, no head, front facing, eye holes: japanese kitsune fox mask, white with red and gold markings",
+    "mask_oni": "a single face mask on its own, no head, front facing, eye holes: red japanese oni demon mask with horns and fangs",
+    "mask_cyber": "a single face mask on its own, no head, front facing, eye holes: trendy cyberpunk LED face mask, black with glowing neon pixel eyes and smile",
+    "mask_plague": "a single face mask on its own, no head, front facing, eye holes: plague doctor mask with a long leather beak and round brass goggles",
+    "mask_orc": "a single face mask on its own, no head, front facing, eye holes: orc war mask made of dark iron with big bone tusks and red war paint",
 }
 
 
@@ -43,8 +65,16 @@ def request(method, url, body=None):
         "Authorization": f"Bearer {KEY}",
         "Content-Type": "application/json",
     })
-    with urllib.request.urlopen(req, timeout=60) as response:
-        return json.loads(response.read().decode())
+    # Meshy limits concurrent tasks and request rate (HTTP 429): wait and retry.
+    for attempt in range(40):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as response:
+                return json.loads(response.read().decode())
+        except urllib.error.HTTPError as error:
+            if error.code != 429 or attempt == 39:
+                raise
+            print(f"rate limited, retrying in 30 s ({url})", flush=True)
+            time.sleep(30)
 
 
 def wait(task_id, label):
