@@ -28,26 +28,19 @@ internal sealed class ParticleEffects(IGameScheduler scheduler, bool enabled) : 
         if (!enabled)
             return null;
 
+        // CounterStrikeSharp currently exposes m_vServerControlPoints as Span<Vector>,
+        // but Vector is a native wrapper rather than a blittable managed value type.
+        // Writing its X/Y/Z fields throws at runtime. Returning null here lets EffectKit
+        // use the existing beam fallback for line/radius effects without breaking the ability.
+        if (controlPoint1 is not null)
+            return null;
+
         var particle = Utilities.CreateEntityByName<CParticleSystem>("info_particle_system");
         if (particle is null)
             return null;
 
         particle.EffectName = effect;
         particle.StartActive = true;
-
-        if (controlPoint1 is { } point)
-        {
-            // Every server slot targets CP1, so an unused slot can never move CP0.
-            var assignments = particle.ServerControlPointAssignments;
-            var values = particle.ServerControlPoints;
-            for (var i = 0; i < assignments.Length; i++)
-            {
-                assignments[i] = 1;
-                values[i].X = point.X;
-                values[i].Y = point.Y;
-                values[i].Z = point.Z;
-            }
-        }
 
         particle.Teleport(new Vector(position.X, position.Y, position.Z), new QAngle(0, 0, 0), new Vector(0, 0, 0));
         particle.DispatchSpawn();
