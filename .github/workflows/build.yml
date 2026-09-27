@@ -30,12 +30,13 @@ jobs:
         run: |
           root=artifacts/addons/counterstrikesharp
           test -f $root/shared/Warcraft.Api/Warcraft.Api.dll
-          for module in Core Database Races Abilities Menu Admin Vip Shop Achievements Rtv; do
+          for module in Core Database Races Abilities Menu Admin Vip Shop Achievements Rtv Loadouts; do
             test -f $root/plugins/Warcraft.$module/Warcraft.$module.dll || { echo "Missing Warcraft.$module" >&2; exit 1; }
           done
           test -f $root/plugins/Warcraft.Database/MySqlConnector.dll
           test -f $root/plugins/Warcraft.Shop/defaults/shop.json
           test -f $root/plugins/Warcraft.Rtv/defaults/maplist.txt
+          test -f $root/plugins/Warcraft.Loadouts/defaults/race_loadouts.json
           test "$(ls $root/plugins/Warcraft.Races/defaults/races/*.json | wc -l)" -ge 3
           if find $root/plugins -name 'Warcraft.Api.dll' -o -name 'CounterStrikeSharp.API.dll' | grep -q .; then
             echo "Plugin folders must not contain Warcraft.Api.dll or CounterStrikeSharp.API.dll" >&2

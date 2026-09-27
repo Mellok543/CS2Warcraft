@@ -1,0 +1,22 @@
+{
+  "races": {
+    "ranger": {
+      "items": [ "weapon_ssg08" ]
+    },
+    "dwarf": {
+      "items": [ "weapon_negev", "weapon_hegrenade" ]
+    },
+    "assassin": {
+      "items": [ "weapon_mp7", "weapon_flashbang" ]
+    },
+    "butcher": {
+      "items": [ "weapon_xm1014" ]
+    },
+    "berserker": {
+      "items": [ "weapon_nova" ]
+    },
+    "guardian": {
+      "items": [ "weapon_m249" ]
+    }
+  }
+}
