@@ -5,7 +5,9 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 6
+    "totalLevel": 10,
+    "playtimeHours": 5,
+    "globalXp": 5000
   },
   "abilities": [
     {
@@ -14,7 +16,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "money": [100, 200, 300]
+        "money": [
+          100,
+          200,
+          300
+        ]
       },
       "conditions": {}
     },
@@ -24,8 +30,14 @@
       "maxLevel": 2,
       "unlockLevel": 2,
       "config": {
-        "armor": [50, 100],
-        "helmet": [0, 1]
+        "armor": [
+          50,
+          100
+        ],
+        "helmet": [
+          0,
+          1
+        ]
       },
       "conditions": {}
     },
@@ -35,7 +47,15 @@
       "maxLevel": 2,
       "unlockLevel": 3,
       "config": {
-        "items": [["weapon_flashbang"], ["weapon_flashbang", "weapon_hegrenade"]]
+        "items": [
+          [
+            "weapon_flashbang"
+          ],
+          [
+            "weapon_flashbang",
+            "weapon_hegrenade"
+          ]
+        ]
       },
       "conditions": {}
     },
@@ -45,9 +65,18 @@
       "maxLevel": 2,
       "unlockLevel": 4,
       "config": {
-        "multiplier": [1.3, 1.5],
-        "duration": [3, 4],
-        "cooldown": [20, 15]
+        "multiplier": [
+          1.3,
+          1.5
+        ],
+        "duration": [
+          3,
+          4
+        ],
+        "cooldown": [
+          20,
+          15
+        ]
       },
       "conditions": {}
     }

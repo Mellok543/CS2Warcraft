@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 14,
+    "totalLevel": 30,
     "races": {
-      "night_elf": 4
-    }
+      "night_elf": 7
+    },
+    "playtimeHours": 15,
+    "globalXp": 20000
   },
   "abilities": [
     {
@@ -17,9 +19,21 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "amount": [20, 30, 40],
-        "radius": [0, 250, 400],
-        "cooldown": [18, 15, 12]
+        "amount": [
+          20,
+          30,
+          40
+        ],
+        "radius": [
+          0,
+          250,
+          400
+        ],
+        "cooldown": [
+          18,
+          15,
+          12
+        ]
       },
       "conditions": {}
     },
@@ -29,7 +43,10 @@
       "maxLevel": 2,
       "unlockLevel": 2,
       "config": {
-        "percent": [0.5, 1.0]
+        "percent": [
+          0.5,
+          1
+        ]
       },
       "conditions": {}
     },
@@ -39,7 +56,10 @@
       "maxLevel": 2,
       "unlockLevel": 3,
       "config": {
-        "gravity": [0.8, 0.65]
+        "gravity": [
+          0.8,
+          0.65
+        ]
       },
       "conditions": {}
     }
@@ -50,10 +70,22 @@
     "maxLevel": 2,
     "unlockLevel": 6,
     "config": {
-      "range": [500, 700],
-      "duration": [2, 3],
-      "damage": [4, 6],
-      "cooldown": [30, 24]
+      "range": [
+        500,
+        700
+      ],
+      "duration": [
+        2,
+        3
+      ],
+      "damage": [
+        4,
+        6
+      ],
+      "cooldown": [
+        30,
+        24
+      ]
     },
     "conditions": {}
   }

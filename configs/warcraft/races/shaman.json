@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 14,
+    "totalLevel": 30,
     "races": {
-      "troll": 4
-    }
+      "troll": 7
+    },
+    "playtimeHours": 15,
+    "globalXp": 20000
   },
   "abilities": [
     {
@@ -17,7 +19,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "amount": [1, 2, 3],
+        "amount": [
+          1,
+          2,
+          3
+        ],
         "radius": 350,
         "interval": 2
       },
@@ -29,7 +35,11 @@
       "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
-        "damage": [2, 3, 4],
+        "damage": [
+          2,
+          3,
+          4
+        ],
         "radius": 200,
         "interval": 1
       },
@@ -44,8 +54,14 @@
         "radius": 300,
         "force": 700,
         "upForce": 300,
-        "damage": [0, 10],
-        "cooldown": [20, 16]
+        "damage": [
+          0,
+          10
+        ],
+        "cooldown": [
+          20,
+          16
+        ]
       },
       "conditions": {}
     }

@@ -5,7 +5,9 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 6
+    "totalLevel": 10,
+    "playtimeHours": 5,
+    "globalXp": 5000
   },
   "abilities": [
     {

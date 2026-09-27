@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 14,
+    "totalLevel": 30,
     "races": {
-      "undead": 6
-    }
+      "undead": 7
+    },
+    "playtimeHours": 15,
+    "globalXp": 20000
   },
   "abilities": [
     {
@@ -17,7 +19,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "percent": [0.3, 0.5, 0.7]
+        "percent": [
+          0.3,
+          0.5,
+          0.7
+        ]
       },
       "conditions": {}
     },
@@ -27,7 +33,11 @@
       "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
-        "percent": [0.1, 0.2, 0.3]
+        "percent": [
+          0.1,
+          0.2,
+          0.3
+        ]
       },
       "conditions": {}
     },

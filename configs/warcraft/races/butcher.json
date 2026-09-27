@@ -5,7 +5,9 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 14
+    "totalLevel": 30,
+    "playtimeHours": 15,
+    "globalXp": 20000
   },
   "abilities": [
     {
@@ -14,10 +16,16 @@
       "maxLevel": 2,
       "unlockLevel": 1,
       "config": {
-        "range": [600, 800],
+        "range": [
+          600,
+          800
+        ],
         "force": 700,
         "upForce": 250,
-        "cooldown": [18, 14]
+        "cooldown": [
+          18,
+          14
+        ]
       },
       "conditions": {}
     },
@@ -27,7 +35,11 @@
       "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
-        "percent": [0.2, 0.35, 0.5],
+        "percent": [
+          0.2,
+          0.35,
+          0.5
+        ],
         "threshold": 0.35
       },
       "conditions": {}
@@ -38,7 +50,10 @@
       "maxLevel": 2,
       "unlockLevel": 3,
       "config": {
-        "percent": [0.3, 0.5]
+        "percent": [
+          0.3,
+          0.5
+        ]
       },
       "conditions": {}
     },
@@ -48,7 +63,10 @@
       "maxLevel": 2,
       "unlockLevel": 4,
       "config": {
-        "chance": [0.3, 0.5]
+        "chance": [
+          0.3,
+          0.5
+        ]
       },
       "conditions": {}
     }

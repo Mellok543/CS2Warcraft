@@ -5,10 +5,12 @@
   "maxLevel": 10,
   "vipOnly": false,
   "requirements": {
-    "totalLevel": 6,
+    "totalLevel": 10,
     "races": {
-      "human": 4
-    }
+      "human": 5
+    },
+    "playtimeHours": 5,
+    "globalXp": 5000
   },
   "abilities": [
     {
@@ -17,7 +19,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "percent": [0.06, 0.1, 0.15]
+        "percent": [
+          0.06,
+          0.1,
+          0.15
+        ]
       },
       "conditions": {}
     },
@@ -27,9 +33,17 @@
       "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
-        "chance": [0.07, 0.12, 0.17],
-        "duration": [0.4, 0.6, 0.8],
-        "slow": 0.0
+        "chance": [
+          0.07,
+          0.12,
+          0.17
+        ],
+        "duration": [
+          0.4,
+          0.6,
+          0.8
+        ],
+        "slow": 0
       },
       "conditions": {}
     },
@@ -39,8 +53,16 @@
       "maxLevel": 3,
       "unlockLevel": 3,
       "config": {
-        "amount": [1, 2, 2],
-        "interval": [2, 2, 1.5]
+        "amount": [
+          1,
+          2,
+          2
+        ],
+        "interval": [
+          2,
+          2,
+          1.5
+        ]
       },
       "conditions": {}
     },
@@ -50,9 +72,17 @@
       "maxLevel": 3,
       "unlockLevel": 4,
       "config": {
-        "force": [550, 650, 750],
+        "force": [
+          550,
+          650,
+          750
+        ],
         "upForce": 220,
-        "cooldown": [12, 10, 8]
+        "cooldown": [
+          12,
+          10,
+          8
+        ]
       },
       "conditions": {
         "requiresGrounded": true
@@ -66,10 +96,19 @@
     "maxLevel": 2,
     "unlockLevel": 6,
     "config": {
-      "damage": [40, 55],
+      "damage": [
+        40,
+        55
+      ],
       "range": 350,
-      "jumps": [1, 2],
-      "cooldown": [35, 28]
+      "jumps": [
+        1,
+        2
+      ],
+      "cooldown": [
+        35,
+        28
+      ]
     },
     "conditions": {}
   }
