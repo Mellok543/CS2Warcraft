@@ -61,11 +61,30 @@ public sealed class RaceRequirementTests
         Assert.True(availability.IsAvailable);
     }
 
+    [Fact]
+    public void PlaytimeRequirementBlocksRaceUntilRequiredHours()
+    {
+        var core = new TestCore();
+        core.LoadRaces(
+            Orc,
+            """{ "id": "final", "name": "Финальная", "requirements": { "playtimeHours": 70 } }""");
+
+        var player = core.Players.Upsert(Player, "p");
+        player.Stats.SessionStartedAt = core.Time.Now;
+
+        core.Time.Now = core.Time.Now.AddHours(69).AddMinutes(59);
+        Assert.False(core.Races.GetAvailability(Player, "final").IsAvailable);
+
+        core.Time.Now = core.Time.Now.AddMinutes(1);
+        Assert.True(core.Races.GetAvailability(Player, "final").IsAvailable);
+    }
+
     [Theory]
     [InlineData("""{ "races": { "elf": 3 } }""", "unknown race")]
     [InlineData("""{ "races": { "human": 11 } }""", "allowed 1..10")]
     [InlineData("""{ "races": { "paladin": 1 } }""", "cannot require itself")]
     [InlineData("""{ "totalLevel": -1 }""", "negative")]
+    [InlineData("""{ "playtimeHours": -1 }""", "negative")]
     public void InvalidRequirementsRejectTheCatalog(string requirements, string error)
     {
         var core = new TestCore();

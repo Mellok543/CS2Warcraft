@@ -66,10 +66,12 @@ internal sealed class KillSpeedAbility(MovementController movement) : AbilityHan
 /// </summary>
 internal sealed class JumpBoostAbility : AbilityHandler
 {
+    private readonly Dictionary<ulong, double> _readyAt = [];
+
     public override string Id => "jump_boost";
     protected override AbilityKind Kind => AbilityKind.Passive;
     protected override string Description =>
-        "Прыжок: горизонтальная скорость x{forward|1}, выше на {up|0}.";
+        "Длинный прыжок: импульс x{forward|1}, максимум {maxSpeed|340} u/s, выше на {up|0}.";
     protected override string DisplayName => "Длинный прыжок";
 
     protected override void Subscribe(IWarcraftEventBus events)
@@ -80,17 +82,34 @@ internal sealed class JumpBoostAbility : AbilityHandler
         if (GetUsable(jump.SteamId) is not { } ability)
             return;
 
-        var forward = (float)Math.Clamp(AbilityConfigReader.GetLevelDouble(ability, "forward", 1.0), 1, 3);
-        var up = (float)Math.Clamp(AbilityConfigReader.GetLevelDouble(ability, "up", 0), 0, 800);
+        var now = Server.CurrentTime;
+        if (_readyAt.GetValueOrDefault(jump.SteamId) > now)
+            return;
+
+        var forward = (float)Math.Clamp(AbilityConfigReader.GetLevelDouble(ability, "forward", 1.0), 1, 2);
+        var maxSpeed = (float)Math.Clamp(AbilityConfigReader.GetLevelDouble(ability, "maxSpeed", 340), 250, 500);
+        var up = (float)Math.Clamp(AbilityConfigReader.GetLevelDouble(ability, "up", 0), 0, 400);
+        var cooldown = Math.Clamp(AbilityConfigReader.GetLevelDouble(ability, "cooldown", 1.25), 0.25, 5);
         var steamId = jump.SteamId;
 
-        // The engine applies the jump impulse this frame; boost it on the next one.
+        _readyAt[steamId] = now + cooldown;
+
         Server.NextFrame(() =>
         {
             if (GamePlayers.FindAlive(steamId) is not { } player || player.Pawn.AbsVelocity is not { } velocity)
                 return;
 
-            player.Pawn.Teleport(velocity: new Vector3(velocity.X * forward, velocity.Y * forward, velocity.Z + up));
+            var horizontal = MathF.Sqrt(velocity.X * velocity.X + velocity.Y * velocity.Y);
+            if (horizontal < 1f)
+                return;
+
+            var target = Math.Min(horizontal * forward, maxSpeed);
+            var scale = target / horizontal;
+
+            player.Pawn.Teleport(velocity: new Vector3(
+                velocity.X * scale,
+                velocity.Y * scale,
+                velocity.Z + up));
         });
     }
 }
