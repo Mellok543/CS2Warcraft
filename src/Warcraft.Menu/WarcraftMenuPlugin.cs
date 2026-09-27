@@ -182,7 +182,7 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             new("Прокачка способностей", _ => OpenAbilityMenu(player), race is null,
                 "Прокачка доступна после выбора расы"),
             new("Профиль", _ => OpenProfileMenu(player)),
-            new("Топ уровней", _ => { _ = OpenTopLevelsMenuAsync(player.SteamID); })
+            new("Топ уровней", ignored => { _ = OpenTopLevelsMenuAsync(player.SteamID); })
         };
 
         foreach (var entry in api.Menu.GetEntries("root", player.SteamID))
