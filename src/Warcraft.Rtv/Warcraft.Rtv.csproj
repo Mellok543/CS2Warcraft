@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Warcraft.Rtv</AssemblyName>
+    <RootNamespace>Warcraft.Rtv</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CounterStrikeSharp.API" />
+    <ProjectReference Include="../Warcraft.Api/Warcraft.Api.csproj" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Shared/WarcraftCoreCapability.cs" Link="Shared/WarcraftCoreCapability.cs" />
+    <Content Include="../../configs/warcraft/maplist.txt">
+      <Link>defaults/maplist.txt</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

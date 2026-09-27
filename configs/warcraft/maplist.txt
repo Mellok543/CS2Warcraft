@@ -1,0 +1,17 @@
+# CS2Warcraft map rotation.
+# Standard map:  map_name
+# Workshop map:  map_name:workshop_id
+#
+# Keep the internal map name on the left, not the Workshop display title.
+
+de_mirage
+de_dust2
+de_overpass
+de_train
+
+# Aim / arena maps
+aim_redline:3162558887
+awp_lego_2_x2:3260606396
+
+# Community defuse
+de_cache:3437809122
