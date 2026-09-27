@@ -105,7 +105,24 @@ internal static class AchievementCatalog
             A("ability.first", "Пробуждение силы", "Успешно применить способность.", AchievementCategory.Abilities, AchievementRarity.Common, AchievementMetric.AbilityUses, 1),
             A("ability.uses_250", "Повелитель навыков", "Успешно применить способности 250 раз.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 250),
             A("ability.ultimate_1", "Высшая сила", "Впервые успешно применить ultimate.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.UltimateUses, 1),
-            A("ability.ultimate_100", "Абсолютная мощь", "Успешно применить ultimate 100 раз.", AchievementCategory.Abilities, AchievementRarity.Legendary, AchievementMetric.UltimateUses, 100)
+            A("ability.ultimate_100", "Абсолютная мощь", "Успешно применить ultimate 100 раз.", AchievementCategory.Abilities, AchievementRarity.Legendary, AchievementMetric.UltimateUses, 100),
+
+            A("mechanic.chain_three", "Цепная реакция", "Одной Цепной молнией поразить минимум 3 цели.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.AbilityUses, 1),
+            A("mechanic.chain_kills_25", "Громовержец", "Убить 25 врагов Цепной молнией.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 25),
+            A("mechanic.reflect_damage_1000", "Возмездие", "Отразить суммарно 1 000 урона.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.AbilityUses, 1000),
+            A("mechanic.reflect_kill", "Сам себя наказал", "Убить врага отражённым уроном.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 1, true),
+            A("mechanic.vamp_heal_5000", "Кровопийца", "Восстановить 5 000 HP вампиризмом.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 5000),
+            A("mechanic.reduction_10000", "Крепче стали", "Предотвратить 10 000 урона пассивным снижением.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 10000),
+            A("mechanic.divine_1000", "Под защитой света", "Поглотить 1 000 урона Божественным щитом.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.AbilityUses, 1000),
+            A("mechanic.second_wind_25", "Второе дыхание", "25 раз пережить критический момент благодаря Второму дыханию.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 25),
+            A("mechanic.life_drain_heal_2000", "Пожиратель жизни", "Восстановить 2 000 HP Похищением жизни.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.AbilityUses, 2000),
+            A("mechanic.totems_100", "Тотемист", "Установить 100 тотемов.", AchievementCategory.Abilities, AchievementRarity.Rare, AchievementMetric.AbilityUses, 100),
+            A("mechanic.healing_totem_5000", "Дух целителя", "Восстановить союзникам 5 000 HP Тотемом исцеления.", AchievementCategory.Teamwork, AchievementRarity.Epic, AchievementMetric.AbilityUses, 5000),
+            A("mechanic.flame_totem_5000", "Огненный идол", "Нанести 5 000 урона Тотемом пламени.", AchievementCategory.Abilities, AchievementRarity.Epic, AchievementMetric.AbilityUses, 5000),
+            A("mechanic.flame_totem_kills_25", "Жертвенный костёр", "Убить 25 врагов Тотемом пламени.", AchievementCategory.Abilities, AchievementRarity.Legendary, AchievementMetric.AbilityUses, 25),
+            A("mechanic.shield_totem_5000", "Хранитель племени", "Предотвратить 5 000 урона союзникам Тотемом защиты.", AchievementCategory.Teamwork, AchievementRarity.Epic, AchievementMetric.AbilityUses, 5000),
+            A("mechanic.devotion_10000", "Аура защитника", "Предотвратить союзникам 10 000 урона Аурой преданности.", AchievementCategory.Teamwork, AchievementRarity.Legendary, AchievementMetric.AbilityUses, 10000),
+            A("mechanic.vampiric_aura_5000", "Кровавая поддержка", "Восстановить союзникам 5 000 HP Вампирской аурой.", AchievementCategory.Teamwork, AchievementRarity.Epic, AchievementMetric.AbilityUses, 5000)
         };
 
         foreach (var race in api.Races.GetAll().OrderBy(x => x.Name))

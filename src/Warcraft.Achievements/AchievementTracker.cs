@@ -29,6 +29,7 @@ internal sealed class AchievementTracker : IDisposable
             api.Events.Subscribe<BombDefusedEvent>(x => Increment(x.SteamId, AchievementMetric.BombDefuses)),
             api.Events.Subscribe<PlayerXpGainedEvent>(x => EvaluateSnapshot(x.SteamId)),
             api.Events.Subscribe<AbilityActivatedEvent>(OnAbilityActivated),
+            api.Events.Subscribe<AbilityTelemetryEvent>(OnAbilityTelemetry),
             api.Events.Subscribe<RoundStartEvent>(_ => OnRoundStart())
         ];
     }
@@ -113,6 +114,120 @@ internal sealed class AchievementTracker : IDisposable
 
         if (activation.IsUltimate)
             Increment(activation.SteamId, AchievementMetric.UltimateUses);
+    }
+
+    private void OnAbilityTelemetry(AbilityTelemetryEvent telemetry)
+    {
+        switch (telemetry.AbilityId.ToLowerInvariant())
+        {
+            case "chain_lightning":
+                if (telemetry.Kind == AbilityTelemetryKind.TargetsHit)
+                    SetSpecific(telemetry.SteamId, "mechanic.chain_three", telemetry.Amount);
+                else if (telemetry.Kind == AbilityTelemetryKind.Kill)
+                    AddSpecific(telemetry.SteamId, "mechanic.chain_kills_25", 1);
+                break;
+
+            case "reflect_damage":
+                if (telemetry.Kind == AbilityTelemetryKind.DamageDealt)
+                    AddSpecific(telemetry.SteamId, "mechanic.reflect_damage_1000", telemetry.Amount);
+                else if (telemetry.Kind == AbilityTelemetryKind.Kill)
+                    AddSpecific(telemetry.SteamId, "mechanic.reflect_kill", 1);
+                break;
+
+            case "vampirism":
+                if (telemetry.Kind == AbilityTelemetryKind.Healing)
+                    AddSpecific(telemetry.SteamId, "mechanic.vamp_heal_5000", telemetry.Amount);
+                break;
+
+            case "damage_reduction":
+                if (telemetry.Kind == AbilityTelemetryKind.DamagePrevented)
+                    AddSpecific(telemetry.SteamId, "mechanic.reduction_10000", telemetry.Amount);
+                break;
+
+            case "divine_shield":
+                if (telemetry.Kind == AbilityTelemetryKind.DamagePrevented)
+                    AddSpecific(telemetry.SteamId, "mechanic.divine_1000", telemetry.Amount);
+                break;
+
+            case "second_wind":
+                if (telemetry.Kind == AbilityTelemetryKind.Triggered)
+                    AddSpecific(telemetry.SteamId, "mechanic.second_wind_25", 1);
+                break;
+
+            case "life_drain":
+                if (telemetry.Kind == AbilityTelemetryKind.Healing)
+                    AddSpecific(telemetry.SteamId, "mechanic.life_drain_heal_2000", telemetry.Amount);
+                break;
+
+            case "healing_totem":
+                if (telemetry.Kind == AbilityTelemetryKind.TotemPlaced)
+                    AddSpecific(telemetry.SteamId, "mechanic.totems_100", 1);
+                else if (telemetry.Kind == AbilityTelemetryKind.Healing)
+                    AddSpecific(telemetry.SteamId, "mechanic.healing_totem_5000", telemetry.Amount);
+                break;
+
+            case "flame_totem":
+                if (telemetry.Kind == AbilityTelemetryKind.TotemPlaced)
+                    AddSpecific(telemetry.SteamId, "mechanic.totems_100", 1);
+                else if (telemetry.Kind == AbilityTelemetryKind.DamageDealt)
+                    AddSpecific(telemetry.SteamId, "mechanic.flame_totem_5000", telemetry.Amount);
+                else if (telemetry.Kind == AbilityTelemetryKind.Kill)
+                    AddSpecific(telemetry.SteamId, "mechanic.flame_totem_kills_25", 1);
+                break;
+
+            case "frost_totem":
+            case "war_totem":
+                if (telemetry.Kind == AbilityTelemetryKind.TotemPlaced)
+                    AddSpecific(telemetry.SteamId, "mechanic.totems_100", 1);
+                break;
+
+            case "shield_totem":
+                if (telemetry.Kind == AbilityTelemetryKind.TotemPlaced)
+                    AddSpecific(telemetry.SteamId, "mechanic.totems_100", 1);
+                else if (telemetry.Kind == AbilityTelemetryKind.DamagePrevented)
+                    AddSpecific(telemetry.SteamId, "mechanic.shield_totem_5000", telemetry.Amount);
+                break;
+
+            case "devotion_aura":
+                if (telemetry.Kind == AbilityTelemetryKind.DamagePrevented)
+                    AddSpecific(telemetry.SteamId, "mechanic.devotion_10000", telemetry.Amount);
+                break;
+
+            case "vampiric_aura":
+                if (telemetry.Kind == AbilityTelemetryKind.Healing)
+                    AddSpecific(telemetry.SteamId, "mechanic.vampiric_aura_5000", telemetry.Amount);
+                break;
+        }
+    }
+
+    private void AddSpecific(ulong steamId, string achievementId, long amount)
+    {
+        var definition = _definitions().FirstOrDefault(x =>
+            string.Equals(x.Id, achievementId, StringComparison.OrdinalIgnoreCase));
+        if (definition is null || amount <= 0)
+            return;
+
+        _api.Achievements.AddProgress(
+            steamId,
+            definition.Id,
+            amount,
+            definition.Target,
+            "ability-telemetry");
+    }
+
+    private void SetSpecific(ulong steamId, string achievementId, long progress)
+    {
+        var definition = _definitions().FirstOrDefault(x =>
+            string.Equals(x.Id, achievementId, StringComparison.OrdinalIgnoreCase));
+        if (definition is null)
+            return;
+
+        _api.Achievements.SetProgress(
+            steamId,
+            definition.Id,
+            progress,
+            definition.Target,
+            "ability-telemetry");
     }
 
     private void OnRoundStart()
