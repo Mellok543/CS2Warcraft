@@ -20,7 +20,18 @@ public sealed class XpRewardTests
         var core = new TestCore();
         core.Players.Upsert(Player, "p");
         core.Players.Upsert(Other, "o");
-        var config = new CoreConfig { KillXp = 25, HeadshotBonusXp = 10, AssistXp = 7, RoundWinXp = 15, BombPlantXp = 20, BombDefuseXp = 30 };
+        var config = new CoreConfig
+        {
+            KillXp = 25,
+            HeadshotBonusXp = 10,
+            KnifeKillBonusXp = 30,
+            DeathPenaltyXp = 8,
+            RoundLossPenaltyXp = 12,
+            AssistXp = 7,
+            RoundWinXp = 15,
+            BombPlantXp = 20,
+            BombDefuseXp = 30
+        };
         return (core, new XpRewardService(core.Players, core.Progress, core.Events, config));
     }
 
@@ -34,11 +45,25 @@ public sealed class XpRewardTests
         core.Events.Publish(new PlayerKillEvent(Player, Other, Headshot: false, TeamKill: true));  // 0
         core.Events.Publish(new PlayerAssistEvent(Player, Other, false));                          // 7
         core.Events.Publish(new PlayerRoundResultEvent(Player, true));                             // 15
-        core.Events.Publish(new PlayerRoundResultEvent(Player, false));                            // 0
+        core.Events.Publish(new PlayerRoundResultEvent(Player, false));                            // -12
         core.Events.Publish(new BombPlantedEvent(Player));                                         // 20
         core.Events.Publish(new BombDefusedEvent(Player));                                         // 30
 
-        Assert.Equal(107, core.Players.Get(Player)!.GlobalXp);
+        Assert.Equal(95, core.Players.Get(Player)!.GlobalXp);
+    }
+
+    [Fact]
+    public void KnifeKillAddsBonusAndPenaltiesRemoveXp()
+    {
+        var (core, rewards) = Create();
+        using var _ = rewards;
+
+        core.Progress.AddXp(Player, 100, "seed");
+        core.Events.Publish(new PlayerKillEvent(Player, Other, Headshot: false, TeamKill: false, Weapon: "weapon_knife"));
+        core.Events.Publish(new PlayerDeathEvent(Player, Other));
+        core.Events.Publish(new PlayerRoundResultEvent(Player, false));
+
+        Assert.Equal(135, core.Players.Get(Player)!.GlobalXp);
     }
 
     [Fact]
