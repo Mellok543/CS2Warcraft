@@ -39,6 +39,10 @@ internal abstract class TotemAbility(TotemSystem totems) : ActiveAbilityHandler
             },
             Color);
 
+        Api?.Events.Publish(new AbilityTelemetryEvent(
+            activation.SteamId,
+            Id,
+            AbilityTelemetryKind.TotemPlaced));
         activation.Succeed();
     }
 }
@@ -55,8 +59,16 @@ internal sealed class HealingTotemAbility(TotemSystem totems) : TotemAbility(tot
     protected override void Pulse(Totem totem, PlayerAbilitySnapshot ability, double now)
     {
         var amount = AbilityConfigReader.GetLevelInt(ability, "amount", 5);
+        var restored = 0;
         foreach (var ally in totem.Allies())
-            PlayerHealth.Heal(ally.Pawn, amount);
+            restored += PlayerHealth.Heal(ally.Pawn, amount);
+
+        if (restored > 0)
+            Api?.Events.Publish(new AbilityTelemetryEvent(
+                totem.OwnerSteamId,
+                Id,
+                AbilityTelemetryKind.Healing,
+                restored));
     }
 }
 
@@ -74,8 +86,21 @@ internal sealed class FlameTotemAbility(TotemSystem totems) : TotemAbility(totem
         var damage = AbilityConfigReader.GetLevelInt(ability, "damage", 5);
         foreach (var enemy in totem.Enemies().ToArray())
         {
-            Api?.Combat.DealAbilityDamage(
+            var result = Api?.Combat.DealAbilityDamage(
                 new AbilityDamageRequest(totem.OwnerSteamId, enemy.Controller.Slot, damage, Id));
+
+            if (result is { Applied: true, HealthRemoved: > 0 })
+                Api?.Events.Publish(new AbilityTelemetryEvent(
+                    totem.OwnerSteamId,
+                    Id,
+                    AbilityTelemetryKind.DamageDealt,
+                    result.HealthRemoved));
+
+            if (result is { Killed: true })
+                Api?.Events.Publish(new AbilityTelemetryEvent(
+                    totem.OwnerSteamId,
+                    Id,
+                    AbilityTelemetryKind.Kill));
         }
     }
 }
@@ -104,7 +129,14 @@ internal abstract class BuffTotemAbility(TotemSystem totems, TeamBuffs buffs, Bu
     {
         var value = (float)Math.Max(0, AbilityConfigReader.GetLevelDouble(ability, "percent"));
         foreach (var ally in totem.Allies().Where(x => !x.Controller.IsBot))
-            buffs.Grant(ally.Controller.SteamID, kind, value, now + totem.Interval + 0.2, now);
+            buffs.Grant(
+                ally.Controller.SteamID,
+                kind,
+                value,
+                now + totem.Interval + 0.2,
+                now,
+                totem.OwnerSteamId,
+                Id);
     }
 }
 

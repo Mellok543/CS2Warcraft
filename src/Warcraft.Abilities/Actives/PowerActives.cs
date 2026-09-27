@@ -54,7 +54,14 @@ internal sealed class RageAbility(TeamBuffs buffs, MovementController movement) 
         var percent = (float)Math.Clamp(AbilityConfigReader.GetLevelDouble(activation.Ability, "percent", 0.3), 0, 3);
         var multiplier = (float)Math.Clamp(AbilityConfigReader.GetLevelDouble(activation.Ability, "multiplier", 1.0), 1, 2);
 
-        buffs.Grant(activation.SteamId, BuffKind.DamageBonus, percent, until, now);
+        buffs.Grant(
+            activation.SteamId,
+            BuffKind.DamageBonus,
+            percent,
+            until,
+            now,
+            activation.SteamId,
+            Id);
         if (multiplier > 1f)
             movement.Boost(caster.Controller.Slot, multiplier, until);
 

@@ -63,7 +63,14 @@ internal abstract class BuffAura(TeamBuffs buffs, BuffKind kind) : ContinuousAur
         foreach (var ally in GamePlayers.AlliesAround(owner, owner.Position, Radius(ability)))
         {
             if (!ally.Controller.IsBot)
-                buffs.Grant(ally.Controller.SteamID, kind, value, now + Linger, now);
+                buffs.Grant(
+                    ally.Controller.SteamID,
+                    kind,
+                    value,
+                    now + Linger,
+                    now,
+                    owner.Controller.SteamID,
+                    Id);
         }
     }
 }
