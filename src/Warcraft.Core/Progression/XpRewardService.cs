@@ -54,7 +54,7 @@ internal sealed class XpRewardService : IDisposable
         if (_config.PlaytimeXp <= 0 || _config.PlaytimeXpIntervalSeconds <= 0)
             return;
 
-        var loaded = _players.GetSnapshots();
+        var loaded = _players.GetLoadedPlayers();
         var active = loaded.Select(x => x.SteamId).ToHashSet();
 
         foreach (var stale in _playtimeDueAt.Keys.Where(x => !active.Contains(x)).ToArray())

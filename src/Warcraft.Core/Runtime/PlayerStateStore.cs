@@ -83,6 +83,7 @@ internal sealed class PlayerStateStore(TimeProvider? time = null) : IPlayersApi
                 SteamId = persisted.SteamId,
                 Name = currentName,
                 GlobalXp = persisted.GlobalXp,
+                AchievementCurrency = persisted.AchievementCurrency,
                 ActiveRaceId = persisted.ActiveRaceId,
                 IsLoaded = true,
                 Stats = PlayerStatsRuntime.FromPersistence(
