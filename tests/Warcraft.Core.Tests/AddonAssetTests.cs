@@ -36,6 +36,25 @@ public sealed partial class AddonAssetTests
         }
     }
 
+    [Fact]
+    public void GlowMaterialsAreNotFullyTransparent()
+    {
+        var root = FindRepositoryRoot();
+
+        foreach (var relative in new[]
+        {
+            Path.Combine("assets", "addon", "models", "warcraft", "effects", "aura_ring", "aura_ring.vmat"),
+            Path.Combine("assets", "addon", "models", "warcraft", "effects", "shield_bubble", "shield_bubble.vmat")
+        })
+        {
+            var material = File.ReadAllText(Path.Combine(root, relative));
+            Assert.Contains("F_TRANSLUCENT \"1\"", material);
+            Assert.DoesNotContain(
+                "g_vColorTint \"[1.000000 1.000000 1.000000 0.000000]\"",
+                material);
+        }
+    }
+
     private static string FindRepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

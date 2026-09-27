@@ -9,7 +9,7 @@ Layer0
 	g_flModelTintAmount "1.000"
 	g_flOpacityScale "1.000"
 	g_flSelfIllumBrightness "2.000"
-	g_vColorTint "[1.000000 1.000000 1.000000 0.000000]"
+	g_vColorTint "[1.000000 1.000000 1.000000 1.000000]"
 	TextureColor "models/warcraft/effects/shield_bubble/shield_bubble_color.png"
 	TextureTranslucency "models/warcraft/effects/shield_bubble/shield_bubble_trans.png"
 	TextureSelfIllumMask "models/warcraft/effects/shield_bubble/shield_bubble_trans.png"

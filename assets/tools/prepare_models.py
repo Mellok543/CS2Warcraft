@@ -101,7 +101,7 @@ Layer0
 	g_flModelTintAmount "1.000"
 	g_flOpacityScale "1.000"
 	g_flSelfIllumBrightness "2.000"
-	g_vColorTint "[1.000000 1.000000 1.000000 0.000000]"
+	g_vColorTint "[1.000000 1.000000 1.000000 1.000000]"
 	TextureColor "{path}/{name}_color.png"
 	TextureTranslucency "{path}/{name}_trans.png"
 	TextureSelfIllumMask "{path}/{name}_trans.png"
