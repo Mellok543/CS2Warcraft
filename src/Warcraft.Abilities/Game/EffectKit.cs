@@ -42,11 +42,69 @@ internal sealed class EffectKit(IGameScheduler scheduler, BeamEffects beams, Pro
 
     public void Smoke(Vector3 ground, FxColor color) => Play(WarcraftParticles.Smoke(color), ground);
 
-    /// <summary>Ray between two points; a plain beam when particles are disabled.</summary>
+    /// <summary>
+    /// Ray between two points. Storm uses a safe jagged lightning fallback because
+    /// CounterStrikeSharp cannot currently write particle control points without
+    /// throwing for its native Vector wrapper.
+    /// </summary>
     public void Line(Vector3 from, Vector3 to, FxColor color, Color fallback, float width, float lifetime = 0.4f)
     {
+        if (color == FxColor.Storm)
+        {
+            DrawJaggedLightning(from, to, fallback, width, lifetime);
+            return;
+        }
+
         if (particles.Play(WarcraftParticles.Line(color), from, lifetime + OneShotSeconds, to) is null)
             beams.Draw(from, to, fallback, width, lifetime);
+    }
+
+    private void DrawJaggedLightning(Vector3 from, Vector3 to, Color fallback, float width, float lifetime)
+    {
+        var delta = to - from;
+        var distance = delta.Length();
+        if (distance < 1f)
+            return;
+
+        var direction = Vector3.Normalize(delta);
+        var segmentCount = Math.Clamp((int)MathF.Ceiling(distance / 110f), 5, 8);
+
+        var reference = MathF.Abs(direction.Z) < 0.9f
+            ? Vector3.UnitZ
+            : Vector3.UnitY;
+
+        var right = Vector3.Normalize(Vector3.Cross(direction, reference));
+        var up = Vector3.Normalize(Vector3.Cross(right, direction));
+        var jitter = Math.Clamp(distance * 0.035f, 8f, 26f);
+
+        var points = new Vector3[segmentCount + 1];
+        points[0] = from;
+        points[^1] = to;
+
+        for (var i = 1; i < segmentCount; i++)
+        {
+            var t = i / (float)segmentCount;
+            var center = Vector3.Lerp(from, to, t);
+            var falloff = MathF.Sin(MathF.PI * t);
+
+            var side = ((float)Random.Shared.NextDouble() * 2f - 1f) * jitter * falloff;
+            var vertical = ((float)Random.Shared.NextDouble() * 2f - 1f) * jitter * 0.7f * falloff;
+
+            points[i] = center + right * side + up * vertical;
+
+            if ((i & 1) == 1)
+                particles.Play(WarcraftParticles.Flash(FxColor.Storm), points[i], 0.9f);
+        }
+
+        var core = Color.FromArgb(255, 220, 235, 255);
+
+        for (var i = 0; i < segmentCount; i++)
+        {
+            beams.Draw(points[i], points[i + 1], fallback, width, lifetime);
+            beams.Draw(points[i], points[i + 1], core, Math.Max(0.8f, width * 0.35f), lifetime);
+        }
+
+        particles.Play(WarcraftParticles.Sparks(FxColor.Storm), to, 1.0f);
     }
 
     /// <summary>
