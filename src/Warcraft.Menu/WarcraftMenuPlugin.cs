@@ -177,7 +177,7 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         }
 
         options.Add(new WarcraftHudMenuOption("← Назад к расам", _ => OpenRaceMenu(player)));
-        menus.Open(player, race.Name.ToUpperInvariant(), race.Description.ToUpperInvariant(), options);
+        menus.Open(player, race.Name.ToUpperInvariant(), (race.Description ?? string.Empty).ToUpperInvariant(), options);
     }
 
     private void OpenAbilityMenu(CCSPlayerController player)
