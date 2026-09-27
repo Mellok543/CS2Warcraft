@@ -1,0 +1,71 @@
+{
+  "id": "tank",
+  "name": "Танк",
+  "description": "Тяжёлый фронтовик: много здоровья, высокая защита и восстановление после критического урона.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 60,
+    "globalXp": 110000,
+    "races": {
+      "crusader": 8
+    }
+  },
+  "abilities": [
+    {
+      "id": "bonus_health",
+      "name": "Тяжёлая броня",
+      "maxLevel": 3,
+      "unlockLevel": 1,
+      "config": {
+        "health": [25, 45, 70]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "damage_reduction",
+      "name": "Бронепластины",
+      "maxLevel": 3,
+      "unlockLevel": 2,
+      "config": {
+        "percent": [0.05, 0.09, 0.13]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "regeneration",
+      "name": "Ремонт брони",
+      "maxLevel": 2,
+      "unlockLevel": 3,
+      "config": {
+        "amount": [2, 4],
+        "interval": 2
+      },
+      "conditions": {}
+    },
+    {
+      "id": "second_wind",
+      "name": "Второе дыхание",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "threshold": 0.3,
+        "heal": [20, 35],
+        "cooldown": [35, 28]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "divine_shield",
+    "name": "Аварийный щит",
+    "maxLevel": 1,
+    "unlockLevel": 6,
+    "config": {
+      "duration": 4,
+      "percent": 0.55,
+      "cooldown": 38
+    },
+    "conditions": {}
+  }
+}

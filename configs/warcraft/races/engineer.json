@@ -1,0 +1,65 @@
+{
+  "id": "engineer",
+  "name": "Инженер",
+  "description": "Технический специалист: получает броню и деньги, а в бою разворачивает автоматическую турель.",
+  "maxLevel": 10,
+  "vipOnly": false,
+  "requirements": {
+    "totalLevel": 100,
+    "globalXp": 220000,
+    "races": {
+      "dwarf": 10
+    }
+  },
+  "abilities": [
+    {
+      "id": "spawn_armor",
+      "name": "Композитная броня",
+      "maxLevel": 2,
+      "unlockLevel": 1,
+      "config": {
+        "armor": [50, 100],
+        "helmet": [0, 1]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "spawn_money",
+      "name": "Контракт снабжения",
+      "maxLevel": 2,
+      "unlockLevel": 2,
+      "config": {
+        "amount": [350, 650]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "turret_totem",
+      "name": "Автоматическая турель",
+      "maxLevel": 3,
+      "unlockLevel": 3,
+      "config": {
+        "damage": [8, 11, 14],
+        "radius": [450, 525, 600],
+        "duration": [9, 11, 13],
+        "interval": [1.0, 0.85, 0.7],
+        "cooldown": [32, 28, 24]
+      },
+      "conditions": {}
+    }
+  ],
+  "ultimate": {
+    "id": "shield_totem",
+    "name": "Защитный генератор",
+    "maxLevel": 2,
+    "unlockLevel": 6,
+    "config": {
+      "percent": [0.10, 0.16],
+      "radius": 350,
+      "duration": [8, 10],
+      "interval": 0.5,
+      "cooldown": [36, 30]
+    },
+    "conditions": {}
+  }
+}

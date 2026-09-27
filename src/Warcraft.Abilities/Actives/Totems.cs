@@ -171,3 +171,59 @@ internal sealed class ShieldTotemAbility(TotemSystem totems, TeamBuffs buffs)
     protected override string DisplayName => "Тотем защиты";
     protected override Color Color => Color.FromArgb(255, 240, 210, 80);
 }
+
+
+/// <summary>
+/// Engineer turret: targets the nearest enemy in range and fires one shot per pulse.
+/// Config: damage, radius, duration, interval, cooldown.
+/// </summary>
+internal sealed class TurretTotemAbility(TotemSystem totems, BeamEffects beams) : TotemAbility(totems)
+{
+    public override string Id => "turret_totem";
+    protected override string Model => WarcraftModels.TotemWar;
+    protected override string Description =>
+        "Турель на {duration} с: стреляет по ближайшему врагу в радиусе {radius}, нанося {damage} урона каждые {interval|1} с. Перезарядка {cooldown} с.";
+    protected override string DisplayName => "Автотурель";
+    protected override Color Color => Color.FromArgb(255, 255, 185, 55);
+
+    protected override void Pulse(Totem totem, PlayerAbilitySnapshot ability, double now)
+    {
+        var target = totem.Enemies()
+            .OrderBy(enemy => System.Numerics.Vector3.DistanceSquared(totem.Position, enemy.Position))
+            .FirstOrDefault();
+
+        if (target is null)
+            return;
+
+        var damage = Math.Clamp(AbilityConfigReader.GetLevelInt(ability, "damage", 8), 1, 100);
+        var muzzle = totem.Position with { Z = totem.Position.Z + 48f };
+        var hit = target.Position with { Z = target.Position.Z + 42f };
+
+        beams.Draw(
+            muzzle,
+            hit,
+            Color.FromArgb(255, 255, 195, 70),
+            2.5f,
+            0.12f);
+
+        var result = Api?.Combat.DealAbilityDamage(
+            new AbilityDamageRequest(totem.OwnerSteamId, target.Controller.Slot, damage, Id));
+
+        if (result is { Applied: true, HealthRemoved: > 0 })
+        {
+            Api?.Events.Publish(new AbilityTelemetryEvent(
+                totem.OwnerSteamId,
+                Id,
+                AbilityTelemetryKind.DamageDealt,
+                result.HealthRemoved));
+        }
+
+        if (result is { Killed: true })
+        {
+            Api?.Events.Publish(new AbilityTelemetryEvent(
+                totem.OwnerSteamId,
+                Id,
+                AbilityTelemetryKind.Kill));
+        }
+    }
+}

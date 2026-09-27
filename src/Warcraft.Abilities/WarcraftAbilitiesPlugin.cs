@@ -134,6 +134,7 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new FrostTotemAbility(totems, movement));
         Register(new WarTotemAbility(totems, buffs));
         Register(new ShieldTotemAbility(totems, buffs));
+        Register(new TurretTotemAbility(totems, beams));
         Register(new SmiteAbility(beams));
         Register(new RageAbility(buffs, movement));
 
