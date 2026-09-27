@@ -16,6 +16,7 @@ internal sealed class CoreGameEventBridge(
     CoreConfig config)
 {
     private readonly Dictionary<int, ulong> _creditedKills = [];
+    private readonly Dictionary<int, PendingDamagePost> _pendingDamagePosts = [];
     private int _ticksSinceGameTick;
 
     public HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
@@ -157,6 +158,7 @@ internal sealed class CoreGameEventBridge(
     {
         abilityDamage.Clear();
         _creditedKills.Clear();
+        _pendingDamagePosts.Clear();
         apiAccessor()?.Events.Publish(new RoundStartEvent());
         return HookResult.Continue;
     }
@@ -221,6 +223,12 @@ internal sealed class CoreGameEventBridge(
         apiAccessor()?.Events.Publish(damageEvent);
         damageInfo.Damage = Math.Max(0.0f, damageEvent.Damage);
 
+        _pendingDamagePosts[victimPawn.Index] = new PendingDamagePost(
+            victimPawn.Health,
+            damageEvent.AttackerSteamId,
+            damageEvent.Weapon,
+            damageEvent.Kind);
+
         return originalDamage > 0 && damageInfo.Damage <= 0
             ? HookResult.Handled
             : HookResult.Continue;
@@ -235,12 +243,21 @@ internal sealed class CoreGameEventBridge(
         if (!IsHuman(victimController))
             return;
 
+        var hasPending = _pendingDamagePosts.Remove(victimPawn.Index, out var pending);
+
+        // CTakeDamageResult is not safe to dereference on every CSS callback:
+        // CounterStrikeSharp can provide a wrapper whose schema pointer is null.
+        // Compute actual HP loss from the pawn state instead.
+        var healthLost = hasPending
+            ? Math.Max(0, pending.HealthBefore - victimPawn.Health)
+            : Math.Max(0.0f, damageInfo.Damage);
+
         apiAccessor()?.Events.Publish(new DamagePostEvent(
             victimController!.SteamID,
-            GetAttackerSteamId(damageInfo),
-            result.HealthLost > 0 ? result.HealthLost : result.DamageDealt,
-            GetAttackerWeapon(damageInfo),
-            ToDamageKind(damageInfo)));
+            hasPending ? pending.AttackerSteamId : GetAttackerSteamId(damageInfo),
+            healthLost,
+            hasPending ? pending.Weapon : GetAttackerWeapon(damageInfo),
+            hasPending ? pending.Kind : ToDamageKind(damageInfo)));
     }
 
     private static DamageKind ToDamageKind(CTakeDamageInfo damageInfo)
@@ -289,6 +306,12 @@ internal sealed class CoreGameEventBridge(
 
         return pawn.WeaponServices?.ActiveWeapon.Value?.DesignerName;
     }
+
+    private readonly record struct PendingDamagePost(
+        int HealthBefore,
+        ulong? AttackerSteamId,
+        string? Weapon,
+        DamageKind Kind);
 
     private const byte TeamTerrorist = 2;
     private const byte TeamCounterTerrorist = 3;
