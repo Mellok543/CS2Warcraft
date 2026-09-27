@@ -30,7 +30,7 @@ jobs:
         run: |
           root=artifacts/addons/counterstrikesharp
           test -f $root/shared/Warcraft.Api/Warcraft.Api.dll
-          for module in Core Database Races Abilities Menu Admin Vip Shop; do
+          for module in Core Database Races Abilities Menu Admin Vip Shop Achievements; do
             test -f $root/plugins/Warcraft.$module/Warcraft.$module.dll || { echo "Missing Warcraft.$module" >&2; exit 1; }
           done
           test -f $root/plugins/Warcraft.Database/MySqlConnector.dll

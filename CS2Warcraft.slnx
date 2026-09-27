@@ -9,6 +9,7 @@
     <Project Path="src/Warcraft.Vip/Warcraft.Vip.csproj" />
     <Project Path="src/Warcraft.Admin/Warcraft.Admin.csproj" />
     <Project Path="src/Warcraft.Shop/Warcraft.Shop.csproj" />
+    <Project Path="src/Warcraft.Achievements/Warcraft.Achievements.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Warcraft.Core.Tests/Warcraft.Core.Tests.csproj" />
