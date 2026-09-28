@@ -61,8 +61,25 @@
       "unlockLevel": 4,
       "config": {
         "health": [
-          20,
-          40
+          25,
+          50
+        ]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "spawn_items",
+      "name": "Оружие командира",
+      "maxLevel": 2,
+      "unlockLevel": 5,
+      "config": {
+        "items": [
+          [
+            "weapon_p250"
+          ],
+          [
+            "weapon_deagle"
+          ]
         ]
       },
       "conditions": {}
