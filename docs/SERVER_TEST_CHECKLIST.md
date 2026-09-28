@@ -98,6 +98,9 @@ Run this checklist on a real Counter-Strike 2 server before tagging a release.
 - [ ] Chain lightning draws jagged blue bolts between targets; smite drops a golden bolt and pillar; life drain, pull and swap draw red/violet rays; war stomp, repulse, battle cry and heal burst show a shockwave along the ground.
 - [ ] Status effects follow the player and end with the effect: poison (green), stun from bash/war stomp (blue), frost totem slow, rage flames, divine shield sparkles, sprint, battle cry buff.
 - [ ] Level up shows a golden pillar on the player; resurrect and reincarnation show a pillar at the respawn point.
+- [ ] Cosmetics: a hat sits on the head, a mask on the face, a backpack on the back (facing away from the player) and a pet on the right shoulder; all follow crouching and looking up/down.
+- [ ] The owner never sees their own cosmetics in first person (mask does not cover the screen); other players and third-person spectators do; spectators in first-person view of the owner do not.
+- [ ] With `visuals.json` → `"models": false` cosmetics are not precached or spawned; the menu still equips them.
 - [ ] With `visuals.json` → `"particles": false`, rays fall back to beams and totems draw beam rings; nothing else is spawned.
 - [ ] Using any ability does not advance `mechanic.*` achievements; chain lightning hitting 3 targets unlocks "Цепная реакция".
 - [ ] `Persistence` shows `warcraft.mysql`; with `database.json` disabled it shows the missing-provider warning.

@@ -27,21 +27,28 @@ public sealed class WarcraftCosmeticsPlugin : BasePlugin
     public override string ModuleAuthor => "Mellok543";
     public override string ModuleDescription => "Persistent cosmetic inventory, equipment and player-attached models.";
 
-    private readonly Dictionary<(ulong SteamId, string Slot), CDynamicProp> _props = [];
+    private readonly Dictionary<(ulong SteamId, string Slot), AttachedCosmetic> _props = [];
     private IWarcraftApi? _api;
+    private bool _modelsEnabled = true;
     private IDisposable? _spawnSubscription;
     private IDisposable? _deathSubscription;
     private IDisposable? _stateSubscription;
 
     public override void Load(bool hotReload)
     {
+        _modelsEnabled = VisualsSettings.ModelsEnabled(Logger);
+
         RegisterListener<Listeners.OnServerPrecacheResources>(manifest =>
         {
+            if (!_modelsEnabled)
+                return;
+
             foreach (var definition in CosmeticCatalog.All)
                 manifest.AddResource(definition.Model);
         });
 
         RegisterListener<Listeners.OnClientDisconnect>(RemovePlayer);
+        RegisterListener<Listeners.CheckTransmit>(HideFromOwnView);
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
@@ -100,8 +107,8 @@ public sealed class WarcraftCosmeticsPlugin : BasePlugin
             _api.Modules.Unregister(ModuleId);
         }
 
-        foreach (var prop in _props.Values.ToArray())
-            Remove(prop);
+        foreach (var attached in _props.Values.ToArray())
+            Remove(attached.Prop);
         _props.Clear();
         _api = null;
     }
@@ -194,7 +201,9 @@ public sealed class WarcraftCosmeticsPlugin : BasePlugin
         var api = _api;
         var player = Utilities.GetPlayerFromSteamId(steamId);
         var pawn = player?.PlayerPawn.Value;
-        if (api is null || player is not { IsValid: true, IsBot: false, PawnIsAlive: true } ||
+        if (!_modelsEnabled ||
+            api is null ||
+            player is not { IsValid: true, IsBot: false, PawnIsAlive: true } ||
             pawn is not { IsValid: true })
         {
             return;
@@ -208,7 +217,7 @@ public sealed class WarcraftCosmeticsPlugin : BasePlugin
 
             var prop = Attach(definition, pawn);
             if (prop is not null)
-                _props[(steamId, slot)] = prop;
+                _props[(steamId, slot)] = new AttachedCosmetic(prop, pawn.Index);
         }
     }
 
@@ -218,21 +227,18 @@ public sealed class WarcraftCosmeticsPlugin : BasePlugin
         if (origin is null)
             return null;
 
+        var mount = CosmeticCatalog.Mount(definition.Slot);
         var yaw = pawn.EyeAngles.Y;
         var radians = yaw * MathF.PI / 180f;
         var forward = new Vector3(MathF.Cos(radians), MathF.Sin(radians), 0);
-        var right = new Vector3(-MathF.Sin(radians), MathF.Cos(radians), 0);
+        var right = new Vector3(MathF.Sin(radians), -MathF.Cos(radians), 0);
 
-        var offset = definition.Slot switch
-        {
-            CosmeticCatalog.Hat => new Vector3(0, 0, 72),
-            CosmeticCatalog.Mask => forward * 5f + new Vector3(0, 0, 63),
-            CosmeticCatalog.Backpack => forward * -8f + new Vector3(0, 0, 47),
-            CosmeticCatalog.Pet => right * 14f + forward * -1f + new Vector3(0, 0, 58),
-            _ => Vector3.Zero
-        };
+        // The view offset shrinks while crouching; fall back to the standing eye height before it is networked.
+        var eyeHeight = pawn.ViewOffset.Z > 1f ? pawn.ViewOffset.Z : StandingEyeHeight;
+        var position = new Vector3(origin.X, origin.Y, origin.Z + eyeHeight + mount.Up) +
+                       forward * mount.Forward +
+                       right * mount.Right;
 
-        var position = new Vector3(origin.X, origin.Y, origin.Z) + offset;
         var prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic_override");
         if (prop is null)
             return null;
@@ -243,10 +249,49 @@ public sealed class WarcraftCosmeticsPlugin : BasePlugin
         prop.SetModel(definition.Model);
         prop.Teleport(
             new Vector(position.X, position.Y, position.Z),
-            new QAngle(0, yaw, 0),
+            new QAngle(0, yaw + mount.Yaw, 0),
             new Vector(0, 0, 0));
+
+        // Follow the bone, keeping the placement above; without the attachment the prop
+        // simply stays parented to the pawn.
         prop.AcceptInput("SetParent", pawn, prop, "!activator");
+        prop.AcceptInput("SetParentAttachmentMaintainOffset", pawn, prop, mount.Attachment);
         return prop;
+    }
+
+    /// <summary>
+    /// Players never see their own cosmetics (a mask would cover the camera), neither
+    /// do spectators watching them in first person.
+    /// </summary>
+    private void HideFromOwnView(CCheckTransmitInfoList infoList)
+    {
+        if (_props.Count == 0)
+            return;
+
+        foreach (var (info, player) in infoList)
+        {
+            if (player is not { IsValid: true } || ViewedPawnIndex(player) is not { } viewed)
+                continue;
+
+            foreach (var attached in _props.Values)
+            {
+                if (attached.OwnerPawnIndex == viewed && attached.Prop.IsValid)
+                    info.TransmitEntities.Remove(attached.Prop);
+            }
+        }
+    }
+
+    private static uint? ViewedPawnIndex(CCSPlayerController player)
+    {
+        if (player.PawnIsAlive && player.PlayerPawn.Value is { IsValid: true } own)
+            return own.Index;
+
+        var services = player.Pawn.Value?.ObserverServices;
+        if (services is null || services.ObserverMode != (byte)ObserverMode_t.OBS_MODE_IN_EYE)
+            return null;
+
+        var target = services.ObserverTarget;
+        return target.IsValid ? target.Index : null;
     }
 
     private void RemovePlayer(int slot)
@@ -260,8 +305,8 @@ public sealed class WarcraftCosmeticsPlugin : BasePlugin
     {
         foreach (var key in _props.Keys.Where(x => x.SteamId == steamId).ToArray())
         {
-            if (_props.Remove(key, out var prop))
-                Remove(prop);
+            if (_props.Remove(key, out var attached))
+                Remove(attached.Prop);
         }
     }
 
@@ -272,4 +317,8 @@ public sealed class WarcraftCosmeticsPlugin : BasePlugin
     }
 
     private static string PageId(string slot) => RootPageId + "." + slot;
+
+    private const float StandingEyeHeight = 64f;
+
+    private sealed record AttachedCosmetic(CDynamicProp Prop, uint OwnerPawnIndex);
 }

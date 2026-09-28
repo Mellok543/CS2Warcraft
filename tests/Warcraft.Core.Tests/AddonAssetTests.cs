@@ -16,10 +16,13 @@ public sealed partial class AddonAssetTests
     public void EverySpawnedModelHasCompleteSources()
     {
         var root = FindRepositoryRoot();
-        var registry = File.ReadAllText(Path.Combine(root, "src", "Warcraft.Abilities", "Game", "WarcraftModels.cs"));
+        // Ability models and the cosmetics catalog are both spawned by the server.
+        var registry =
+            File.ReadAllText(Path.Combine(root, "src", "Warcraft.Abilities", "Game", "WarcraftModels.cs")) +
+            File.ReadAllText(Path.Combine(root, "src", "Warcraft.Cosmetics", "CosmeticCatalog.cs"));
         var models = ModelPath().Matches(registry).Select(x => x.Groups["path"].Value).Distinct().ToArray();
 
-        Assert.True(models.Length >= 8, $"Only {models.Length} model paths found in WarcraftModels.");
+        Assert.True(models.Length >= 29, $"Only {models.Length} model paths found in WarcraftModels and CosmeticCatalog.");
 
         foreach (var model in models)
         {
