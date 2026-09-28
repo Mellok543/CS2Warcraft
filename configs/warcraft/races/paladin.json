@@ -19,9 +19,9 @@
       "unlockLevel": 1,
       "config": {
         "percent": [
-          0.06,
-          0.1,
-          0.15
+          0.08,
+          0.13,
+          0.18
         ]
       },
       "conditions": {}
@@ -86,6 +86,19 @@
       "conditions": {
         "requiresGrounded": true
       }
+    },
+    {
+      "id": "bonus_health",
+      "name": "Священная стойкость",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "health": [
+          10,
+          20
+        ]
+      },
+      "conditions": {}
     }
   ],
   "ultimate": {
