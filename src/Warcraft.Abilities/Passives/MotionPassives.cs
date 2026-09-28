@@ -101,7 +101,7 @@ internal sealed class JumpBoostAbility(IGameScheduler scheduler) : AbilityHandle
             if (GamePlayers.FindAlive(steamId) is not { } player)
                 return;
 
-            var velocity = player.Pawn.AbsVelocity ?? Vector3.Zero;
+            var velocity = player.Pawn.AbsVelocity;
             var horizontal = MathF.Sqrt(velocity.X * velocity.X + velocity.Y * velocity.Y);
 
             // A long jump must also work from a standing/slow start. If there is not
@@ -167,7 +167,7 @@ internal sealed class BhopAbility(IGameScheduler scheduler) : AbilityHandler
             if (GamePlayers.FindAlive(steamId) is not { } player)
                 return;
 
-            var velocity = player.Pawn.AbsVelocity ?? Vector3.Zero;
+            var velocity = player.Pawn.AbsVelocity;
             var horizontal = MathF.Sqrt(velocity.X * velocity.X + velocity.Y * velocity.Y);
             if (horizontal < 20f || horizontal >= maxSpeed)
                 return;
