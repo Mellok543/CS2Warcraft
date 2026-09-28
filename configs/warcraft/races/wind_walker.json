@@ -98,6 +98,19 @@
         ]
       },
       "conditions": {}
+    },
+    {
+      "id": "fov",
+      "name": "Взор ветра",
+      "maxLevel": 2,
+      "unlockLevel": 5,
+      "config": {
+        "fov": [
+          95,
+          100
+        ]
+      },
+      "conditions": {}
     }
   ],
   "ultimate": {
