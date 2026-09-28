@@ -18,6 +18,9 @@ internal sealed record VipConfig
     public double BhopCooldownSeconds { get; init; } = 2.0;
     public double BhopHorizontalMultiplier { get; init; } = 1.12;
     public double BhopMaxHorizontalSpeed { get; init; } = 420.0;
+    public bool HitMarkerEnabled { get; init; } = true;
+    public bool FovEnabled { get; init; } = true;
+    public int Fov { get; init; } = 100;
 
     public static string ConfigPath =>
         Path.Combine(Server.GameDirectory, "configs", "warcraft", "vip.json");
