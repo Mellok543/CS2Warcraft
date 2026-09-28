@@ -3,6 +3,7 @@ using Warcraft.Api;
 using Warcraft.Api.Events;
 using Warcraft.Core.Achievements;
 using Warcraft.Core.Diagnostics;
+using Warcraft.Core.Cosmetics;
 using Warcraft.Core.Game;
 using Warcraft.Core.Menu;
 using Warcraft.Core.Modules;
@@ -30,6 +31,7 @@ public sealed class AchievementTests
             core.Races,
             core.Abilities,
             achievements,
+            new CosmeticsService(core.Players, core.Events),
             core.Events,
             persistence,
             core.Modifiers,
