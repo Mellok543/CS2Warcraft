@@ -1,4 +1,4 @@
-using CounterStrikeSharp.API;
+using System.Diagnostics;
 using Warcraft.Api.Events;
 using Warcraft.Api.Progression;
 using Warcraft.Core.Runtime;
@@ -116,7 +116,7 @@ internal sealed class XpRewardService : IDisposable
             return;
         }
 
-        var now = Server.CurrentTime;
+        var now = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
         var previous = _killCombos.GetValueOrDefault(steamId);
         var count = previous.Count > 0 &&
                     now - previous.LastKillAt <= _config.ComboKillWindowSeconds
