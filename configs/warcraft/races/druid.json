@@ -61,6 +61,24 @@
         ]
       },
       "conditions": {}
+    },
+    {
+      "id": "speed",
+      "name": "Облик гепарда",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "multiplier": [
+          1.07,
+          1.13
+        ]
+      },
+      "conditions": {
+        "weaponTypes": [
+          "knife",
+          "pistol"
+        ]
+      }
     }
   ],
   "ultimate": {
