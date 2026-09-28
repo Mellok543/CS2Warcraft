@@ -35,8 +35,8 @@
       "unlockLevel": 2,
       "config": {
         "chance": [
-          0.06,
-          0.12
+          0.1,
+          0.18
         ]
       },
       "conditions": {}
@@ -68,6 +68,24 @@
         "cooldown": 25
       },
       "conditions": {}
+    },
+    {
+      "id": "speed",
+      "name": "Шаг духа",
+      "maxLevel": 2,
+      "unlockLevel": 5,
+      "config": {
+        "multiplier": [
+          1.06,
+          1.12
+        ]
+      },
+      "conditions": {
+        "weaponTypes": [
+          "knife",
+          "pistol"
+        ]
+      }
     }
   ],
   "ultimate": {
@@ -76,7 +94,7 @@
     "maxLevel": 1,
     "unlockLevel": 6,
     "config": {
-      "percent": 0.3,
+      "percent": 0.35,
       "radius": 350,
       "duration": 10,
       "interval": 1,
