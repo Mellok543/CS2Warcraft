@@ -72,7 +72,9 @@ internal sealed record AchievementDefinition(
     long Target,
     bool Secret = false,
     string? RaceId = null,
-    AbilityTelemetryRule? Telemetry = null);
+    AbilityTelemetryRule? Telemetry = null,
+    string? CosmeticRewardId = null,
+    string? CosmeticRewardName = null);
 
 internal static class AchievementCatalog
 {
@@ -85,7 +87,7 @@ internal static class AchievementCatalog
             A("combat.kills_50", "Охотник", "Совершить 50 убийств.", AchievementCategory.Combat, AchievementRarity.Rare, AchievementMetric.Kills, 50),
             A("combat.kills_100", "Воин", "Совершить 100 убийств.", AchievementCategory.Combat, AchievementRarity.Rare, AchievementMetric.Kills, 100),
             A("combat.kills_250", "Палач", "Совершить 250 убийств.", AchievementCategory.Combat, AchievementRarity.Epic, AchievementMetric.Kills, 250),
-            A("combat.kills_1000", "Легенда поля боя", "Совершить 1000 убийств.", AchievementCategory.Combat, AchievementRarity.Legendary, AchievementMetric.Kills, 1000),
+            Reward(A("combat.kills_1000", "Легенда поля боя", "Совершить 1000 убийств.", AchievementCategory.Combat, AchievementRarity.Legendary, AchievementMetric.Kills, 1000), "hat_crown", "Корона"),
 
             A("combat.hs_1", "Точно в цель", "Совершить первое убийство в голову.", AchievementCategory.Combat, AchievementRarity.Common, AchievementMetric.Headshots, 1),
             A("combat.hs_50", "Снайперская привычка", "Совершить 50 убийств в голову.", AchievementCategory.Combat, AchievementRarity.Rare, AchievementMetric.Headshots, 50),
@@ -93,7 +95,7 @@ internal static class AchievementCatalog
 
             A("combat.streak_3", "На ходу", "Совершить 3 убийства за одну жизнь.", AchievementCategory.Combat, AchievementRarity.Common, AchievementMetric.KillStreak, 3),
             A("combat.streak_5", "Не остановить", "Совершить 5 убийств за одну жизнь.", AchievementCategory.Combat, AchievementRarity.Rare, AchievementMetric.KillStreak, 5),
-            A("combat.streak_10", "Бессмертный охотник", "Совершить 10 убийств за одну жизнь.", AchievementCategory.Combat, AchievementRarity.Legendary, AchievementMetric.KillStreak, 10, true),
+            Reward(A("combat.streak_10", "Бессмертный охотник", "Совершить 10 убийств за одну жизнь.", AchievementCategory.Combat, AchievementRarity.Legendary, AchievementMetric.KillStreak, 10, true), "mask_oni", "Маска Они"),
 
             A("combat.round_3", "Тройной удар", "Совершить 3 убийства за один раунд.", AchievementCategory.Combat, AchievementRarity.Rare, AchievementMetric.RoundKills, 3),
             A("combat.round_5", "Резня", "Совершить 5 убийств за один раунд.", AchievementCategory.Combat, AchievementRarity.Epic, AchievementMetric.RoundKills, 5),
@@ -105,11 +107,11 @@ internal static class AchievementCatalog
 
             A("progress.levels_25", "Путь исследователя", "Набрать суммарно 25 уровней рас.", AchievementCategory.Progression, AchievementRarity.Common, AchievementMetric.TotalRaceLevels, 25),
             A("progress.levels_100", "Знаток рас", "Набрать суммарно 100 уровней рас.", AchievementCategory.Progression, AchievementRarity.Epic, AchievementMetric.TotalRaceLevels, 100),
-            A("progress.levels_250", "Мастер Warcraft", "Набрать суммарно 250 уровней рас.", AchievementCategory.Progression, AchievementRarity.Legendary, AchievementMetric.TotalRaceLevels, 250),
+            Reward(A("progress.levels_250", "Мастер Warcraft", "Набрать суммарно 250 уровней рас.", AchievementCategory.Progression, AchievementRarity.Legendary, AchievementMetric.TotalRaceLevels, 250), "backpack_mimic", "Рюкзак-мимик"),
 
             A("progress.mastered_1", "Первая специализация", "Довести одну расу до 10 уровня.", AchievementCategory.Progression, AchievementRarity.Rare, AchievementMetric.RacesAtLevel10, 1),
             A("progress.mastered_5", "Коллекционер знаний", "Довести 5 рас до 10 уровня.", AchievementCategory.Progression, AchievementRarity.Epic, AchievementMetric.RacesAtLevel10, 5),
-            A("progress.mastered_10", "Архимастер", "Довести 10 рас до 10 уровня.", AchievementCategory.Progression, AchievementRarity.Legendary, AchievementMetric.RacesAtLevel10, 10),
+            Reward(A("progress.mastered_10", "Архимастер", "Довести 10 рас до 10 уровня.", AchievementCategory.Progression, AchievementRarity.Legendary, AchievementMetric.RacesAtLevel10, 10), "pet_dragon", "Дракон"),
 
             A("progress.rounds_50", "Завсегдатай", "Сыграть 50 раундов.", AchievementCategory.Progression, AchievementRarity.Common, AchievementMetric.RoundsPlayed, 50),
             A("progress.rounds_250", "Ветеран", "Сыграть 250 раундов.", AchievementCategory.Progression, AchievementRarity.Rare, AchievementMetric.RoundsPlayed, 250),
@@ -203,4 +205,14 @@ internal static class AchievementCatalog
 
     private static AchievementDefinition Secret(AchievementDefinition definition)
         => definition with { Secret = true };
+
+    private static AchievementDefinition Reward(
+        AchievementDefinition definition,
+        string cosmeticId,
+        string cosmeticName)
+        => definition with
+        {
+            CosmeticRewardId = cosmeticId,
+            CosmeticRewardName = cosmeticName
+        };
 }

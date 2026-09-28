@@ -91,7 +91,10 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
             $"{_definitions.Count} achievements"));
 
         foreach (var player in _api.Players.GetLoadedPlayers())
+        {
             _tracker.EvaluateSnapshot(player.SteamId);
+            GrantAchievementCosmetics(player.SteamId);
+        }
 
         Logger.LogInformation(
             "Warcraft.Achievements loaded {Count} achievements.",
@@ -134,6 +137,7 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
     private void OpenAchievements(ulong steamId)
     {
         _tracker?.EvaluateSnapshot(steamId);
+        GrantAchievementCosmetics(steamId);
         _api?.Menu.RequestOpenPage(RootPageId, steamId);
     }
 
@@ -198,7 +202,10 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
 
             var reason = definition.Secret && !state.Unlocked
                 ? "Условие скрыто"
-                : definition.Description;
+                : definition.Description +
+                  (definition.CosmeticRewardName is { } rewardName
+                      ? $" • Награда: {rewardName}"
+                      : string.Empty);
 
             return new MenuPageItemDescriptor(
                 text,
@@ -233,11 +240,16 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
         if (reward > 0)
             _api?.Achievements.AddCurrency(unlocked.SteamId, reward, definition.Id);
 
+        if (definition.CosmeticRewardId is { } cosmeticId)
+            _api?.Cosmetics.Unlock(unlocked.SteamId, cosmeticId, $"achievement:{definition.Id}");
+
         var shown = _api?.Menu.RequestNotification(new MenuNotificationRequest(
             unlocked.SteamId,
             $"ДОСТИЖЕНИЕ • {RarityName(definition.Rarity)}",
             definition.Name,
-            definition.Description + (reward > 0 ? $"  •  +{reward} ✦" : string.Empty),
+            definition.Description +
+            (reward > 0 ? $"  •  +{reward} ✦" : string.Empty) +
+            (definition.CosmeticRewardName is { } cosmeticReward ? $"  •  Получено: {cosmeticReward}" : string.Empty),
             NotificationStyle(definition.Rarity),
             5.0f)) == true;
 
@@ -274,17 +286,87 @@ public sealed class WarcraftAchievementsPlugin : BasePlugin
         if (api is null)
             return null;
 
+        var balance = api.Achievements.GetCurrency(steamId);
+        var items = AchievementShopItems.Select(item =>
+        {
+            var owned = api.Cosmetics.Owns(steamId, item.CosmeticId);
+            var enough = balance >= item.Price;
+
+            return new MenuPageItemDescriptor(
+                owned ? $"✓ {item.Name} — получено" : $"{item.Name} — {item.Price} ✦",
+                buyerSteamId => BuyAchievementCosmetic(buyerSteamId, item),
+                !owned && enough,
+                owned
+                    ? "Этот предмет уже получен"
+                    : !enough ? $"Нужно {item.Price} ✦" : item.Description);
+        }).ToArray();
+
         return new MenuPageDescriptor(
             CurrencyShopPageId,
             "МАГАЗИН ДОСТИЖЕНИЙ",
-            $"БАЛАНС: {api.Achievements.GetCurrency(steamId)} ✦",
-            [new MenuPageItemDescriptor(
-                "Магазин пока пуст",
-                _ => { },
-                false,
-                "Предметы будут добавлены позже")],
+            $"БАЛАНС: {balance} ✦",
+            items,
             RootPageId);
     }
+
+    private void BuyAchievementCosmetic(ulong steamId, AchievementShopItem item)
+    {
+        var api = _api;
+        if (api is null || api.Cosmetics.Owns(steamId, item.CosmeticId))
+            return;
+
+        if (!api.Achievements.SpendCurrency(steamId, item.Price, $"achievement-shop:{item.CosmeticId}"))
+            return;
+
+        var unlock = api.Cosmetics.Unlock(steamId, item.CosmeticId, "achievement-shop");
+        if (!unlock.Success)
+        {
+            api.Achievements.AddCurrency(steamId, item.Price, $"achievement-shop-refund:{item.CosmeticId}");
+            return;
+        }
+
+        api.Cosmetics.Equip(steamId, item.Slot, item.CosmeticId, "achievement-shop");
+        api.Menu.RequestOpenPage(CurrencyShopPageId, steamId);
+    }
+
+    private void GrantAchievementCosmetics(ulong steamId)
+    {
+        var api = _api;
+        if (api is null)
+            return;
+
+        var progress = api.Achievements.GetAll(steamId);
+        foreach (var definition in _definitions)
+        {
+            if (definition.CosmeticRewardId is not { } cosmeticId ||
+                !progress.TryGetValue(definition.Id, out var state) ||
+                !state.Unlocked)
+            {
+                continue;
+            }
+
+            api.Cosmetics.Unlock(steamId, cosmeticId, $"achievement-backfill:{definition.Id}");
+        }
+    }
+
+    private static readonly AchievementShopItem[] AchievementShopItems =
+    [
+        new("backpack_loot_sack", "Мешок добычи", "backpack", 70, "Постоянный рюкзак."),
+        new("backpack_quiver", "Колчан", "backpack", 90, "Постоянный рюкзак."),
+        new("hat_viking", "Шлем викинга", "hat", 75, "Постоянная шапка."),
+        new("hat_wizard", "Шляпа мага", "hat", 100, "Постоянная шапка."),
+        new("mask_kitsune", "Маска кицунэ", "mask", 80, "Постоянная маска."),
+        new("mask_plague", "Маска чумного доктора", "mask", 100, "Постоянная маска."),
+        new("pet_capybara", "Питомец: Капибара", "pet", 85, "Постоянный питомец."),
+        new("pet_owl", "Питомец: Сова", "pet", 110, "Постоянный питомец.")
+    ];
+
+    private sealed record AchievementShopItem(
+        string CosmeticId,
+        string Name,
+        string Slot,
+        long Price,
+        string Description);
 
     private static long CurrencyReward(AchievementRarity rarity)
         => rarity switch
