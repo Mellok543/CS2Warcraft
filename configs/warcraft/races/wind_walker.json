@@ -19,9 +19,9 @@
       "unlockLevel": 1,
       "config": {
         "multiplier": [
-          1.05,
-          1.1,
-          1.15
+          1.07,
+          1.12,
+          1.18
         ],
         "radius": 350
       },
@@ -79,6 +79,25 @@
         ]
       },
       "conditions": {}
+    },
+    {
+      "id": "bhop",
+      "name": "Танец ветра",
+      "maxLevel": 3,
+      "unlockLevel": 5,
+      "config": {
+        "multiplier": [
+          1.04,
+          1.07,
+          1.1
+        ],
+        "maxSpeed": [
+          380,
+          425,
+          470
+        ]
+      },
+      "conditions": {}
     }
   ],
   "ultimate": {
@@ -87,7 +106,7 @@
     "maxLevel": 1,
     "unlockLevel": 6,
     "config": {
-      "multiplier": 1.6,
+      "multiplier": 1.7,
       "duration": 5,
       "cooldown": 30
     },
