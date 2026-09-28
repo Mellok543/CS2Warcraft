@@ -18,8 +18,14 @@
       "maxLevel": 2,
       "unlockLevel": 1,
       "config": {
-        "armor": [50, 100],
-        "helmet": [0, 1]
+        "armor": [
+          50,
+          100
+        ],
+        "helmet": [
+          0,
+          1
+        ]
       },
       "conditions": {}
     },
@@ -29,7 +35,10 @@
       "maxLevel": 2,
       "unlockLevel": 2,
       "config": {
-        "amount": [350, 650]
+        "amount": [
+          350,
+          650
+        ]
       },
       "conditions": {}
     },
@@ -39,11 +48,51 @@
       "maxLevel": 3,
       "unlockLevel": 3,
       "config": {
-        "damage": [8, 11, 14],
-        "radius": [450, 525, 600],
-        "duration": [9, 11, 13],
-        "interval": [1.0, 0.85, 0.7],
-        "cooldown": [32, 28, 24]
+        "damage": [
+          9,
+          13,
+          17
+        ],
+        "radius": [
+          450,
+          525,
+          600
+        ],
+        "duration": [
+          9,
+          11,
+          13
+        ],
+        "interval": [
+          1,
+          0.8,
+          0.65
+        ],
+        "cooldown": [
+          32,
+          28,
+          24
+        ]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "spawn_items",
+      "name": "Комплект инженера",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "items": [
+          [
+            "weapon_p250",
+            "weapon_smokegrenade"
+          ],
+          [
+            "weapon_mp7",
+            "weapon_smokegrenade",
+            "weapon_hegrenade"
+          ]
+        ]
       },
       "conditions": {}
     }
@@ -54,11 +103,20 @@
     "maxLevel": 2,
     "unlockLevel": 6,
     "config": {
-      "percent": [0.10, 0.16],
+      "percent": [
+        0.1,
+        0.16
+      ],
       "radius": 350,
-      "duration": [8, 10],
+      "duration": [
+        8,
+        10
+      ],
       "interval": 0.5,
-      "cooldown": [36, 30]
+      "cooldown": [
+        36,
+        30
+      ]
     },
     "conditions": {}
   }
