@@ -11,7 +11,11 @@
       "maxLevel": 3,
       "unlockLevel": 1,
       "config": {
-        "health": [15, 25, 40]
+        "health": [
+          15,
+          25,
+          35
+        ]
       },
       "conditions": {}
     },
@@ -21,7 +25,11 @@
       "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
-        "amount": [1, 2, 3],
+        "amount": [
+          1,
+          2,
+          3
+        ],
         "interval": 1.5
       },
       "conditions": {
@@ -35,7 +43,11 @@
       "maxLevel": 3,
       "unlockLevel": 3,
       "config": {
-        "percent": [0.1, 0.18, 0.25],
+        "percent": [
+          0.08,
+          0.14,
+          0.2
+        ],
         "maxDamage": 20
       },
       "conditions": {}
@@ -46,7 +58,11 @@
       "maxLevel": 3,
       "unlockLevel": 4,
       "config": {
-        "multiplier": [1.05, 1.1, 1.15]
+        "multiplier": [
+          1.04,
+          1.07,
+          1.1
+        ]
       },
       "conditions": {}
     }
