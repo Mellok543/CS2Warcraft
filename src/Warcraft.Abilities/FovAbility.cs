@@ -23,7 +23,6 @@ internal sealed class FovAbility : AbilityHandler
     protected override void Subscribe(IWarcraftEventBus events)
     {
         Track(events.Subscribe<GameTickEvent>(_ => RefreshAll()));
-        Track(events.Subscribe<PlayerDeathEvent>(e => _applied.Remove(e.SteamId)));
     }
 
     protected override void OnDisposed()
