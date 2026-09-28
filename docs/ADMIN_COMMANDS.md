@@ -1,55 +1,110 @@
-# Admin commands
+# Warcraft.Admin
 
-All commands go through `IWarcraftApi`; no admin module reads or writes the
-database directly.
+The module uses its own compact letter flags from `configs/warcraft/admin.json`.
 
-- Permission: `@warcraft/admin` (in `addons/counterstrikesharp/configs/admins.json`).
-- The server console / RCON runs every command without a permission check —
-  use the `css_` form there.
-- In chat use `!` instead of `css_` (`!wc_xp` = `css_wc_xp`).
-- `<player>` accepts CounterStrikeSharp target expressions (name part, `#userid`,
-  `@me`, …). Commands that change a player need exactly one online human target
-  and respect admin immunity.
+## Flags
 
-## Warcraft.Admin
-
-| Command | Effect |
+| Flag | Access |
 |---|---|
-| `css_wc_status` | diagnostics: Core version, modules and versions, registered abilities, loaded races, persistence provider, loaded players, last race reload, race catalog health |
-| `css_wc_xp <player> <amount>` | add (or remove, negative) XP to the active race; the VIP multiplier applies to positive amounts |
-| `css_wc_level <player> <level>` | set the level of the active race |
-| `css_wc_givepoints <player> <amount>` | add skill points to the active race |
-| `css_wc_race <player> <raceId>` | switch the active race, **bypassing** VIP and unlock requirements |
-| `css_wc_reset <player>` | reset all Warcraft progress of the player (races, levels, XP, cooldowns; statistics are kept) |
-| `css_wc_reload_races` | reload `configs/warcraft/races/*.json`; on any error the previous catalog stays |
+| `b` | bans / unbans |
+| `k` | kick, warnings, clear warnings |
+| `m` | mute / unmute |
+| `g` | gag / ungag |
+| `f` | fun commands |
+| `i` | change map, restart round |
+| `z` | root access: all flags + Warcraft progression/service commands |
 
-## Warcraft.Shop
+Server console/RCON bypasses flag checks.
 
-| Command | Effect |
-|---|---|
-| `css_wc_reload_shop` | reload `configs/warcraft/shop.json` (invalid items are logged and skipped) |
+Example:
 
-## Reading `css_wc_status`
-
-```text
-[Warcraft] Core 0.6.1 | players loaded: 12
-[Warcraft] Persistence: warcraft.mysql
-[Warcraft] Modules: warcraft.abilities 0.6.1, warcraft.achievements 0.6.1, ...
-[Warcraft] Abilities registered: 59 | races loaded: 30
-[Warcraft] Races: starter 3 [human, orc, undead], locked 26, VIP 1 [shadow]
-[Warcraft] Last race reload: OK from plugin-load at 12:00:01 UTC, errors: 0
-[Warcraft] Health: OK
+```json
+{
+  "admins": {
+    "76561198000000000": {
+      "name": "Owner",
+      "flags": "z",
+      "immunity": 100
+    },
+    "76561198000000001": {
+      "name": "Moderator",
+      "flags": "bkmg",
+      "immunity": 20
+    }
+  },
+  "warnKickThreshold": 3,
+  "banDurationsMinutes": [30, 120, 1440, 10080, 0],
+  "muteDurationsMinutes": [10, 30, 120, 1440, 0],
+  "gagDurationsMinutes": [10, 30, 120, 1440, 0]
+}
 ```
 
-Problems are listed with `!`:
+`0` duration means permanent.
 
-- `Persistence: НЕТ ПРОВАЙДЕРА` — Warcraft.Database is missing, disabled
-  (`database.json` → `"enabled": true`) or could not connect (see its log).
-- `ability 'x' has no handler` — a race references a mechanic that is not
-  registered (typo in JSON or Warcraft.Abilities not loaded).
-- `ultimate 'x' is a passive mechanic` — the ultimate can never be activated.
-- `Last race reload: REJECTED` — the newest files are broken; the previous
-  catalog is still active. The first errors are printed below the line.
+Punishments are saved automatically to
+`configs/warcraft/admin_punishments.json`.
 
-The same race health report is logged by Warcraft.Races after every
-successful reload.
+## Menu
+
+- `!admin`
+- `!a`
+
+The menu contains only actions allowed by the caller's flags.
+
+## Moderation commands
+
+| Command | Flag |
+|---|---|
+| `!ban <player> <minutes|0> [reason]` | b |
+| `!unban <steamid64>` | b |
+| `!kick <player> [reason]` | k |
+| `!warn <player> [reason]` | k |
+| `!clearwarns <player>` | k |
+| `!mute <player> <minutes|0> [reason]` | m |
+| `!unmute <player>` | m |
+| `!gag <player> <minutes|0> [reason]` | g |
+| `!ungag <player>` | g |
+
+Bans, mutes, gags and warnings persist across restarts. Expired timed
+punishments are pruned automatically.
+
+## Fun commands
+
+| Command | Effect |
+|---|---|
+| `!slay <player>` | kill player |
+| `!slap <player> [damage]` | damage + vertical impulse |
+| `!freeze <player>` | freeze movement |
+| `!unfreeze <player>` | restore walking |
+| `!hp <player> <1..1000>` | set HP |
+| `!money <player> <0..16000>` | set money |
+| `!bring <player>` | teleport target to admin |
+
+All require `f`.
+
+## Server commands
+
+| Command | Effect |
+|---|---|
+| `!map <map>` | change map |
+| `!rr` | restart round after 1 second |
+
+Both require `i`.
+
+The map menu reads the Warcraft RTV map list when present.
+
+## Warcraft root commands
+
+These require `z`:
+
+- `!wc_xp <player> <amount>`
+- `!wc_level <player> <level>`
+- `!wc_race <player> <raceId>`
+- `!wc_reset <player>`
+- `!wc_givepoints <player> <amount>`
+- `!wc_reload_races`
+- `!wc_status`
+- `!wc_reload_admin`
+
+Targeting respects both Warcraft.Admin immunity and CounterStrikeSharp
+admin immunity.

@@ -35,6 +35,7 @@ jobs:
           done
           test -f $root/plugins/Warcraft.Database/MySqlConnector.dll
           test -f $root/plugins/Warcraft.Shop/defaults/shop.json
+          test -f $root/plugins/Warcraft.Admin/defaults/admin.json
           test -f $root/plugins/Warcraft.Rtv/defaults/maplist.txt
           test -f $root/plugins/Warcraft.Loadouts/defaults/race_loadouts.json
           test "$(ls $root/plugins/Warcraft.Races/defaults/races/*.json | wc -l)" -ge 3
