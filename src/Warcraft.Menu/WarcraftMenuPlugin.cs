@@ -35,6 +35,7 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         AddCommand("css_races", "Open Warcraft race selection", OnRacesCommand);
 
         RegisterListener<Listeners.OnPlayerButtonsChanged>(_menus.HandleButtonsChanged);
+        RegisterListener<Listeners.OnTick>(_menus.PollDeadPlayerButtons);
         RegisterListener<Listeners.OnClientDisconnect>(_menus.HandleClientDisconnect);
     }
 
