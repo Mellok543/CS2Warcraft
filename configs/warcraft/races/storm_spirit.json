@@ -80,6 +80,19 @@
         ]
       },
       "conditions": {}
+    },
+    {
+      "id": "fov",
+      "name": "Глаз бури",
+      "maxLevel": 2,
+      "unlockLevel": 5,
+      "config": {
+        "fov": [
+          100,
+          105
+        ]
+      },
+      "conditions": {}
     }
   ],
   "ultimate": {
