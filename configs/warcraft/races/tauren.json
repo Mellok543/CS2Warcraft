@@ -19,9 +19,9 @@
       "unlockLevel": 1,
       "config": {
         "health": [
-          15,
-          30,
-          45
+          20,
+          40,
+          60
         ]
       },
       "conditions": {}
@@ -74,7 +74,7 @@
     "unlockLevel": 6,
     "config": {
       "duration": 4,
-      "percent": 0.6,
+      "percent": 0.65,
       "cooldown": 35
     },
     "conditions": {}
