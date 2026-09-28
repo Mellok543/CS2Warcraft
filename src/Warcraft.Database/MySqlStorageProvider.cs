@@ -501,23 +501,46 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
         PlayerPersistenceDto player,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = new MySqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        const int maxAttempts = 4;
 
-        try
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            await UpsertPlayerAsync(connection, transaction, player, cancellationToken);
-            await UpsertProgressAndPruneAsync(connection, transaction, player, cancellationToken);
-            await UpsertStatsAsync(connection, transaction, player, cancellationToken);
-            await UpsertAchievementsAndPruneAsync(connection, transaction, player, cancellationToken);
-            await UpsertCosmeticsAsync(connection, transaction, player, cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-        }
-        catch
-        {
-            await transaction.RollbackAsync(CancellationToken.None);
-            throw;
+            await using var connection = new MySqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                await UpsertPlayerAsync(connection, transaction, player, cancellationToken);
+                await UpsertProgressAndPruneAsync(connection, transaction, player, cancellationToken);
+                await UpsertStatsAsync(connection, transaction, player, cancellationToken);
+                await UpsertAchievementsAndPruneAsync(connection, transaction, player, cancellationToken);
+                await UpsertCosmeticsAsync(connection, transaction, player, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return;
+            }
+            catch (MySqlException exception) when (
+                attempt < maxAttempts &&
+                (exception.Number == 1213 || exception.Number == 1205))
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+
+                // Deadlocks and lock wait timeouts are transient. Re-run the whole
+                // transaction on a fresh connection after a short bounded delay.
+                var delayMs = attempt switch
+                {
+                    1 => 25,
+                    2 => 75,
+                    _ => 150
+                };
+
+                await Task.Delay(delayMs, cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                throw;
+            }
         }
     }
 
@@ -592,7 +615,9 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
         PlayerPersistenceDto player,
         CancellationToken cancellationToken)
     {
-        var races = player.Races.ToArray();
+        var races = player.Races
+            .OrderBy(x => x.RaceId, StringComparer.Ordinal)
+            .ToArray();
 
         foreach (var race in races)
         {
@@ -618,7 +643,9 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
                 await upsertRace.ExecuteNonQueryAsync(cancellationToken);
             }
 
-            var abilities = race.AbilityLevels.ToArray();
+            var abilities = race.AbilityLevels
+                .OrderBy(x => x.Key, StringComparer.Ordinal)
+                .ToArray();
 
             foreach (var ability in abilities)
             {
