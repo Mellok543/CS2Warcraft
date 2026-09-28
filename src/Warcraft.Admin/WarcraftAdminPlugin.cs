@@ -465,8 +465,14 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         }
 
         var now = DateTimeOffset.UtcNow;
+        var online = Utilities.GetPlayerFromSteamId(steamId);
+        var adminName = online is { IsValid: true } && !string.IsNullOrWhiteSpace(online.PlayerName)
+            ? online.PlayerName
+            : steamId.ToString();
+
         var entry = new AdminPersistenceEntry(
             steamId,
+            adminName,
             flags,
             immunity,
             now,
@@ -573,7 +579,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
                 foreach (var admin in admins)
                 {
                     command.ReplyToCommand(
-                        $"[WC] {admin.SteamId} | flags={admin.Flags} | immunity={admin.Immunity} | expires={FormatExpiry(admin.ExpiresAt)}");
+                        $"[WC] {admin.Name} ({admin.SteamId}) | flags={admin.Flags} | immunity={admin.Immunity} | expires={FormatExpiry(admin.ExpiresAt)}");
                 }
             });
         }
@@ -597,7 +603,12 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         try
         {
             var admins = await api.Persistence.LoadAdminsAsync();
-            Server.NextFrame(() => _access.Replace(admins));
+            Server.NextFrame(() =>
+            {
+                _access.Replace(admins);
+                foreach (var player in Utilities.GetPlayers().Where(IsHuman))
+                    SyncAdminName(player);
+            });
         }
         catch (Exception exception)
         {
@@ -686,6 +697,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             return;
 
         ApplyVoiceState(player!);
+        SyncAdminName(player!);
 
         foreach (var existing in Utilities.GetPlayers().Where(IsHuman))
         {
@@ -1139,6 +1151,34 @@ public sealed class WarcraftAdminPlugin : BasePlugin
 
         if (player.UserId is { } userId)
             Server.ExecuteCommand($"kickid {userId} \"{Safe(reason)}\"");
+    }
+
+    private void SyncAdminName(CCSPlayerController player)
+    {
+        var current = _access.Get(player.SteamID);
+        var api = _api;
+        if (current is null || api?.Persistence.HasProvider != true ||
+            string.Equals(current.Name, player.PlayerName, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var updated = current with { Name = player.PlayerName };
+        _access.Upsert(updated);
+        _ = PersistAdminNameAsync(updated);
+    }
+
+    private async Task PersistAdminNameAsync(AdminPersistenceEntry entry)
+    {
+        try
+        {
+            if (_api?.Persistence.HasProvider == true)
+                await _api.Persistence.UpsertAdminAsync(entry);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Failed to update admin name for {SteamId}.", entry.SteamId);
+        }
     }
 
     // -------------------- common helpers --------------------
