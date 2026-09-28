@@ -19,12 +19,12 @@
       "unlockLevel": 1,
       "config": {
         "amount": [
-          1,
           2,
-          3
+          3,
+          4
         ],
         "radius": 350,
-        "interval": 2
+        "interval": 1.5
       },
       "conditions": {}
     },
@@ -35,9 +35,9 @@
       "unlockLevel": 2,
       "config": {
         "damage": [
-          2,
           3,
-          4
+          5,
+          7
         ],
         "radius": 200,
         "interval": 1
@@ -54,8 +54,8 @@
         "force": 700,
         "upForce": 300,
         "damage": [
-          0,
-          10
+          5,
+          15
         ],
         "cooldown": [
           20,
