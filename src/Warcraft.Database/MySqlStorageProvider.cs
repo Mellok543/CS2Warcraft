@@ -103,7 +103,29 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
                     FOREIGN KEY (steam_id) REFERENCES wc_players(steam_id)
                     ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-            """        };
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS wc_cosmetic_inventory (
+                steam_id BIGINT UNSIGNED NOT NULL,
+                cosmetic_id VARCHAR(96) NOT NULL,
+                PRIMARY KEY (steam_id, cosmetic_id),
+                CONSTRAINT fk_wc_cosmetic_inventory_player
+                    FOREIGN KEY (steam_id) REFERENCES wc_players(steam_id)
+                    ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS wc_cosmetic_equipped (
+                steam_id BIGINT UNSIGNED NOT NULL,
+                slot_id VARCHAR(32) NOT NULL,
+                cosmetic_id VARCHAR(96) NOT NULL,
+                PRIMARY KEY (steam_id, slot_id),
+                CONSTRAINT fk_wc_cosmetic_equipped_player
+                    FOREIGN KEY (steam_id) REFERENCES wc_players(steam_id)
+                    ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            """
+        };
 
         foreach (var sql in commands)
         {
@@ -290,6 +312,36 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             }
         }
 
+        var ownedCosmetics = new List<string>();
+        await using (var command = new MySqlCommand(
+            """
+            SELECT cosmetic_id
+            FROM wc_cosmetic_inventory
+            WHERE steam_id = @steamId;
+            """,
+            connection))
+        {
+            command.Parameters.AddWithValue("@steamId", steamId);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                ownedCosmetics.Add(reader.GetString(0));
+        }
+
+        var equippedCosmetics = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        await using (var command = new MySqlCommand(
+            """
+            SELECT slot_id, cosmetic_id
+            FROM wc_cosmetic_equipped
+            WHERE steam_id = @steamId;
+            """,
+            connection))
+        {
+            command.Parameters.AddWithValue("@steamId", steamId);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                equippedCosmetics[reader.GetString(0)] = reader.GetString(1);
+        }
+
         return new PlayerPersistenceDto
         {
             SteamId = steamId,
@@ -299,6 +351,8 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             ActiveRaceId = activeRaceId,
             Stats = stats,
             Achievements = achievements,
+            OwnedCosmetics = ownedCosmetics,
+            EquippedCosmetics = equippedCosmetics,
             Races = races.Values
                 .Select(x => new RaceProgressPersistenceDto
                 {
@@ -364,6 +418,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             await UpsertProgressAndPruneAsync(connection, transaction, player, cancellationToken);
             await UpsertStatsAsync(connection, transaction, player, cancellationToken);
             await UpsertAchievementsAndPruneAsync(connection, transaction, player, cancellationToken);
+            await UpsertCosmeticsAsync(connection, transaction, player, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
         catch
@@ -658,6 +713,87 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             prune.Parameters.AddWithValue(names[index], achievements[index].AchievementId);
 
         await prune.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task UpsertCosmeticsAsync(
+        MySqlConnection connection,
+        MySqlTransaction transaction,
+        PlayerPersistenceDto player,
+        CancellationToken cancellationToken)
+    {
+        var owned = player.OwnedCosmetics
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        foreach (var cosmeticId in owned)
+        {
+            await using var upsert = new MySqlCommand(
+                """
+                INSERT INTO wc_cosmetic_inventory (steam_id, cosmetic_id)
+                VALUES (@steamId, @cosmeticId)
+                ON DUPLICATE KEY UPDATE cosmetic_id = VALUES(cosmetic_id);
+                """,
+                connection,
+                transaction);
+
+            upsert.Parameters.AddWithValue("@steamId", player.SteamId);
+            upsert.Parameters.AddWithValue("@cosmeticId", cosmeticId);
+            await upsert.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await using (var clearEquipped = new MySqlCommand(
+            "DELETE FROM wc_cosmetic_equipped WHERE steam_id = @steamId;",
+            connection,
+            transaction))
+        {
+            clearEquipped.Parameters.AddWithValue("@steamId", player.SteamId);
+            await clearEquipped.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        foreach (var (slot, cosmeticId) in player.EquippedCosmetics)
+        {
+            await using var upsertEquipped = new MySqlCommand(
+                """
+                INSERT INTO wc_cosmetic_equipped (steam_id, slot_id, cosmetic_id)
+                VALUES (@steamId, @slotId, @cosmeticId)
+                ON DUPLICATE KEY UPDATE cosmetic_id = VALUES(cosmetic_id);
+                """,
+                connection,
+                transaction);
+
+            upsertEquipped.Parameters.AddWithValue("@steamId", player.SteamId);
+            upsertEquipped.Parameters.AddWithValue("@slotId", slot);
+            upsertEquipped.Parameters.AddWithValue("@cosmeticId", cosmeticId);
+            await upsertEquipped.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        if (owned.Length == 0)
+        {
+            await using var clearOwned = new MySqlCommand(
+                "DELETE FROM wc_cosmetic_inventory WHERE steam_id = @steamId;",
+                connection,
+                transaction);
+            clearOwned.Parameters.AddWithValue("@steamId", player.SteamId);
+            await clearOwned.ExecuteNonQueryAsync(cancellationToken);
+            return;
+        }
+
+        var names = owned.Select((_, index) => $"@cosmetic{index}").ToArray();
+        await using var pruneOwned = new MySqlCommand(
+            $"""
+            DELETE FROM wc_cosmetic_inventory
+            WHERE steam_id = @steamId
+              AND cosmetic_id NOT IN ({string.Join(", ", names)});
+            """,
+            connection,
+            transaction);
+
+        pruneOwned.Parameters.AddWithValue("@steamId", player.SteamId);
+        for (var index = 0; index < owned.Length; index++)
+            pruneOwned.Parameters.AddWithValue(names[index], owned[index]);
+
+        await pruneOwned.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private sealed class MutableRaceProgress
