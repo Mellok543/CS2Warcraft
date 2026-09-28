@@ -19,9 +19,9 @@
       "unlockLevel": 1,
       "config": {
         "percent": [
-          0.05,
-          0.1,
-          0.15
+          0.06,
+          0.11,
+          0.17
         ],
         "radius": 400
       },
@@ -34,8 +34,8 @@
       "unlockLevel": 2,
       "config": {
         "health": [
-          15,
-          30
+          20,
+          40
         ]
       },
       "conditions": {}
