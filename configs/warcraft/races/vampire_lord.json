@@ -19,9 +19,9 @@
       "unlockLevel": 1,
       "config": {
         "percent": [
-          0.06,
-          0.1,
-          0.14
+          0.08,
+          0.14,
+          0.2
         ]
       },
       "conditions": {}
@@ -52,6 +52,19 @@
         "cooldown": 30
       },
       "conditions": {}
+    },
+    {
+      "id": "speed",
+      "name": "Ночная охота",
+      "maxLevel": 2,
+      "unlockLevel": 3,
+      "config": {
+        "multiplier": [
+          1.05,
+          1.1
+        ]
+      },
+      "conditions": {}
     }
   ],
   "ultimate": {
@@ -65,8 +78,8 @@
         700
       ],
       "damage": [
-        30,
-        45
+        35,
+        55
       ],
       "healPercent": 1,
       "cooldown": [
