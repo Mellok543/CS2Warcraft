@@ -19,11 +19,11 @@
       "unlockLevel": 1,
       "config": {
         "chance": [
-          0.25,
-          0.35,
-          0.45
+          0.28,
+          0.4,
+          0.52
         ],
-        "damage": 3,
+        "damage": 4,
         "ticks": 4,
         "interval": 1
       },
@@ -50,11 +50,11 @@
       "unlockLevel": 3,
       "config": {
         "amount": [
-          3,
-          5
+          4,
+          7
         ],
         "radius": 280,
-        "duration": 8,
+        "duration": 10,
         "interval": 1,
         "cooldown": [
           25,
