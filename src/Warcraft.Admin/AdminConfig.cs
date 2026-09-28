@@ -60,6 +60,16 @@ internal sealed class AdminAccess
         }
     }
 
+    public void Upsert(Warcraft.Api.Persistence.AdminPersistenceEntry admin)
+    {
+        if (admin.ExpiresAt is null || admin.ExpiresAt > DateTimeOffset.UtcNow)
+            _admins[admin.SteamId] = admin;
+        else
+            _admins.Remove(admin.SteamId);
+    }
+
+    public void Remove(ulong steamId) => _admins.Remove(steamId);
+
     public bool Has(ulong steamId, char flag)
     {
         if (!TryGet(steamId, out var admin))

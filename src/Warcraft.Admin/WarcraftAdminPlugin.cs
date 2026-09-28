@@ -10,6 +10,7 @@ using Warcraft.Api;
 using Warcraft.Api.Events;
 using Warcraft.Api.Menu;
 using Warcraft.Api.Modules;
+using Warcraft.Api.Persistence;
 using Warcraft.Shared;
 
 namespace Warcraft.Admin;
@@ -37,10 +38,12 @@ public sealed class WarcraftAdminPlugin : BasePlugin
 
     private IWarcraftApi? _api;
     private AdminConfig _config = new();
-    private AdminAccess _access = new(new());
+    private readonly AdminAccess _access = new();
     private readonly PunishmentStore _punishments = new();
     private readonly Dictionary<ulong, ulong> _selectedTargets = [];
     private double _nextPruneAt;
+    private double _nextAdminRefreshAt;
+    private bool _adminRefreshInFlight;
 
     public override void Load(bool hotReload)
     {
@@ -49,6 +52,9 @@ public sealed class WarcraftAdminPlugin : BasePlugin
 
         AddCommand("css_admin", "Open Warcraft admin menu", OnAdminMenu);
         AddCommand("css_a", "Open Warcraft admin menu", OnAdminMenu);
+        AddCommand("css_addadmin", "Console: add/update database admin", OnAddAdminCommand);
+        AddCommand("css_deladmin", "Console: remove database admin", OnDeleteAdminCommand);
+        AddCommand("css_admins", "Console: list database admins", OnAdminsCommand);
 
         AddCommand("css_ban", "Ban player", OnBanCommand);
         AddCommand("css_unban", "Unban SteamID64", OnUnbanCommand);
@@ -99,6 +105,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         }
 
         RegisterPages();
+        _ = RefreshAdminsAsync();
 
         _api.Modules.Register(new ModuleRegistration(
             ModuleId,
@@ -183,7 +190,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             items.Add(Item("Warcraft / прогресс", id => _api.Menu.RequestOpenPage(WarcraftPage, id)));
 
         if (_access.Has(steamId, 'z'))
-            items.Add(Item("Перезагрузить admin.json", id =>
+            items.Add(Item("Перезагрузить настройки админки", id =>
             {
                 ReloadAdminConfig();
                 _api.Menu.RequestOpenPage(RootPage, id);
@@ -434,6 +441,227 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             ServerPage);
     }
 
+    // -------------------- database admins --------------------
+
+    private void OnAddAdminCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        if (caller is not null)
+        {
+            command.ReplyToCommand("[WC] css_addadmin доступна только из server console/RCON.");
+            return;
+        }
+
+        if (command.ArgCount < 5 ||
+            !ulong.TryParse(command.GetArg(1), out var steamId) ||
+            steamId == 0 ||
+            !TryParseAdminDuration(command.GetArg(2), out var duration) ||
+            !TryNormalizeFlags(command.GetArg(3), out var flags) ||
+            !int.TryParse(command.GetArg(4), out var immunity) ||
+            immunity < 0)
+        {
+            command.ReplyToCommand(
+                "Использование: css_addadmin <steamid64> <time> <flags> <immunity> | time: 0, 30, 30m, 2h, 7d, 4w");
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var entry = new AdminPersistenceEntry(
+            steamId,
+            flags,
+            immunity,
+            now,
+            duration is null ? null : now.Add(duration.Value));
+
+        _ = AddAdminAsync(entry, command);
+    }
+
+    private async Task AddAdminAsync(AdminPersistenceEntry entry, CommandInfo command)
+    {
+        var api = _api;
+        if (api?.Persistence.HasProvider != true)
+        {
+            ReplyLater(command, "[WC] База данных недоступна.");
+            return;
+        }
+
+        try
+        {
+            await api.Persistence.UpsertAdminAsync(entry);
+            Server.NextFrame(() =>
+            {
+                _access.Upsert(entry);
+                command.ReplyToCommand(
+                    $"[WC] Admin {entry.SteamId} сохранён. flags={entry.Flags}, immunity={entry.Immunity}, expires={FormatExpiry(entry.ExpiresAt)}");
+            });
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to add admin {SteamId}.", entry.SteamId);
+            ReplyLater(command, "[WC] Ошибка записи администратора в БД.");
+        }
+    }
+
+    private void OnDeleteAdminCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        if (caller is not null)
+        {
+            command.ReplyToCommand("[WC] css_deladmin доступна только из server console/RCON.");
+            return;
+        }
+
+        if (command.ArgCount < 2 || !ulong.TryParse(command.GetArg(1), out var steamId) || steamId == 0)
+        {
+            command.ReplyToCommand("Использование: css_deladmin <steamid64>");
+            return;
+        }
+
+        _ = DeleteAdminAsync(steamId, command);
+    }
+
+    private async Task DeleteAdminAsync(ulong steamId, CommandInfo command)
+    {
+        var api = _api;
+        if (api?.Persistence.HasProvider != true)
+        {
+            ReplyLater(command, "[WC] База данных недоступна.");
+            return;
+        }
+
+        try
+        {
+            await api.Persistence.DeleteAdminAsync(steamId);
+            Server.NextFrame(() =>
+            {
+                _access.Remove(steamId);
+                command.ReplyToCommand($"[WC] Admin {steamId} удалён.");
+            });
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to delete admin {SteamId}.", steamId);
+            ReplyLater(command, "[WC] Ошибка удаления администратора из БД.");
+        }
+    }
+
+    private void OnAdminsCommand(CCSPlayerController? caller, CommandInfo command)
+    {
+        if (caller is not null)
+        {
+            command.ReplyToCommand("[WC] css_admins доступна только из server console/RCON.");
+            return;
+        }
+
+        _ = ListAdminsAsync(command);
+    }
+
+    private async Task ListAdminsAsync(CommandInfo command)
+    {
+        var api = _api;
+        if (api?.Persistence.HasProvider != true)
+        {
+            ReplyLater(command, "[WC] База данных недоступна.");
+            return;
+        }
+
+        try
+        {
+            var admins = await api.Persistence.LoadAdminsAsync();
+            Server.NextFrame(() =>
+            {
+                _access.Replace(admins);
+                command.ReplyToCommand($"[WC] Администраторов: {admins.Count}");
+                foreach (var admin in admins)
+                {
+                    command.ReplyToCommand(
+                        $"[WC] {admin.SteamId} | flags={admin.Flags} | immunity={admin.Immunity} | expires={FormatExpiry(admin.ExpiresAt)}");
+                }
+            });
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to list admins.");
+            ReplyLater(command, "[WC] Ошибка чтения администраторов из БД.");
+        }
+    }
+
+    private async Task RefreshAdminsAsync()
+    {
+        if (_adminRefreshInFlight)
+            return;
+
+        var api = _api;
+        if (api?.Persistence.HasProvider != true)
+            return;
+
+        _adminRefreshInFlight = true;
+        try
+        {
+            var admins = await api.Persistence.LoadAdminsAsync();
+            Server.NextFrame(() => _access.Replace(admins));
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Failed to refresh Warcraft admin cache.");
+        }
+        finally
+        {
+            _adminRefreshInFlight = false;
+        }
+    }
+
+    private static bool TryNormalizeFlags(string raw, out string flags)
+    {
+        const string allowed = "bkmgfiz";
+        var normalized = new string(raw
+            .ToLowerInvariant()
+            .Where(char.IsLetter)
+            .Where(allowed.Contains)
+            .Distinct()
+            .ToArray());
+
+        flags = normalized;
+        return normalized.Length > 0 &&
+               raw.ToLowerInvariant().Where(char.IsLetter).All(allowed.Contains);
+    }
+
+    private static bool TryParseAdminDuration(string raw, out TimeSpan? duration)
+    {
+        duration = null;
+        raw = raw.Trim().ToLowerInvariant();
+
+        if (raw == "0")
+            return true;
+
+        var suffix = raw[^1];
+        var numberText = char.IsLetter(suffix) ? raw[..^1] : raw;
+        if (!double.TryParse(numberText, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var value) ||
+            value <= 0)
+        {
+            return false;
+        }
+
+        duration = suffix switch
+        {
+            'm' => TimeSpan.FromMinutes(value),
+            'h' => TimeSpan.FromHours(value),
+            'd' => TimeSpan.FromDays(value),
+            'w' => TimeSpan.FromDays(value * 7),
+            _ when !char.IsLetter(suffix) => TimeSpan.FromMinutes(value),
+            _ => null
+        };
+
+        return duration is not null;
+    }
+
+    private static string FormatExpiry(DateTimeOffset? expiresAt)
+        => expiresAt is null
+            ? "never"
+            : expiresAt.Value.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss 'UTC'");
+
+    private static void ReplyLater(CommandInfo command, string text)
+        => Server.NextFrame(() => command.ReplyToCommand(text));
+
     // -------------------- punishments --------------------
 
     private void OnClientAuthorized(int slot, SteamID steamId)
@@ -475,14 +703,22 @@ public sealed class WarcraftAdminPlugin : BasePlugin
 
     private void OnTick()
     {
-        if (Server.CurrentTime < _nextPruneAt)
-            return;
+        var now = Server.CurrentTime;
 
-        _nextPruneAt = Server.CurrentTime + 1.0;
-        if (_punishments.Prune())
+        if (now >= _nextPruneAt)
         {
-            foreach (var player in Utilities.GetPlayers().Where(IsHuman))
-                ApplyVoiceState(player);
+            _nextPruneAt = now + 1.0;
+            if (_punishments.Prune())
+            {
+                foreach (var player in Utilities.GetPlayers().Where(IsHuman))
+                    ApplyVoiceState(player);
+            }
+        }
+
+        if (now >= _nextAdminRefreshAt)
+        {
+            _nextAdminRefreshAt = now + 15.0;
+            _ = RefreshAdminsAsync();
         }
     }
 
@@ -910,8 +1146,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
     private void ReloadAdminConfig()
     {
         _config = AdminConfig.LoadOrCreate(ModuleDirectory);
-        _access = new AdminAccess(_config);
-        Logger.LogInformation("Warcraft.Admin loaded {Count} admins.", _config.Admins.Count);
+        Logger.LogInformation("Warcraft.Admin settings loaded.");
     }
 
     private bool Require(CCSPlayerController? caller, CommandInfo command, char flag)
@@ -995,12 +1230,16 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         : minutes % 1440 == 0 ? $"{minutes / 1440} дн."
         : $"{minutes / 60} ч.";
 
-    private string AdminIdentity(ulong steamId)
-        => steamId == 0
-            ? "server"
-            : _config.Admins.TryGetValue(steamId.ToString(), out var admin) && !string.IsNullOrWhiteSpace(admin.Name)
-                ? admin.Name
-                : steamId.ToString();
+    private static string AdminIdentity(ulong steamId)
+    {
+        if (steamId == 0)
+            return "server";
+
+        var player = Utilities.GetPlayerFromSteamId(steamId);
+        return player is { IsValid: true }
+            ? $"{player.PlayerName} ({steamId})"
+            : steamId.ToString();
+    }
 
     private static string CallerIdentity(CCSPlayerController? caller)
         => caller is null ? "server" : caller.SteamID.ToString();
