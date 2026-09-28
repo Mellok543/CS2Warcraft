@@ -78,6 +78,25 @@
         ]
       },
       "conditions": {}
+    },
+    {
+      "id": "bhop",
+      "name": "Безумный разгон",
+      "maxLevel": 3,
+      "unlockLevel": 4,
+      "config": {
+        "multiplier": [
+          1.03,
+          1.055,
+          1.08
+        ],
+        "maxSpeed": [
+          350,
+          385,
+          420
+        ]
+      },
+      "conditions": {}
     }
   ]
 }
