@@ -12,6 +12,7 @@
     <Project Path="src/Warcraft.Achievements/Warcraft.Achievements.csproj" />
     <Project Path="src/Warcraft.Rtv/Warcraft.Rtv.csproj" />
     <Project Path="src/Warcraft.Loadouts/Warcraft.Loadouts.csproj" />
+    <Project Path="src/Warcraft.Cosmetics/Warcraft.Cosmetics.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Warcraft.Core.Tests/Warcraft.Core.Tests.csproj" />
