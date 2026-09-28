@@ -28,8 +28,8 @@
     },
     {
       "id": "spawn_items",
-      "name": "Ящик гранат",
-      "maxLevel": 2,
+      "name": "Арсенал подрывника",
+      "maxLevel": 3,
       "unlockLevel": 2,
       "config": {
         "items": [
@@ -39,6 +39,11 @@
           [
             "weapon_hegrenade",
             "weapon_molotov"
+          ],
+          [
+            "weapon_hegrenade",
+            "weapon_molotov",
+            "weapon_nova"
           ]
         ]
       },
@@ -67,7 +72,7 @@
       "maxLevel": 1,
       "unlockLevel": 4,
       "config": {
-        "health": 25
+        "health": 35
       },
       "conditions": {}
     }
@@ -81,7 +86,7 @@
       "radius": 350,
       "force": 900,
       "upForce": 400,
-      "damage": 30,
+      "damage": 35,
       "cooldown": 35
     },
     "conditions": {}
