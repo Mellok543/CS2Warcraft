@@ -1,3 +1,4 @@
+using CounterStrikeSharp.API;
 using Warcraft.Api.Events;
 using Warcraft.Api.Progression;
 using Warcraft.Core.Runtime;
@@ -19,12 +20,14 @@ internal sealed class XpRewardService : IDisposable
     public const string BombPlantReason = "установка бомбы";
     public const string BombDefuseReason = "разминирование бомбы";
     public const string PlaytimeReason = "время на сервере";
+    public const string ComboKillReason = "серия убийств";
 
     private readonly PlayerStateStore _players;
     private readonly IProgressApi _progress;
     private readonly CoreConfig _config;
     private readonly IDisposable[] _subscriptions;
     private readonly Dictionary<ulong, double> _playtimeDueAt = [];
+    private readonly Dictionary<ulong, KillComboState> _killCombos = [];
 
     public XpRewardService(PlayerStateStore players, IProgressApi progress, IWarcraftEventBus events, CoreConfig config)
     {
@@ -34,7 +37,11 @@ internal sealed class XpRewardService : IDisposable
         _subscriptions =
         [
             events.Subscribe<PlayerKillEvent>(OnKill),
-            events.Subscribe<PlayerDeathEvent>(e => Penalize(e.SteamId, _config.DeathPenaltyXp, DeathPenaltyReason)),
+            events.Subscribe<PlayerDeathEvent>(e =>
+            {
+                _killCombos.Remove(e.SteamId);
+                Penalize(e.SteamId, _config.DeathPenaltyXp, DeathPenaltyReason);
+            }),
             events.Subscribe<PlayerAssistEvent>(e => Grant(e.AssisterSteamId, _config.AssistXp, AssistReason)),
             events.Subscribe<PlayerRoundResultEvent>(e =>
             {
@@ -97,6 +104,36 @@ internal sealed class XpRewardService : IDisposable
             kill.KillerSteamId,
             amount,
             knife ? KnifeKillReason : kill.Headshot ? KillReason + " в голову" : KillReason);
+
+        HandleKillCombo(kill.KillerSteamId);
+    }
+
+    private void HandleKillCombo(ulong steamId)
+    {
+        if (_config.ComboKillWindowSeconds <= 0 ||
+            _config.ComboKillBonusXp is not { Length: > 0 })
+        {
+            return;
+        }
+
+        var now = Server.CurrentTime;
+        var previous = _killCombos.GetValueOrDefault(steamId);
+        var count = previous.Count > 0 &&
+                    now - previous.LastKillAt <= _config.ComboKillWindowSeconds
+            ? previous.Count + 1
+            : 1;
+
+        _killCombos[steamId] = new KillComboState(count, now);
+
+        if (count < 2)
+            return;
+
+        var index = Math.Min(count - 1, _config.ComboKillBonusXp.Length - 1);
+        var bonus = Math.Max(0, _config.ComboKillBonusXp[index]);
+        if (bonus <= 0)
+            return;
+
+        Grant(steamId, bonus, $"{ComboKillReason} x{count}");
     }
 
     private void Penalize(ulong steamId, int amount, string reason)
@@ -123,4 +160,5 @@ internal sealed class XpRewardService : IDisposable
 
         _progress.AddXp(steamId, amount, reason);
     }
+    private readonly record struct KillComboState(int Count, double LastKillAt);
 }
