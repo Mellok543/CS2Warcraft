@@ -10,6 +10,7 @@ internal sealed class WarcraftMenuService
 
     private readonly Dictionary<int, ActiveMenuState> _activeMenus = [];
     private readonly Dictionary<int, long> _notificationVersions = [];
+    private readonly Dictionary<int, PlayerButtons> _deadMenuButtons = [];
     private readonly PanoramaMenuRenderer _renderer;
 
     public WarcraftMenuService(Action<string>? log = null)
@@ -31,6 +32,7 @@ internal sealed class WarcraftMenuService
 
         _activeMenus.Clear();
         _notificationVersions.Clear();
+        _deadMenuButtons.Clear();
         _renderer.Stop();
     }
 
@@ -54,6 +56,8 @@ internal sealed class WarcraftMenuService
         };
 
         _activeMenus[player.Slot] = state;
+        if (!player.PawnIsAlive)
+            _deadMenuButtons[player.Slot] = player.Buttons;
 
         if (!_renderer.EnsureReady())
         {
@@ -68,7 +72,42 @@ internal sealed class WarcraftMenuService
     public void Close(CCSPlayerController player)
     {
         _activeMenus.Remove(player.Slot);
+        _deadMenuButtons.Remove(player.Slot);
         _renderer.Hide(player);
+    }
+
+    public void PollDeadPlayerButtons()
+    {
+        if (_activeMenus.Count == 0)
+            return;
+
+        foreach (var state in _activeMenus.Values.ToArray())
+        {
+            var player = state.Player;
+            if (!IsHuman(player) || player.PawnIsAlive)
+            {
+                _deadMenuButtons.Remove(player.Slot);
+                continue;
+            }
+
+            PlayerButtons current;
+            try
+            {
+                current = player.Buttons;
+            }
+            catch
+            {
+                continue;
+            }
+
+            var previous = _deadMenuButtons.GetValueOrDefault(player.Slot, current);
+            _deadMenuButtons[player.Slot] = current;
+
+            var pressed = current & ~previous;
+            var released = previous & ~current;
+            if (pressed != 0 || released != 0)
+                HandleButtonsChanged(player, pressed, released);
+        }
     }
 
     public void HandleButtonsChanged(CCSPlayerController player, PlayerButtons pressed, PlayerButtons released)
@@ -127,6 +166,7 @@ internal sealed class WarcraftMenuService
     {
         _activeMenus.Remove(playerSlot);
         _notificationVersions.Remove(playerSlot);
+        _deadMenuButtons.Remove(playerSlot);
         _renderer.ForgetPlayer(playerSlot);
     }
 
