@@ -19,9 +19,9 @@
       "unlockLevel": 1,
       "config": {
         "percent": [
-          0.15,
-          0.25,
-          0.35
+          0.18,
+          0.28,
+          0.38
         ]
       },
       "conditions": {}
@@ -63,6 +63,18 @@
         "duration": 3
       },
       "conditions": {}
+    },
+    {
+      "id": "spawn_items",
+      "name": "Оружие охотника",
+      "maxLevel": 1,
+      "unlockLevel": 4,
+      "config": {
+        "items": [
+          "weapon_ssg08"
+        ]
+      },
+      "conditions": {}
     }
   ],
   "ultimate": {
@@ -72,7 +84,7 @@
     "unlockLevel": 6,
     "config": {
       "range": 1200,
-      "damage": 70,
+      "damage": 80,
       "cooldown": 35
     },
     "conditions": {}
