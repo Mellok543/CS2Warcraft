@@ -30,6 +30,12 @@ internal sealed class PlayerRuntimeState
     public Dictionary<string, AchievementProgressRuntime> Achievements { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
+    public HashSet<string> OwnedCosmetics { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    public Dictionary<string, string> EquippedCosmetics { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
     public PlayerStateSnapshot ToSnapshot(DateTimeOffset now)
         => new(
             SteamId,
@@ -39,7 +45,9 @@ internal sealed class PlayerRuntimeState
             ActiveRaceId,
             Races.ToDictionary(x => x.Key, x => x.Value.ToSnapshot(), StringComparer.OrdinalIgnoreCase),
             new Dictionary<string, DateTimeOffset>(Cooldowns, StringComparer.OrdinalIgnoreCase),
-            Stats.ToSnapshot(now));
+            Stats.ToSnapshot(now),
+            OwnedCosmetics.ToArray(),
+            new Dictionary<string, string>(EquippedCosmetics, StringComparer.OrdinalIgnoreCase));
 
     public PlayerPersistenceDto ToPersistence(DateTimeOffset now)
         => new()
@@ -51,7 +59,9 @@ internal sealed class PlayerRuntimeState
             ActiveRaceId = ActiveRaceId,
             Races = Races.Values.Select(x => x.ToPersistence()).ToArray(),
             Stats = Stats.ToPersistence(now),
-            Achievements = Achievements.Select(x => x.Value.ToPersistence(x.Key)).ToArray()
+            Achievements = Achievements.Select(x => x.Value.ToPersistence(x.Key)).ToArray(),
+            OwnedCosmetics = OwnedCosmetics.ToArray(),
+            EquippedCosmetics = new Dictionary<string, string>(EquippedCosmetics, StringComparer.OrdinalIgnoreCase)
         };
 }
 

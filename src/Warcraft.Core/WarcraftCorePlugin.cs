@@ -10,6 +10,7 @@ using Warcraft.Api.Persistence;
 using Warcraft.Core.Abilities;
 using Warcraft.Core.Achievements;
 using Warcraft.Core.Conditions;
+using Warcraft.Core.Cosmetics;
 using Warcraft.Core.Diagnostics;
 using Warcraft.Core.Events;
 using Warcraft.Core.Game;
@@ -80,6 +81,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
             new CssPlayerCombatStateProvider());
         var abilities = new AbilitiesApiService(registrations, resolver, cooldowns);
         var achievements = new AchievementProgressService(players, events, TimeProvider.System);
+        var cosmetics = new CosmeticsService(players, events);
         var activation = new AbilityActivationService(resolver, registrations, cooldowns, events);
         var abilityDamage = new AbilityDamageService(new AbilityDamagePipeline(events));
         _abilityDamage = abilityDamage;
@@ -99,6 +101,7 @@ public sealed class WarcraftCorePlugin : BasePlugin
             races,
             abilities,
             achievements,
+            cosmetics,
             events,
             persistence,
             modifiers,

@@ -2,6 +2,7 @@ using Warcraft.Api;
 using Warcraft.Api.Abilities;
 using Warcraft.Api.Achievements;
 using Warcraft.Api.Combat;
+using Warcraft.Api.Cosmetics;
 using Warcraft.Api.Diagnostics;
 using Warcraft.Api.Events;
 using Warcraft.Api.Menu;
@@ -20,6 +21,7 @@ internal sealed class WarcraftApiFacade(
     IRacesApi races,
     IAbilitiesApi abilities,
     IAchievementsApi achievements,
+    ICosmeticsApi cosmetics,
     IWarcraftEventBus events,
     IPersistenceApi persistence,
     IModifiersApi modifiers,
@@ -33,6 +35,7 @@ internal sealed class WarcraftApiFacade(
     public IRacesApi Races { get; } = races;
     public IAbilitiesApi Abilities { get; } = abilities;
     public IAchievementsApi Achievements { get; } = achievements;
+    public ICosmeticsApi Cosmetics { get; } = cosmetics;
     public IWarcraftEventBus Events { get; } = events;
     public IPersistenceApi Persistence { get; } = persistence;
     public IModifiersApi Modifiers { get; } = modifiers;

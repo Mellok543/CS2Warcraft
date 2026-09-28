@@ -8,7 +8,9 @@ public sealed record PlayerStateSnapshot(
     string? ActiveRaceId,
     IReadOnlyDictionary<string, RaceProgressSnapshot> Races,
     IReadOnlyDictionary<string, DateTimeOffset> Cooldowns,
-    PlayerStatsSnapshot Stats);
+    PlayerStatsSnapshot Stats,
+    IReadOnlyCollection<string> OwnedCosmetics,
+    IReadOnlyDictionary<string, string> EquippedCosmetics);
 
 /// <summary>Lifetime statistics maintained by Core. PlaySeconds includes the current session.</summary>
 public sealed record PlayerStatsSnapshot(

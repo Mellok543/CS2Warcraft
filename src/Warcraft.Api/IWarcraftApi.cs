@@ -1,6 +1,7 @@
 using Warcraft.Api.Abilities;
 using Warcraft.Api.Achievements;
 using Warcraft.Api.Combat;
+using Warcraft.Api.Cosmetics;
 using Warcraft.Api.Diagnostics;
 using Warcraft.Api.Events;
 using Warcraft.Api.Menu;
@@ -20,6 +21,7 @@ public interface IWarcraftApi
     IRacesApi Races { get; }
     IAbilitiesApi Abilities { get; }
     IAchievementsApi Achievements { get; }
+    ICosmeticsApi Cosmetics { get; }
     IWarcraftEventBus Events { get; }
     IPersistenceApi Persistence { get; }
     IModifiersApi Modifiers { get; }

@@ -91,6 +91,12 @@ internal sealed class PlayerStateStore(TimeProvider? time = null) : IPlayersApi
                     current.Stats.SessionStartedAt)
             };
 
+            foreach (var cosmeticId in persisted.OwnedCosmetics)
+                player.OwnedCosmetics.Add(cosmeticId);
+
+            foreach (var equipped in persisted.EquippedCosmetics)
+                player.EquippedCosmetics[equipped.Key] = equipped.Value;
+
             foreach (var achievement in persisted.Achievements)
             {
                 player.Achievements[achievement.AchievementId] = new AchievementProgressRuntime
