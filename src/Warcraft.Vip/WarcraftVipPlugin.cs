@@ -31,8 +31,10 @@ public sealed class WarcraftVipPlugin : BasePlugin
     private IDisposable? _jumpSubscription;
     private IDisposable? _spawnSubscription;
     private IDisposable? _roundSubscription;
+    private IDisposable? _damageSubscription;
     private readonly Dictionary<ulong, double> _nextBhopAt = [];
     private readonly HashSet<ulong> _moneyGrantedThisRound = [];
+    private readonly Dictionary<ulong, long> _hitMarkerVersions = [];
 
     public override void Load(bool hotReload)
     {
@@ -62,6 +64,7 @@ public sealed class WarcraftVipPlugin : BasePlugin
         _jumpSubscription = _api.Events.Subscribe<Warcraft.Api.Events.PlayerJumpEvent>(OnPlayerJump);
         _spawnSubscription = _api.Events.Subscribe<Warcraft.Api.Events.PlayerSpawnEvent>(OnPlayerSpawn);
         _roundSubscription = _api.Events.Subscribe<Warcraft.Api.Events.RoundStartEvent>(_ => _moneyGrantedThisRound.Clear());
+        _damageSubscription = _api.Events.Subscribe<Warcraft.Api.Events.DamagePostEvent>(OnDamagePost);
 
         _api.Modules.Register(new ModuleRegistration(ModuleId, ModuleVersion, "VIP modifiers"));
         _api.Menu.RegisterPage(new MenuPageRegistration(PageId, ModuleId, BuildVipPage));
@@ -75,11 +78,14 @@ public sealed class WarcraftVipPlugin : BasePlugin
         _jumpSubscription?.Dispose();
         _spawnSubscription?.Dispose();
         _roundSubscription?.Dispose();
+        _damageSubscription?.Dispose();
         _jumpSubscription = null;
         _spawnSubscription = null;
         _roundSubscription = null;
+        _damageSubscription = null;
         _nextBhopAt.Clear();
         _moneyGrantedThisRound.Clear();
+        _hitMarkerVersions.Clear();
         if (_api is not null)
         {
             _api.Menu.Unregister(MenuEntryId, ModuleId);
@@ -138,6 +144,12 @@ public sealed class WarcraftVipPlugin : BasePlugin
                 "Bhop-буст: раз в " + _config.BhopCooldownSeconds.ToString("0.#", CultureInfo.InvariantCulture) + " сек.",
                 "Небольшой горизонтальный импульс на прыжке"));
 
+        if (_config?.HitMarkerEnabled == true)
+            items.Add(Info("Hit marker: включён", "Показывает попадание и нанесённый урон"));
+
+        if (_config?.FovEnabled == true)
+            items.Add(Info($"FOV: {_config.Fov}", "Увеличенное поле зрения для VIP"));
+
         return new MenuPageDescriptor(
             PageId,
             "VIP",
@@ -150,17 +162,73 @@ public sealed class WarcraftVipPlugin : BasePlugin
     {
         var provider = _provider;
         var config = _config;
-        if (provider is null || config is null || config.BonusBuyMoney <= 0 ||
-            !provider.IsVip(spawned.SteamId) || !_moneyGrantedThisRound.Add(spawned.SteamId))
+        if (provider is null || config is null || !provider.IsVip(spawned.SteamId))
             return;
 
         var player = Utilities.GetPlayerFromSteamId(spawned.SteamId);
-        var money = player?.InGameMoneyServices;
-        if (player is not { IsValid: true } || money is null)
+        if (player is not { IsValid: true, IsBot: false })
             return;
 
-        money.Account = Math.Min(16000, money.Account + config.BonusBuyMoney);
-        Utilities.SetStateChanged(player, "CCSPlayerController", "m_pInGameMoneyServices");
+        if (config.BonusBuyMoney > 0 && _moneyGrantedThisRound.Add(spawned.SteamId))
+        {
+            var money = player.InGameMoneyServices;
+            if (money is not null)
+            {
+                money.Account = Math.Min(16000, money.Account + config.BonusBuyMoney);
+                Utilities.SetStateChanged(player, "CCSPlayerController", "m_pInGameMoneyServices");
+            }
+        }
+
+        if (config.FovEnabled)
+        {
+            var steamId = spawned.SteamId;
+            AddTimer(0.05f, () =>
+            {
+                var target = Utilities.GetPlayerFromSteamId(steamId);
+                if (target is not { IsValid: true, IsBot: false, PawnIsAlive: true } ||
+                    _provider?.IsVip(steamId) != true)
+                {
+                    return;
+                }
+
+                var fov = (uint)Math.Clamp(config.Fov, 90, 120);
+                target.DesiredFOV = fov;
+                Utilities.SetStateChanged(target, "CBasePlayerController", "m_iDesiredFOV");
+            });
+        }
+    }
+
+    private void OnDamagePost(Warcraft.Api.Events.DamagePostEvent damage)
+    {
+        var provider = _provider;
+        var config = _config;
+        if (provider is null || config is null || !config.HitMarkerEnabled ||
+            damage.FinalDamage <= 0 || damage.AttackerSteamId is not { } attackerSteamId ||
+            attackerSteamId == damage.VictimSteamId || !provider.IsVip(attackerSteamId))
+        {
+            return;
+        }
+
+        var attacker = Utilities.GetPlayerFromSteamId(attackerSteamId);
+        if (attacker is not { IsValid: true, IsBot: false })
+            return;
+
+        var shownDamage = Math.Max(1, (int)Math.Round(damage.FinalDamage));
+        var version = _hitMarkerVersions.GetValueOrDefault(attackerSteamId) + 1;
+        _hitMarkerVersions[attackerSteamId] = version;
+
+        attacker.PrintToCenterHtml(
+            $"<font color='#F4C542' class='fontSize-l'>✕</font> <font color='#FFFFFF'>-{shownDamage}</font>");
+
+        AddTimer(0.18f, () =>
+        {
+            if (_hitMarkerVersions.GetValueOrDefault(attackerSteamId) != version)
+                return;
+
+            var player = Utilities.GetPlayerFromSteamId(attackerSteamId);
+            if (player is { IsValid: true, IsBot: false })
+                player.PrintToCenterHtml(string.Empty);
+        });
     }
 
     private void OnPlayerJump(Warcraft.Api.Events.PlayerJumpEvent jumped)
