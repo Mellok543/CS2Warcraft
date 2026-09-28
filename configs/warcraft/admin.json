@@ -1,0 +1,13 @@
+{
+  "admins": {
+    "76561198000000000": {
+      "name": "Owner",
+      "flags": "z",
+      "immunity": 100
+    }
+  },
+  "warnKickThreshold": 3,
+  "banDurationsMinutes": [30, 120, 1440, 10080, 0],
+  "muteDurationsMinutes": [10, 30, 120, 1440, 0],
+  "gagDurationsMinutes": [10, 30, 120, 1440, 0]
+}
