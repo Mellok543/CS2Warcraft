@@ -124,6 +124,16 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
                     FOREIGN KEY (steam_id) REFERENCES wc_players(steam_id)
                     ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS wc_admins (
+                steam_id BIGINT UNSIGNED NOT NULL,
+                flags VARCHAR(32) NOT NULL,
+                immunity INT NOT NULL DEFAULT 0,
+                created_at DATETIME(6) NOT NULL,
+                expires_at DATETIME(6) NULL,
+                PRIMARY KEY (steam_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
             """
         };
 
@@ -364,6 +374,79 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
                 })
                 .ToArray()
         };
+    }
+
+    public async ValueTask<IReadOnlyList<AdminPersistenceEntry>> LoadAdminsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new MySqlCommand(
+            """
+            SELECT steam_id, flags, immunity, created_at, expires_at
+            FROM wc_admins
+            WHERE expires_at IS NULL OR expires_at > UTC_TIMESTAMP(6)
+            ORDER BY immunity DESC, steam_id ASC;
+            """,
+            connection);
+
+        var result = new List<AdminPersistenceEntry>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            result.Add(new AdminPersistenceEntry(
+                reader.GetFieldValue<ulong>(0),
+                reader.GetString(1),
+                reader.GetInt32(2),
+                new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime(3), DateTimeKind.Utc)),
+                reader.IsDBNull(4)
+                    ? null
+                    : new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime(4), DateTimeKind.Utc))));
+        }
+
+        return result;
+    }
+
+    public async ValueTask UpsertAdminAsync(
+        AdminPersistenceEntry admin,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new MySqlCommand(
+            """
+            INSERT INTO wc_admins (steam_id, flags, immunity, created_at, expires_at)
+            VALUES (@steamId, @flags, @immunity, @createdAt, @expiresAt)
+            ON DUPLICATE KEY UPDATE
+                flags = VALUES(flags),
+                immunity = VALUES(immunity),
+                created_at = VALUES(created_at),
+                expires_at = VALUES(expires_at);
+            """,
+            connection);
+
+        command.Parameters.AddWithValue("@steamId", admin.SteamId);
+        command.Parameters.AddWithValue("@flags", admin.Flags);
+        command.Parameters.AddWithValue("@immunity", admin.Immunity);
+        command.Parameters.AddWithValue("@createdAt", admin.CreatedAt.UtcDateTime);
+        command.Parameters.AddWithValue("@expiresAt", admin.ExpiresAt?.UtcDateTime ?? (object)DBNull.Value);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async ValueTask DeleteAdminAsync(
+        ulong steamId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new MySqlCommand(
+            "DELETE FROM wc_admins WHERE steam_id = @steamId;",
+            connection);
+        command.Parameters.AddWithValue("@steamId", steamId);
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     public async ValueTask<IReadOnlyList<PlayerLeaderboardEntry>> LoadLevelLeaderboardAsync(
