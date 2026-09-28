@@ -62,6 +62,23 @@
         "cooldown": 30
       },
       "conditions": {}
+    },
+    {
+      "id": "bhop",
+      "name": "Шаг убийцы",
+      "maxLevel": 2,
+      "unlockLevel": 5,
+      "config": {
+        "multiplier": [
+          1.04,
+          1.075
+        ],
+        "maxSpeed": [
+          375,
+          420
+        ]
+      },
+      "conditions": {}
     }
   ],
   "ultimate": {
