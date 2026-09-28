@@ -89,7 +89,7 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
 
         // Passives
         Register(new CriticalStrikeAbility());
-        Register(new BonusHealthAbility());
+        Register(new BonusHealthAbility(scheduler));
         Register(new VampirismAbility());
         Register(new SpeedAbility(movement));
         Register(new LowGravityAbility());
