@@ -5,7 +5,7 @@ using Warcraft.Api.Events;
 namespace Warcraft.Abilities;
 
 /// <summary>Passive: raises max health on spawn. Config: health.</summary>
-internal sealed class BonusHealthAbility : AbilityHandler
+internal sealed class BonusHealthAbility(IGameScheduler scheduler) : AbilityHandler
 {
     private const int BaseHealth = 100;
 
@@ -28,7 +28,13 @@ internal sealed class BonusHealthAbility : AbilityHandler
         if (bonusHealth == 0)
             return;
 
-        if (GamePlayers.FindAlive(@event.SteamId) is { } player)
+        var steamId = @event.SteamId;
+        scheduler.Schedule(0.15f, () =>
+        {
+            if (GamePlayers.FindAlive(steamId) is not { } player)
+                return;
+
             PlayerHealth.SetMaxAndCurrent(player.Pawn, BaseHealth + bonusHealth);
+        });
     }
 }
