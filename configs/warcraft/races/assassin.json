@@ -79,6 +79,19 @@
         ]
       },
       "conditions": {}
+    },
+    {
+      "id": "fov",
+      "name": "Хищный взгляд",
+      "maxLevel": 2,
+      "unlockLevel": 5,
+      "config": {
+        "fov": [
+          95,
+          100
+        ]
+      },
+      "conditions": {}
     }
   ],
   "ultimate": {
