@@ -40,28 +40,33 @@ internal sealed class TemporaryBhopService
         if (_nextAt.GetValueOrDefault(jumped.SteamId) > now)
             return;
 
-        var player = Utilities.GetPlayerFromSteamId(jumped.SteamId);
-        var pawn = player?.PlayerPawn.Value;
-        var velocity = pawn?.AbsVelocity;
-        if (player is not { IsValid: true, PawnIsAlive: true } ||
-            pawn is not { IsValid: true } ||
-            velocity is null)
+        var steamId = jumped.SteamId;
+        _nextAt[steamId] = now + boost.CooldownSeconds;
+
+        // The engine applies the jump impulse this frame; scale the resulting velocity on the next one.
+        Server.NextFrame(() =>
         {
-            return;
-        }
+            var player = Utilities.GetPlayerFromSteamId(steamId);
+            var pawn = player?.PlayerPawn.Value;
+            var velocity = pawn?.AbsVelocity;
+            if (player is not { IsValid: true, PawnIsAlive: true } ||
+                pawn is not { IsValid: true } ||
+                velocity is null)
+            {
+                return;
+            }
 
-        var horizontal = MathF.Sqrt(velocity.X * velocity.X + velocity.Y * velocity.Y);
-        if (horizontal < 1f)
-            return;
+            var horizontal = MathF.Sqrt(velocity.X * velocity.X + velocity.Y * velocity.Y);
+            if (horizontal < 1f)
+                return;
 
-        var target = Math.Min(horizontal * (float)boost.Multiplier, (float)boost.MaxSpeed);
-        var scale = target / horizontal;
-        pawn.Teleport(velocity: new Vector3(
-            velocity.X * scale,
-            velocity.Y * scale,
-            velocity.Z));
-
-        _nextAt[jumped.SteamId] = now + boost.CooldownSeconds;
+            var target = Math.Min(horizontal * (float)boost.Multiplier, (float)boost.MaxSpeed);
+            var scale = target / horizontal;
+            pawn.Teleport(velocity: new Vector3(
+                velocity.X * scale,
+                velocity.Y * scale,
+                velocity.Z));
+        });
     }
 
     public void Clear()
