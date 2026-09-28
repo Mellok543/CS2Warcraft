@@ -19,9 +19,9 @@
       "unlockLevel": 1,
       "config": {
         "multiplier": [
-          1.05,
           1.1,
-          1.15
+          1.18,
+          1.25
         ]
       },
       "conditions": {}
@@ -33,9 +33,9 @@
       "unlockLevel": 2,
       "config": {
         "chance": [
-          0.05,
-          0.09,
-          0.13
+          0.08,
+          0.14,
+          0.2
         ]
       },
       "conditions": {}
@@ -47,17 +47,36 @@
       "unlockLevel": 3,
       "config": {
         "damage": [
-          18,
-          25
+          25,
+          35
         ],
         "range": 450,
         "jumps": [
-          1,
-          2
+          2,
+          3
         ],
         "cooldown": [
-          15,
-          12
+          14,
+          10
+        ]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "bhop",
+      "name": "Скачок молнии",
+      "maxLevel": 3,
+      "unlockLevel": 4,
+      "config": {
+        "multiplier": [
+          1.05,
+          1.08,
+          1.11
+        ],
+        "maxSpeed": [
+          400,
+          450,
+          500
         ]
       },
       "conditions": {}
@@ -70,7 +89,7 @@
     "unlockLevel": 6,
     "config": {
       "range": 900,
-      "damage": 55,
+      "damage": 75,
       "cooldown": 30
     },
     "conditions": {}
