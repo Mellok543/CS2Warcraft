@@ -55,6 +55,20 @@
         ]
       },
       "conditions": {}
+    },
+    {
+      "id": "bonus_health",
+      "name": "Закалённое тело",
+      "maxLevel": 3,
+      "unlockLevel": 4,
+      "config": {
+        "health": [
+          15,
+          30,
+          45
+        ]
+      },
+      "conditions": {}
     }
   ],
   "ultimate": {
@@ -63,8 +77,8 @@
     "maxLevel": 1,
     "unlockLevel": 6,
     "config": {
-      "percent": 0.5,
-      "multiplier": 1.3,
+      "percent": 0.55,
+      "multiplier": 1.35,
       "duration": 6,
       "cooldown": 40
     },
