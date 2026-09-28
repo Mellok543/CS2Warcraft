@@ -53,6 +53,18 @@ public sealed class XpRewardTests
     }
 
     [Fact]
+    public void KillComboAddsConfiguredBonusXp()
+    {
+        var (core, rewards) = Create();
+        using var _ = rewards;
+
+        core.Events.Publish(new PlayerKillEvent(Player, Other, Headshot: false, TeamKill: false));
+        core.Events.Publish(new PlayerKillEvent(Player, Other, Headshot: false, TeamKill: false));
+
+        Assert.Equal(60, core.Players.Get(Player)!.GlobalXp);
+    }
+
+    [Fact]
     public void KnifeKillAddsBonusAndPenaltiesRemoveXp()
     {
         var (core, rewards) = Create();
