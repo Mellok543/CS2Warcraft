@@ -267,12 +267,40 @@ public sealed class WarcraftMenuPlugin : BasePlugin
 
         foreach (var ability in api.Abilities.GetRaceAbilities(race.Id))
         {
+            var abilityId = ability.AbilityId;
             options.Add(new WarcraftHudMenuOption(
-                AbilityStatusText.PreviewTitle(ability), _ => { }, true, "Способность этой расы"));
+                AbilityStatusText.PreviewTitle(ability),
+                _ => OpenRaceAbilityPreview(player, race.Id, abilityId)));
         }
 
         options.Add(new WarcraftHudMenuOption("← Назад к расам", _ => OpenRaceMenu(player)));
         menus.Open(player, race.Name.ToUpperInvariant(), (race.Description ?? string.Empty).ToUpperInvariant(), options);
+    }
+
+    private void OpenRaceAbilityPreview(CCSPlayerController player, string raceId, string abilityId)
+    {
+        var api = _api;
+        var menus = _menus;
+        var race = api?.Races.Get(raceId);
+        var ability = api?.Abilities.GetRaceAbilities(raceId)
+            .FirstOrDefault(x => string.Equals(x.AbilityId, abilityId, StringComparison.OrdinalIgnoreCase));
+
+        if (api is null || menus is null || race is null || ability is null)
+            return;
+
+        var options = AbilityStatusText.PreviewLines(ability)
+            .Select(line => new WarcraftHudMenuOption(line, _ => { }, true, line))
+            .ToList();
+
+        options.Add(new WarcraftHudMenuOption(
+            "← Назад к расе",
+            _ => OpenRacePreview(player, raceId)));
+
+        menus.Open(
+            player,
+            ability.DisplayName.ToUpperInvariant(),
+            $"{race.Name.ToUpperInvariant()} • МАКС. УР. {ability.MaxLevel}",
+            options);
     }
 
     private void OpenAbilityMenu(CCSPlayerController player)
