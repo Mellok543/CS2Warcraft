@@ -27,8 +27,16 @@ internal sealed class ShopEffectRegistry(IEnumerable<IShopEffect> effects)
     private readonly IReadOnlyDictionary<string, IShopEffect> _effects =
         effects.ToDictionary(x => x.Type, StringComparer.OrdinalIgnoreCase);
 
-    public static ShopEffectRegistry CreateDefault()
-        => new([new HealEffect(), new ArmorEffect(), new GiveItemEffect(), new XpEffect(), new XpBoostEffect()]);
+    public static ShopEffectRegistry CreateDefault(TemporaryBhopService bhop)
+        => new([
+            new HealEffect(),
+            new ArmorEffect(),
+            new GiveItemEffect(),
+            new XpEffect(),
+            new XpBoostEffect(),
+            new TemporaryBhopEffect(bhop),
+            new CosmeticUnlockEffect()
+        ]);
 
     public IEnumerable<string> Types => _effects.Keys.Order();
 
@@ -155,5 +163,66 @@ internal sealed class XpBoostEffect : IShopEffect
         var duration = TimeSpan.FromSeconds(EffectJson.Int(effect, "durationSeconds"));
         context.Api.Modifiers.AddTemporaryXpMultiplier(context.Player.SteamID, multiplier, duration, Source);
         return null;
+    }
+}
+
+
+/// <summary>Temporary shop bhop. Config: durationSeconds, multiplier, maxSpeed, cooldownSeconds.</summary>
+internal sealed class TemporaryBhopEffect(TemporaryBhopService service) : IShopEffect
+{
+    public string Type => "bhop_boost";
+
+    public string? Validate(JsonElement effect)
+    {
+        if (EffectJson.Double(effect, "durationSeconds") <= 0)
+            return "'durationSeconds' must be positive.";
+        if (EffectJson.Double(effect, "multiplier", 1.12) < 1)
+            return "'multiplier' must be >= 1.";
+        if (EffectJson.Double(effect, "maxSpeed", 420) <= 0)
+            return "'maxSpeed' must be positive.";
+        return null;
+    }
+
+    public string? Apply(ShopContext context, JsonElement effect)
+    {
+        service.Activate(
+            context.Player.SteamID,
+            Server.CurrentTime,
+            EffectJson.Double(effect, "durationSeconds"),
+            EffectJson.Double(effect, "multiplier", 1.12),
+            EffectJson.Double(effect, "maxSpeed", 420),
+            EffectJson.Double(effect, "cooldownSeconds", 0.1));
+        return null;
+    }
+}
+
+/// <summary>Unlocks a persistent cosmetic and equips it immediately.</summary>
+internal sealed class CosmeticUnlockEffect : IShopEffect
+{
+    public string Type => "cosmetic_unlock";
+
+    public string? Validate(JsonElement effect)
+    {
+        var id = effect.TryGetProperty("cosmeticId", out var idValue) ? idValue.GetString() : null;
+        var slot = effect.TryGetProperty("slot", out var slotValue) ? slotValue.GetString() : null;
+        return string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(slot)
+            ? "'cosmeticId' and 'slot' are required."
+            : null;
+    }
+
+    public string? Apply(ShopContext context, JsonElement effect)
+    {
+        var cosmeticId = effect.GetProperty("cosmeticId").GetString()!;
+        var slot = effect.GetProperty("slot").GetString()!;
+
+        if (context.Api.Cosmetics.Owns(context.Player.SteamID, cosmeticId))
+            return "Этот косметический предмет уже получен.";
+
+        var unlock = context.Api.Cosmetics.Unlock(context.Player.SteamID, cosmeticId, "shop");
+        if (!unlock.Success)
+            return unlock.Message;
+
+        var equip = context.Api.Cosmetics.Equip(context.Player.SteamID, slot, cosmeticId, "shop");
+        return equip.Success ? null : equip.Message;
     }
 }

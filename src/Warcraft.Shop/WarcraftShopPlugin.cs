@@ -26,10 +26,17 @@ public sealed class WarcraftShopPlugin : BasePlugin
     public override string ModuleAuthor => "Mellok543";
     public override string ModuleDescription => "JSON-configured Warcraft item shop working through Warcraft.Core.";
 
-    private readonly ShopEffectRegistry _effects = ShopEffectRegistry.CreateDefault();
+    public WarcraftShopPlugin()
+    {
+        _effects = ShopEffectRegistry.CreateDefault(_bhop);
+    }
+
+    private readonly TemporaryBhopService _bhop = new();
+    private readonly ShopEffectRegistry _effects;
     private IWarcraftApi? _api;
     private ShopService? _shop;
     private IDisposable? _roundStartSubscription;
+    private IDisposable? _jumpSubscription;
 
     public override void Load(bool hotReload)
     {
@@ -50,7 +57,12 @@ public sealed class WarcraftShopPlugin : BasePlugin
         new ShopCatalogLoader(_effects).EnsureDefault(ModuleDirectory);
         Reload();
 
-        _roundStartSubscription = _api.Events.Subscribe<RoundStartEvent>(_ => _shop?.ResetRound());
+        _roundStartSubscription = _api.Events.Subscribe<RoundStartEvent>(_ =>
+        {
+            _shop?.ResetRound();
+            _bhop.Clear();
+        });
+        _jumpSubscription = _api.Events.Subscribe<PlayerJumpEvent>(_bhop.OnJump);
         _api.Modules.Register(new ModuleRegistration(ModuleId, ModuleVersion, "Item shop"));
         _api.Menu.RegisterPage(new MenuPageRegistration(PageId, ModuleId, BuildShopPage));
         _api.Menu.Register(new MenuEntryRegistration(MenuEntryId, ModuleId, "root", "Магазин", 40, OpenShop));
@@ -60,6 +72,9 @@ public sealed class WarcraftShopPlugin : BasePlugin
     {
         _roundStartSubscription?.Dispose();
         _roundStartSubscription = null;
+        _jumpSubscription?.Dispose();
+        _jumpSubscription = null;
+        _bhop.Clear();
 
         if (_api is not null)
         {

@@ -1,37 +1,18 @@
 {
   "items": [
     {
-      "id": "health_potion",
-      "name": "Зелье здоровья",
-      "description": "Восстанавливает 40 HP.",
-      "price": 800,
-      "maxPerRound": 2,
-      "effect": {
-        "type": "heal",
-        "amount": 40
-      }
-    },
-    {
-      "id": "armor_kit",
-      "name": "Броня и шлем",
-      "description": "100 брони и шлем.",
-      "price": 1000,
+      "id": "bhop_6s",
+      "name": "Bhop на 6 секунд",
+      "description": "Даёт усиленный bhop на 6 секунд. Скорость ограничена для баланса.",
+      "price": 2500,
       "maxPerRound": 1,
+      "requiresAlive": true,
       "effect": {
-        "type": "armor",
-        "amount": 100,
-        "helmet": true
-      }
-    },
-    {
-      "id": "he_grenade",
-      "name": "Осколочная граната",
-      "description": "Выдаёт HE-гранату.",
-      "price": 300,
-      "maxPerRound": 1,
-      "effect": {
-        "type": "give_item",
-        "item": "weapon_hegrenade"
+        "type": "bhop_boost",
+        "durationSeconds": 6,
+        "multiplier": 1.12,
+        "maxSpeed": 420,
+        "cooldownSeconds": 0.1
       }
     },
     {
@@ -46,17 +27,112 @@
         "amount": 50
       }
     },
+
     {
-      "id": "double_xp_15m",
-      "name": "Свиток двойного опыта",
-      "description": "Удваивает получаемый XP на 15 минут. Повторная покупка продлевает время.",
-      "price": 6500,
+      "id": "cosmetic_backpack_capybara",
+      "name": "Рюкзак-капибара",
+      "description": "Постоянный косметический предмет. После покупки автоматически экипируется.",
+      "price": 9000,
       "maxPerRound": 1,
       "requiresAlive": false,
       "effect": {
-        "type": "xp_boost",
-        "multiplier": 2,
-        "durationSeconds": 900
+        "type": "cosmetic_unlock",
+        "cosmeticId": "backpack_capybara",
+        "slot": "backpack"
+      }
+    },
+    {
+      "id": "cosmetic_backpack_jetpack",
+      "name": "Джетпак",
+      "description": "Постоянный косметический предмет. После покупки автоматически экипируется.",
+      "price": 12000,
+      "maxPerRound": 1,
+      "requiresAlive": false,
+      "effect": {
+        "type": "cosmetic_unlock",
+        "cosmeticId": "backpack_jetpack",
+        "slot": "backpack"
+      }
+    },
+
+    {
+      "id": "cosmetic_hat_cat_headset",
+      "name": "Кошачьи наушники",
+      "description": "Постоянный косметический предмет.",
+      "price": 8500,
+      "maxPerRound": 1,
+      "requiresAlive": false,
+      "effect": {
+        "type": "cosmetic_unlock",
+        "cosmeticId": "hat_cat_headset",
+        "slot": "hat"
+      }
+    },
+    {
+      "id": "cosmetic_hat_mushroom",
+      "name": "Грибная шапка",
+      "description": "Постоянный косметический предмет.",
+      "price": 9500,
+      "maxPerRound": 1,
+      "requiresAlive": false,
+      "effect": {
+        "type": "cosmetic_unlock",
+        "cosmeticId": "hat_mushroom",
+        "slot": "hat"
+      }
+    },
+
+    {
+      "id": "cosmetic_mask_cyber",
+      "name": "Кибермаска",
+      "description": "Постоянный косметический предмет.",
+      "price": 10000,
+      "maxPerRound": 1,
+      "requiresAlive": false,
+      "effect": {
+        "type": "cosmetic_unlock",
+        "cosmeticId": "mask_cyber",
+        "slot": "mask"
+      }
+    },
+    {
+      "id": "cosmetic_mask_orc",
+      "name": "Маска орка",
+      "description": "Постоянный косметический предмет.",
+      "price": 9000,
+      "maxPerRound": 1,
+      "requiresAlive": false,
+      "effect": {
+        "type": "cosmetic_unlock",
+        "cosmeticId": "mask_orc",
+        "slot": "mask"
+      }
+    },
+
+    {
+      "id": "cosmetic_pet_axolotl",
+      "name": "Питомец: Аксолотль",
+      "description": "Постоянный питомец на плече.",
+      "price": 9000,
+      "maxPerRound": 1,
+      "requiresAlive": false,
+      "effect": {
+        "type": "cosmetic_unlock",
+        "cosmeticId": "pet_axolotl",
+        "slot": "pet"
+      }
+    },
+    {
+      "id": "cosmetic_pet_cowboy_frog",
+      "name": "Питомец: Лягушка-ковбой",
+      "description": "Постоянный питомец на плече.",
+      "price": 10000,
+      "maxPerRound": 1,
+      "requiresAlive": false,
+      "effect": {
+        "type": "cosmetic_unlock",
+        "cosmeticId": "pet_cowboy_frog",
+        "slot": "pet"
       }
     }
   ]
