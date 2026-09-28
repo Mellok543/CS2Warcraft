@@ -19,9 +19,9 @@
       "unlockLevel": 1,
       "config": {
         "amount": [
-          1,
           2,
-          3
+          3,
+          4
         ],
         "radius": 400,
         "interval": 2
@@ -50,15 +50,28 @@
       "unlockLevel": 3,
       "config": {
         "amount": [
-          4,
-          7
+          5,
+          8
         ],
         "radius": 300,
-        "duration": 10,
+        "duration": 11,
         "interval": 1,
         "cooldown": [
           30,
           24
+        ]
+      },
+      "conditions": {}
+    },
+    {
+      "id": "bonus_health",
+      "name": "Благословение жизни",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "health": [
+          10,
+          20
         ]
       },
       "conditions": {}
