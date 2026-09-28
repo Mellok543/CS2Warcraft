@@ -48,9 +48,16 @@ public sealed class WarcraftRtvPlugin : BasePlugin
     {
         EnsureMapList();
 
+        var loadedMaps = LoadMaps();
+        Logger.LogInformation(
+            "RTV: loaded {Count} maps from {Path}.",
+            loadedMaps.Count,
+            ResolveMapListPath());
+
         AddCommand("css_rtv", "Vote for an early map change", OnRtvCommand);
         AddCommand("css_nominate", "Nominate a map", OnNominateCommand);
         AddCommand("css_timeleft", "Show remaining map time", OnTimeleftCommand);
+        AddCommand("css_reloadmaps", "Reload and validate Warcraft RTV map list", OnReloadMapsCommand);
 
         AddTimer(
             10.0f,
@@ -128,6 +135,23 @@ public sealed class WarcraftRtvPlugin : BasePlugin
             return;
 
         Print(player!, TimeLeftText());
+    }
+
+    private void OnReloadMapsCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        var path = ResolveMapListPath();
+        var maps = LoadMaps();
+
+        Logger.LogInformation(
+            "RTV: map list reloaded: {Count} maps from {Path}.",
+            maps.Count,
+            path);
+
+        var message = $"RTV: загружено карт: {maps.Count}. Файл: {path}";
+        if (IsHuman(player))
+            Print(player!, message);
+        else
+            command.ReplyToCommand(message);
     }
 
     private MenuPageDescriptor? BuildRootPage(ulong steamId)
@@ -489,7 +513,7 @@ public sealed class WarcraftRtvPlugin : BasePlugin
 
     private List<MapInfo> LoadMaps()
     {
-        var path = MapListPath();
+        var path = ResolveMapListPath();
         if (!File.Exists(path))
         {
             Logger.LogWarning("RTV: maplist.txt not found at {Path}", path);
@@ -535,13 +559,41 @@ public sealed class WarcraftRtvPlugin : BasePlugin
         if (File.Exists(target))
             return;
 
-        var source = Path.Combine(ModuleDirectory, "defaults", "maplist.txt");
+        var source = PackagedMapListPath();
         if (!File.Exists(source))
+        {
+            Logger.LogWarning(
+                "RTV: neither runtime nor packaged map list exists. Runtime path: {Target}; packaged path: {Source}",
+                target,
+                source);
             return;
+        }
 
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         File.Copy(source, target);
+        Logger.LogInformation("RTV: created runtime map list at {Path}.", target);
     }
+
+    private string ResolveMapListPath()
+    {
+        var runtime = MapListPath();
+        var packaged = PackagedMapListPath();
+
+        if (!File.Exists(runtime))
+            return packaged;
+        if (!File.Exists(packaged))
+            return runtime;
+
+        // A freshly deployed plugin may contain a newer packaged map list while an
+        // old auto-created runtime file is still present. Prefer whichever file was
+        // modified most recently; manual runtime edits therefore still win.
+        return File.GetLastWriteTimeUtc(packaged) > File.GetLastWriteTimeUtc(runtime)
+            ? packaged
+            : runtime;
+    }
+
+    private string PackagedMapListPath()
+        => Path.Combine(ModuleDirectory, "defaults", "maplist.txt");
 
     private static string MapListPath()
         => Path.Combine(Server.GameDirectory, "configs", "warcraft", "maplist.txt");
