@@ -20,6 +20,17 @@ public interface IPersistenceApi
     ValueTask<IReadOnlyList<PlayerLeaderboardEntry>> LoadLevelLeaderboardAsync(
         int limit,
         CancellationToken cancellationToken = default);
+
+    ValueTask<IReadOnlyList<AdminPersistenceEntry>> LoadAdminsAsync(
+        CancellationToken cancellationToken = default);
+
+    ValueTask UpsertAdminAsync(
+        AdminPersistenceEntry admin,
+        CancellationToken cancellationToken = default);
+
+    ValueTask DeleteAdminAsync(
+        ulong steamId,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IWarcraftStorageProvider
@@ -38,6 +49,20 @@ public interface IWarcraftStorageProvider
         int limit,
         CancellationToken cancellationToken = default)
         => ValueTask.FromResult<IReadOnlyList<PlayerLeaderboardEntry>>([]);
+
+    ValueTask<IReadOnlyList<AdminPersistenceEntry>> LoadAdminsAsync(
+        CancellationToken cancellationToken = default)
+        => ValueTask.FromResult<IReadOnlyList<AdminPersistenceEntry>>([]);
+
+    ValueTask UpsertAdminAsync(
+        AdminPersistenceEntry admin,
+        CancellationToken cancellationToken = default)
+        => ValueTask.CompletedTask;
+
+    ValueTask DeleteAdminAsync(
+        ulong steamId,
+        CancellationToken cancellationToken = default)
+        => ValueTask.CompletedTask;
 }
 
 public sealed record PlayerLeaderboardEntry(
@@ -45,6 +70,13 @@ public sealed record PlayerLeaderboardEntry(
     string Name,
     long GlobalXp,
     long TotalRaceLevels);
+
+public sealed record AdminPersistenceEntry(
+    ulong SteamId,
+    string Flags,
+    int Immunity,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? ExpiresAt);
 
 public sealed record PlayerPersistenceDto
 {

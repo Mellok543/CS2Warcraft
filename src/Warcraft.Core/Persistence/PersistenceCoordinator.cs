@@ -88,6 +88,20 @@ internal sealed class PersistenceCoordinator : IPersistenceApi
         CancellationToken cancellationToken = default)
         => GetProvider().LoadLevelLeaderboardAsync(Math.Clamp(limit, 1, 100), cancellationToken);
 
+    public ValueTask<IReadOnlyList<AdminPersistenceEntry>> LoadAdminsAsync(
+        CancellationToken cancellationToken = default)
+        => GetProvider().LoadAdminsAsync(cancellationToken);
+
+    public ValueTask UpsertAdminAsync(
+        AdminPersistenceEntry admin,
+        CancellationToken cancellationToken = default)
+        => GetProvider().UpsertAdminAsync(admin, cancellationToken);
+
+    public ValueTask DeleteAdminAsync(
+        ulong steamId,
+        CancellationToken cancellationToken = default)
+        => GetProvider().DeleteAdminAsync(steamId, cancellationToken);
+
     private IWarcraftStorageProvider GetProvider()
     {
         lock (_sync)

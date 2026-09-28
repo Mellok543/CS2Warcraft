@@ -3,17 +3,8 @@ using CounterStrikeSharp.API;
 
 namespace Warcraft.Admin;
 
-internal sealed record AdminEntry
-{
-    public string Name { get; init; } = string.Empty;
-    public string Flags { get; init; } = string.Empty;
-    public int Immunity { get; init; }
-}
-
 internal sealed record AdminConfig
 {
-    public Dictionary<string, AdminEntry> Admins { get; init; } =
-        new(StringComparer.OrdinalIgnoreCase);
 
     public int WarnKickThreshold { get; init; } = 3;
     public int[] BanDurationsMinutes { get; init; } = [30, 120, 1440, 10080, 0];
@@ -54,29 +45,46 @@ internal sealed record AdminConfig
     }
 }
 
-internal sealed class AdminAccess(AdminConfig config)
+internal sealed class AdminAccess
 {
+    private readonly Dictionary<ulong, Warcraft.Api.Persistence.AdminPersistenceEntry> _admins = [];
+
+    public void Replace(IEnumerable<Warcraft.Api.Persistence.AdminPersistenceEntry> admins)
+    {
+        _admins.Clear();
+        var now = DateTimeOffset.UtcNow;
+        foreach (var admin in admins)
+        {
+            if (admin.ExpiresAt is null || admin.ExpiresAt > now)
+                _admins[admin.SteamId] = admin;
+        }
+    }
+
     public bool Has(ulong steamId, char flag)
     {
-        if (!config.Admins.TryGetValue(steamId.ToString(), out var admin))
+        if (!TryGet(steamId, out var admin))
             return false;
 
         var flags = admin.Flags.ToLowerInvariant();
         return flags.Contains('z') || flags.Contains(char.ToLowerInvariant(flag));
     }
 
-    public bool IsAdmin(ulong steamId)
-        => config.Admins.ContainsKey(steamId.ToString());
+    public bool IsAdmin(ulong steamId) => TryGet(steamId, out _);
 
     public int Immunity(ulong steamId)
-        => config.Admins.TryGetValue(steamId.ToString(), out var admin)
-            ? admin.Immunity
-            : 0;
+        => TryGet(steamId, out var admin) ? admin.Immunity : 0;
 
     public string Flags(ulong steamId)
-        => config.Admins.TryGetValue(steamId.ToString(), out var admin)
-            ? admin.Flags
-            : string.Empty;
+        => TryGet(steamId, out var admin) ? admin.Flags : string.Empty;
+
+    public Warcraft.Api.Persistence.AdminPersistenceEntry? Get(ulong steamId)
+        => TryGet(steamId, out var admin) ? admin : null;
+
+    public IReadOnlyCollection<Warcraft.Api.Persistence.AdminPersistenceEntry> GetAll()
+    {
+        PruneExpired();
+        return _admins.Values.OrderByDescending(x => x.Immunity).ThenBy(x => x.SteamId).ToArray();
+    }
 
     public bool CanTarget(ulong callerSteamId, ulong targetSteamId)
     {
@@ -87,5 +95,26 @@ internal sealed class AdminAccess(AdminConfig config)
             return true;
 
         return Immunity(callerSteamId) >= Immunity(targetSteamId);
+    }
+
+    private bool TryGet(ulong steamId, out Warcraft.Api.Persistence.AdminPersistenceEntry admin)
+    {
+        if (_admins.TryGetValue(steamId, out admin!))
+        {
+            if (admin.ExpiresAt is null || admin.ExpiresAt > DateTimeOffset.UtcNow)
+                return true;
+
+            _admins.Remove(steamId);
+        }
+
+        admin = null!;
+        return false;
+    }
+
+    private void PruneExpired()
+    {
+        var now = DateTimeOffset.UtcNow;
+        foreach (var id in _admins.Where(x => x.Value.ExpiresAt is not null && x.Value.ExpiresAt <= now).Select(x => x.Key).ToArray())
+            _admins.Remove(id);
     }
 }
