@@ -98,6 +98,7 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new ReflectDamageAbility());
         Register(new BashAbility(movement));
         Register(new InvisibilityAbility());
+        Register(new FovAbility());
         Register(new DamageReductionAbility());
         Register(new BonusDamageAbility());
         Register(new FallImmunityAbility());
