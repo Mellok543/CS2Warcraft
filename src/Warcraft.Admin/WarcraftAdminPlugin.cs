@@ -753,43 +753,53 @@ public sealed class WarcraftAdminPlugin : BasePlugin
     private void DoBan(CCSPlayerController target, int minutes, string reason, ulong adminSteam)
     {
         _punishments.Ban(target.SteamID, target.PlayerName, minutes, reason, AdminIdentity(adminSteam));
-        Kick(target, $"Ban: {reason}");
+        BroadcastAdminAction(adminSteam, "забанил", target, DurationName(minutes) + " • " + reason);
+        Kick(target, "Ban: " + reason);
     }
 
-    private void DoKick(CCSPlayerController target, string reason)
-        => Kick(target, reason);
-
-    private void DoWarn(CCSPlayerController target, string reason)
+    private void DoKick(CCSPlayerController target, string reason, ulong adminSteam)
     {
-        _punishments.Warn(target.SteamID, target.PlayerName, reason, "admin");
-        target.PrintToChat($" [WC] Предупреждение: {reason}");
+        BroadcastAdminAction(adminSteam, "кикнул", target, reason);
+        Kick(target, reason);
+    }
+
+    private void DoWarn(CCSPlayerController target, string reason, ulong adminSteam)
+    {
+        _punishments.Warn(target.SteamID, target.PlayerName, reason, AdminIdentity(adminSteam));
+        BroadcastAdminAction(adminSteam, "выдал предупреждение", target, reason);
+        target.PrintToChat(" [WC] Предупреждение: " + reason);
 
         if (_config.WarnKickThreshold > 0 &&
             _punishments.WarningCount(target.SteamID) >= _config.WarnKickThreshold)
         {
-            Kick(target, $"Достигнут лимит предупреждений ({_config.WarnKickThreshold})");
+            Kick(target, "Достигнут лимит предупреждений (" + _config.WarnKickThreshold + ")");
         }
     }
 
     private void DoMute(CCSPlayerController target, int minutes, string reason, ulong adminSteam)
     {
         _punishments.Mute(target.SteamID, target.PlayerName, minutes, reason, AdminIdentity(adminSteam));
+        BroadcastAdminAction(adminSteam, "выдал mute", target, DurationName(minutes) + " • " + reason);
         ApplyVoiceState(target);
-        target.PrintToChat($" [WC] Mute: {DurationName(minutes)}. {reason}");
+        target.PrintToChat(" [WC] Mute: " + DurationName(minutes) + ". " + reason);
     }
 
-    private void DoUnmute(ulong targetSteam)
+    private void DoUnmute(ulong targetSteam, ulong adminSteam)
     {
         _punishments.Unmute(targetSteam);
         var player = Utilities.GetPlayerFromSteamId(targetSteam);
         if (player is { IsValid: true })
+        {
             ApplyVoiceState(player);
+            BroadcastAdminAction(adminSteam, "снял mute с", player);
+        }
     }
 
     private void DoGag(CCSPlayerController target, int minutes, string reason, ulong adminSteam)
     {
         _punishments.Gag(target.SteamID, target.PlayerName, minutes, reason, AdminIdentity(adminSteam));
-        target.PrintToChat($" [WC] Gag: {DurationName(minutes)}. {reason}");
+        BroadcastAdminAction(adminSteam, "выдал gag", target, DurationName(minutes) + " • " + reason);
+        target.PrintToChat(" [WC] Gag: " + DurationName(minutes) + ". " + reason);
     }
 
     private void ApplyVoiceState(CCSPlayerController sender)
@@ -1179,6 +1189,46 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         {
             Logger.LogWarning(exception, "Failed to update admin name for {SteamId}.", entry.SteamId);
         }
+    }
+
+    private void BroadcastAdminAction(
+        ulong adminSteamId,
+        string action,
+        CCSPlayerController target,
+        string? details = null)
+    {
+        var adminName = AdminDisplayName(adminSteamId);
+        var suffix = string.IsNullOrWhiteSpace(details) ? string.Empty : " • " + details;
+        var message =
+            " " + ChatColors.Gold + "[WC]" + ChatColors.Default + " " +
+            ChatColors.Red + adminName + ChatColors.Default + " " + action + " " +
+            ChatColors.Red + target.PlayerName + ChatColors.Default + suffix;
+
+        foreach (var player in Utilities.GetPlayers().Where(IsHuman))
+            player.PrintToChat(message);
+    }
+
+    private void BroadcastServerAction(ulong adminSteamId, string action)
+    {
+        var adminName = AdminDisplayName(adminSteamId);
+        var message =
+            " " + ChatColors.Gold + "[WC]" + ChatColors.Default + " " +
+            ChatColors.Red + adminName + ChatColors.Default + " " + action;
+
+        foreach (var player in Utilities.GetPlayers().Where(IsHuman))
+            player.PrintToChat(message);
+    }
+
+    private string AdminDisplayName(ulong steamId)
+    {
+        if (steamId == 0)
+            return "SERVER";
+
+        var player = Utilities.GetPlayerFromSteamId(steamId);
+        if (player is { IsValid: true } && !string.IsNullOrWhiteSpace(player.PlayerName))
+            return player.PlayerName;
+
+        return _access.Get(steamId)?.Name ?? steamId.ToString();
     }
 
     // -------------------- common helpers --------------------
