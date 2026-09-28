@@ -13,6 +13,7 @@ internal sealed class FovAbility : AbilityHandler
 {
     private const uint DefaultFov = 90;
     private readonly HashSet<ulong> _applied = [];
+    private readonly Dictionary<ulong, uint> _previousFov = [];
 
     public override string Id => "fov";
     protected override AbilityKind Kind => AbilityKind.Passive;
@@ -30,10 +31,11 @@ internal sealed class FovAbility : AbilityHandler
         foreach (var player in GamePlayers.AllAliveHumans())
         {
             if (_applied.Contains(player.Controller.SteamID))
-                SetFov(player, DefaultFov);
+                SetFov(player, _previousFov.GetValueOrDefault(player.Controller.SteamID, DefaultFov));
         }
 
         _applied.Clear();
+        _previousFov.Clear();
     }
 
     private void RefreshAll()
@@ -46,7 +48,10 @@ internal sealed class FovAbility : AbilityHandler
             if (ability is null)
             {
                 if (_applied.Remove(steamId))
-                    SetFov(player, DefaultFov);
+                {
+                    SetFov(player, _previousFov.GetValueOrDefault(steamId, DefaultFov));
+                    _previousFov.Remove(steamId);
+                }
 
                 continue;
             }
@@ -56,8 +61,10 @@ internal sealed class FovAbility : AbilityHandler
                 90,
                 120);
 
+            if (_applied.Add(steamId))
+                _previousFov[steamId] = player.Controller.DesiredFOV == 0 ? DefaultFov : player.Controller.DesiredFOV;
+
             SetFov(player, fov);
-            _applied.Add(steamId);
         }
     }
 
