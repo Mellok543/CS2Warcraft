@@ -335,18 +335,18 @@ public sealed class WarcraftAdminPlugin : BasePlugin
 
         var items = new List<MenuPageItemDescriptor>
         {
-            Item("Slay", _ => Slay(target)),
-            Item("Slap 20 HP", _ => Slap(target, 20)),
-            Item("HP = 1", _ => SetHp(target, 1)),
-            Item("HP = 100", _ => SetHp(target, 100)),
-            Item("Заморозить", _ => SetFrozen(target, true)),
-            Item("Разморозить", _ => SetFrozen(target, false)),
-            Item("$16000", _ => SetMoney(target, 16000))
+            Item("Slay", admin => { Slay(target); BroadcastAdminAction(admin, "убил", target); }),
+            Item("Slap 20 HP", admin => { Slap(target, 20); BroadcastAdminAction(admin, "ударил", target, "-20 HP"); }),
+            Item("HP = 1", admin => { SetHp(target, 1); BroadcastAdminAction(admin, "установил HP", target, "1"); }),
+            Item("HP = 100", admin => { SetHp(target, 100); BroadcastAdminAction(admin, "установил HP", target, "100"); }),
+            Item("Заморозить", admin => { SetFrozen(target, true); BroadcastAdminAction(admin, "заморозил", target); }),
+            Item("Разморозить", admin => { SetFrozen(target, false); BroadcastAdminAction(admin, "разморозил", target); }),
+            Item("$16000", admin => { SetMoney(target, 16000); BroadcastAdminAction(admin, "выдал деньги", target, "$16000"); })
         };
 
         var caller = Utilities.GetPlayerFromSteamId(steamId);
         if (caller is { IsValid: true })
-            items.Add(Item("Телепортировать ко мне", _ => Bring(caller, target)));
+            items.Add(Item("Телепортировать ко мне", admin => { Bring(caller, target); BroadcastAdminAction(admin, "телепортировал к себе", target); }));
 
         return new MenuPageDescriptor(
             FunPage,
@@ -375,29 +375,42 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         var state = _api.Players.Get(captured.SteamID);
         var items = new List<MenuPageItemDescriptor>
         {
-            Item("+100 XP", _ => _api.Progress.AddXp(captured.SteamID, 100, $"admin:{steamId}")),
-            Item("+500 XP", _ => _api.Progress.AddXp(captured.SteamID, 500, $"admin:{steamId}")),
-            Item("+1000 XP", _ => _api.Progress.AddXp(captured.SteamID, 1000, $"admin:{steamId}")),
-            Item("-100 XP", _ => _api.Progress.AddXp(captured.SteamID, -100, $"admin:{steamId}")),
-            Item("+1 skill point", _ =>
+            Item("+100 XP", admin => { _api.Progress.AddXp(captured.SteamID, 100, $"admin:{steamId}"); BroadcastAdminAction(admin, "выдал XP", captured, "+100"); }),
+            Item("+500 XP", admin => { _api.Progress.AddXp(captured.SteamID, 500, $"admin:{steamId}"); BroadcastAdminAction(admin, "выдал XP", captured, "+500"); }),
+            Item("+1000 XP", admin => { _api.Progress.AddXp(captured.SteamID, 1000, $"admin:{steamId}"); BroadcastAdminAction(admin, "выдал XP", captured, "+1000"); }),
+            Item("-100 XP", admin => { _api.Progress.AddXp(captured.SteamID, -100, $"admin:{steamId}"); BroadcastAdminAction(admin, "снял XP", captured, "-100"); }),
+            Item("+1 skill point", admin =>
             {
                 var current = _api.Players.Get(captured.SteamID);
                 if (current?.ActiveRaceId is { } raceId)
+                {
                     _api.Progress.GiveSkillPoints(captured.SteamID, raceId, 1, $"admin:{steamId}");
+                    BroadcastAdminAction(admin, "выдал очки навыков", captured, "+1");
+                }
             }),
-            Item("+5 skill points", _ =>
+            Item("+5 skill points", admin =>
             {
                 var current = _api.Players.Get(captured.SteamID);
                 if (current?.ActiveRaceId is { } raceId)
+                {
                     _api.Progress.GiveSkillPoints(captured.SteamID, raceId, 5, $"admin:{steamId}");
+                    BroadcastAdminAction(admin, "выдал очки навыков", captured, "+5");
+                }
             }),
-            Item("Уровень активной расы = 10", _ =>
+            Item("Уровень активной расы = 10", admin =>
             {
                 var current = _api.Players.Get(captured.SteamID);
                 if (current?.ActiveRaceId is { } raceId)
+                {
                     _api.Progress.SetRaceLevel(captured.SteamID, raceId, 10, $"admin:{steamId}");
+                    BroadcastAdminAction(admin, "установил уровень расы", captured, "10");
+                }
             }),
-            Item("Сбросить Warcraft-прогресс", _ => _api.Progress.ResetPlayer(captured.SteamID, $"admin:{steamId}"))
+            Item("Сбросить Warcraft-прогресс", admin =>
+            {
+                _api.Progress.ResetPlayer(captured.SteamID, $"admin:{steamId}");
+                BroadcastAdminAction(admin, "сбросил Warcraft-прогресс", captured);
+            })
         };
 
         return new MenuPageDescriptor(
@@ -419,7 +432,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             Server.MapName.ToUpperInvariant(),
             [
                 Item("Сменить карту", id => _api.Menu.RequestOpenPage(MapsPage, id)),
-                Item("Рестарт раунда через 1 сек.", _ => Server.ExecuteCommand("mp_restartgame 1"))
+                Item("Рестарт раунда через 1 сек.", admin => { BroadcastServerAction(admin, "перезапустил раунд"); Server.ExecuteCommand("mp_restartgame 1"); })
             ],
             RootPage);
     }
@@ -433,7 +446,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         var items = maps.Select(map =>
         {
             var captured = map;
-            return Item(captured.Name, _ => ChangeMap(captured));
+            return Item(captured.Name, admin => { BroadcastServerAction(admin, "сменил карту на " + captured.Name); ChangeMap(captured); });
         }).ToArray();
 
         return new MenuPageDescriptor(
@@ -928,7 +941,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
     {
         if (!Require(caller, command, 'f')) return;
         var target = ResolveSingleTarget(caller, command);
-        if (target is not null) Slay(target);
+        if (target is not null) { Slay(target); BroadcastAdminAction(caller?.SteamID ?? 0, "убил", target); }
     }
 
     private void OnSlapCommand(CCSPlayerController? caller, CommandInfo command)
@@ -937,21 +950,23 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         var target = ResolveSingleTarget(caller, command);
         if (target is null) return;
         var damage = command.ArgCount >= 3 && int.TryParse(command.GetArg(2), out var parsed) ? parsed : 20;
-        Slap(target, Math.Clamp(damage, 0, 1000));
+        damage = Math.Clamp(damage, 0, 1000);
+        Slap(target, damage);
+        BroadcastAdminAction(caller?.SteamID ?? 0, "ударил", target, "-" + damage + " HP");
     }
 
     private void OnFreezeCommand(CCSPlayerController? caller, CommandInfo command)
     {
         if (!Require(caller, command, 'f')) return;
         var target = ResolveSingleTarget(caller, command);
-        if (target is not null) SetFrozen(target, true);
+        if (target is not null) { SetFrozen(target, true); BroadcastAdminAction(caller?.SteamID ?? 0, "заморозил", target); }
     }
 
     private void OnUnfreezeCommand(CCSPlayerController? caller, CommandInfo command)
     {
         if (!Require(caller, command, 'f')) return;
         var target = ResolveSingleTarget(caller, command);
-        if (target is not null) SetFrozen(target, false);
+        if (target is not null) { SetFrozen(target, false); BroadcastAdminAction(caller?.SteamID ?? 0, "разморозил", target); }
     }
 
     private void OnHpCommand(CCSPlayerController? caller, CommandInfo command)
@@ -961,7 +976,12 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             return;
 
         var target = ResolveSingleTarget(caller, command);
-        if (target is not null) SetHp(target, Math.Clamp(hp, 1, 1000));
+        if (target is not null)
+        {
+            hp = Math.Clamp(hp, 1, 1000);
+            SetHp(target, hp);
+            BroadcastAdminAction(caller?.SteamID ?? 0, "установил HP", target, hp.ToString());
+        }
     }
 
     private void OnMoneyCommand(CCSPlayerController? caller, CommandInfo command)
@@ -971,14 +991,19 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             return;
 
         var target = ResolveSingleTarget(caller, command);
-        if (target is not null) SetMoney(target, Math.Clamp(money, 0, 16000));
+        if (target is not null)
+        {
+            money = Math.Clamp(money, 0, 16000);
+            SetMoney(target, money);
+            BroadcastAdminAction(caller?.SteamID ?? 0, "установил деньги", target, "$" + money);
+        }
     }
 
     private void OnBringCommand(CCSPlayerController? caller, CommandInfo command)
     {
         if (!Require(caller, command, 'f') || caller is null) return;
         var target = ResolveSingleTarget(caller, command);
-        if (target is not null) Bring(caller, target);
+        if (target is not null) { Bring(caller, target); BroadcastAdminAction(caller.SteamID, "телепортировал к себе", target); }
     }
 
     private void OnMapCommand(CCSPlayerController? caller, CommandInfo command)
@@ -995,9 +1020,15 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
 
         if (known is not null)
+        {
+            BroadcastServerAction(caller?.SteamID ?? 0, "сменил карту на " + known.Name);
             ChangeMap(known);
+        }
         else if (Server.IsMapValid(name))
+        {
+            BroadcastServerAction(caller?.SteamID ?? 0, "сменил карту на " + name);
             Server.ExecuteCommand($"changelevel \"{Safe(name)}\"");
+        }
         else
             command.ReplyToCommand("[WC] Карта не найдена.");
     }
@@ -1005,7 +1036,10 @@ public sealed class WarcraftAdminPlugin : BasePlugin
     private void OnRestartRoundCommand(CCSPlayerController? caller, CommandInfo command)
     {
         if (Require(caller, command, 'i'))
+        {
+            BroadcastServerAction(caller?.SteamID ?? 0, "перезапустил раунд");
             Server.ExecuteCommand("mp_restartgame 1");
+        }
     }
 
     // -------------------- Warcraft z commands --------------------
