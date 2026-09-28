@@ -23,13 +23,13 @@
           650
         ],
         "damage": [
-          20,
-          30
+          25,
+          35
         ],
         "healPercent": 1,
         "cooldown": [
-          18,
-          14
+          16,
+          12
         ]
       },
       "conditions": {}
@@ -60,6 +60,19 @@
           0.4
         ],
         "delay": 3
+      },
+      "conditions": {}
+    },
+    {
+      "id": "bonus_health",
+      "name": "Плоть мертвеца",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "health": [
+          15,
+          30
+        ]
       },
       "conditions": {}
     }
