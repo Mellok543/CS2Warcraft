@@ -75,6 +75,20 @@
         ]
       },
       "conditions": {}
+    },
+    {
+      "id": "fov",
+      "name": "Орлиный обзор",
+      "maxLevel": 3,
+      "unlockLevel": 5,
+      "config": {
+        "fov": [
+          100,
+          105,
+          110
+        ]
+      },
+      "conditions": {}
     }
   ],
   "ultimate": {
