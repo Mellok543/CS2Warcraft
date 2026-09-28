@@ -115,8 +115,8 @@ public sealed class WarcraftAbilitiesPlugin : BasePlugin
         Register(new SpawnMoneyAbility());
         Register(new AdrenalineAbility(movement));
         Register(new KillSpeedAbility(movement));
-        Register(new JumpBoostAbility());
-        Register(new BhopAbility());
+        Register(new JumpBoostAbility(scheduler));
+        Register(new BhopAbility(scheduler));
         Register(new HealAuraAbility());
         Register(new ImmolationAbility());
         Register(new SlowAuraAbility(movement));
