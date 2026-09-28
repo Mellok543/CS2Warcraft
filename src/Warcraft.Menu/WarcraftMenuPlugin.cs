@@ -207,17 +207,31 @@ public sealed class WarcraftMenuPlugin : BasePlugin
 
         var current = api.Players.Get(player.SteamID)?.ActiveRaceId;
         var races = api.Races.GetAll()
-            .Select(x => (Race: x, Availability: api.Races.GetAvailability(player.SteamID, x.Id)))
-            .OrderByDescending(x => x.Availability.IsAvailable)
+            .Select(x => (
+                Race: x,
+                Availability: api.Races.GetAvailability(player.SteamID, x.Id),
+                Tier: RaceTier(x)))
+            .OrderBy(x => x.Tier)
             .ThenBy(x => x.Race.Requirements?.TotalLevel ?? 0)
             .ThenBy(x => x.Race.Name)
             .ToArray();
 
         var open = races.Count(x => x.Availability.IsAvailable);
         var options = new List<WarcraftHudMenuOption>();
+        var lastTier = int.MinValue;
 
-        foreach (var (race, availability) in races)
+        foreach (var (race, availability, tier) in races)
         {
+            if (tier != lastTier)
+            {
+                lastTier = tier;
+                options.Add(new WarcraftHudMenuOption(
+                    RaceTierTitle(tier),
+                    _ => { },
+                    true,
+                    "Этап прогрессии"));
+            }
+
             var suffix = string.Equals(race.Id, current, StringComparison.OrdinalIgnoreCase)
                 ? "  ✓"
                 : availability.VipLocked ? "  [VIP]"
@@ -229,6 +243,34 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         options.Add(new WarcraftHudMenuOption("← Назад", _ => OpenMainMenu(player)));
         menus.Open(player, "ВЫБОР РАСЫ", $"ОТКРЫТО {open}/{races.Length}", options);
     }
+
+    private static int RaceTier(Warcraft.Api.Races.RaceDefinition race)
+    {
+        if (race.VipOnly)
+            return 99;
+
+        var totalLevel = race.Requirements?.TotalLevel ?? 0;
+        if (totalLevel <= 0)
+            return 0;
+        if (totalLevel <= 10)
+            return 1;
+        if (totalLevel <= 30)
+            return 2;
+        if (totalLevel <= 60)
+            return 3;
+        return 4;
+    }
+
+    private static string RaceTierTitle(int tier) => tier switch
+    {
+        0 => "— СТАРТОВЫЕ РАСЫ —",
+        1 => "— TIER II —",
+        2 => "— TIER III —",
+        3 => "— TIER IV —",
+        4 => "— TIER V —",
+        99 => "— VIP РАСЫ —",
+        _ => "— РАСЫ —"
+    };
 
     private void OpenRacePreview(CCSPlayerController player, string raceId)
     {

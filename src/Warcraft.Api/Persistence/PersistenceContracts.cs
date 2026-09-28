@@ -73,6 +73,7 @@ public sealed record PlayerLeaderboardEntry(
 
 public sealed record AdminPersistenceEntry(
     ulong SteamId,
+    string Name,
     string Flags,
     int Immunity,
     DateTimeOffset CreatedAt,

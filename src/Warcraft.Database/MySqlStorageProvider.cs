@@ -128,6 +128,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             """
             CREATE TABLE IF NOT EXISTS wc_admins (
                 steam_id BIGINT UNSIGNED NOT NULL,
+                name VARCHAR(128) NOT NULL DEFAULT '',
                 flags VARCHAR(32) NOT NULL,
                 immunity INT NOT NULL DEFAULT 0,
                 created_at DATETIME(6) NOT NULL,
@@ -148,6 +149,13 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             "wc_players",
             "achievement_currency",
             "ALTER TABLE wc_players ADD COLUMN achievement_currency BIGINT NOT NULL DEFAULT 0 AFTER global_xp;",
+            cancellationToken);
+
+        await EnsureColumnAsync(
+            connection,
+            "wc_admins",
+            "name",
+            "ALTER TABLE wc_admins ADD COLUMN name VARCHAR(128) NOT NULL DEFAULT '' AFTER steam_id;",
             cancellationToken);
 
         await EnsureColumnAsync(
@@ -384,7 +392,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
 
         await using var command = new MySqlCommand(
             """
-            SELECT steam_id, flags, immunity, created_at, expires_at
+            SELECT steam_id, name, flags, immunity, created_at, expires_at
             FROM wc_admins
             WHERE expires_at IS NULL OR expires_at > UTC_TIMESTAMP(6)
             ORDER BY immunity DESC, steam_id ASC;
@@ -398,11 +406,12 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             result.Add(new AdminPersistenceEntry(
                 reader.GetFieldValue<ulong>(0),
                 reader.GetString(1),
-                reader.GetInt32(2),
-                new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime(3), DateTimeKind.Utc)),
-                reader.IsDBNull(4)
+                reader.GetString(2),
+                reader.GetInt32(3),
+                new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime(4), DateTimeKind.Utc)),
+                reader.IsDBNull(5)
                     ? null
-                    : new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime(4), DateTimeKind.Utc))));
+                    : new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime(5), DateTimeKind.Utc))));
         }
 
         return result;
@@ -417,9 +426,10 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
 
         await using var command = new MySqlCommand(
             """
-            INSERT INTO wc_admins (steam_id, flags, immunity, created_at, expires_at)
-            VALUES (@steamId, @flags, @immunity, @createdAt, @expiresAt)
+            INSERT INTO wc_admins (steam_id, name, flags, immunity, created_at, expires_at)
+            VALUES (@steamId, @name, @flags, @immunity, @createdAt, @expiresAt)
             ON DUPLICATE KEY UPDATE
+                name = VALUES(name),
                 flags = VALUES(flags),
                 immunity = VALUES(immunity),
                 created_at = VALUES(created_at),
@@ -428,6 +438,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             connection);
 
         command.Parameters.AddWithValue("@steamId", admin.SteamId);
+        command.Parameters.AddWithValue("@name", admin.Name);
         command.Parameters.AddWithValue("@flags", admin.Flags);
         command.Parameters.AddWithValue("@immunity", admin.Immunity);
         command.Parameters.AddWithValue("@createdAt", admin.CreatedAt.UtcDateTime);
