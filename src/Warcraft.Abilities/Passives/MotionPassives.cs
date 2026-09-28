@@ -64,7 +64,7 @@ internal sealed class KillSpeedAbility(MovementController movement) : AbilityHan
 /// Passive: stronger jumps. Config: forward (horizontal speed multiplier, default 1),
 /// up (extra vertical speed, default 0).
 /// </summary>
-internal sealed class JumpBoostAbility : AbilityHandler
+internal sealed class JumpBoostAbility(IGameScheduler scheduler) : AbilityHandler
 {
     private readonly Dictionary<ulong, double> _readyAt = [];
 
@@ -94,22 +94,43 @@ internal sealed class JumpBoostAbility : AbilityHandler
 
         _readyAt[steamId] = now + cooldown;
 
-        Server.NextFrame(() =>
+        // player_jump fires before CS2 has fully settled the jump velocity.
+        // Apply the boost a few milliseconds later so the engine jump impulse is already present.
+        scheduler.Schedule(0.04f, () =>
         {
-            if (GamePlayers.FindAlive(steamId) is not { } player || player.Pawn.AbsVelocity is not { } velocity)
+            if (GamePlayers.FindAlive(steamId) is not { } player)
                 return;
 
+            var velocity = player.Pawn.AbsVelocity ?? Vector3.Zero;
             var horizontal = MathF.Sqrt(velocity.X * velocity.X + velocity.Y * velocity.Y);
-            if (horizontal < 1f)
-                return;
 
-            var target = Math.Min(horizontal * forward, maxSpeed);
-            var scale = target / horizontal;
+            // A long jump must also work from a standing/slow start. If there is not
+            // enough horizontal velocity yet, push in the player's look direction.
+            var minSpeed = (float)Math.Clamp(
+                AbilityConfigReader.GetLevelDouble(ability, "minSpeed", 250), 0, 500);
+            var target = Math.Min(Math.Max(horizontal * forward, minSpeed), maxSpeed);
+
+            float dirX;
+            float dirY;
+            if (horizontal >= 20f)
+            {
+                dirX = velocity.X / horizontal;
+                dirY = velocity.Y / horizontal;
+            }
+            else
+            {
+                var yaw = player.Pawn.EyeAngles.Y * MathF.PI / 180f;
+                dirX = MathF.Cos(yaw);
+                dirY = MathF.Sin(yaw);
+            }
+
+            // Keep the normal CS2 jump impulse and add the configured vertical boost.
+            var vertical = velocity.Z + up;
 
             player.Pawn.Teleport(velocity: new Vector3(
-                velocity.X * scale,
-                velocity.Y * scale,
-                velocity.Z + up));
+                dirX * target,
+                dirY * target,
+                vertical));
         });
     }
 }
@@ -119,7 +140,7 @@ internal sealed class JumpBoostAbility : AbilityHandler
 /// Passive bunny-hop momentum assist. Config: multiplier (horizontal momentum gain),
 /// maxSpeed (hard horizontal cap). The bonus is applied on every real jump event.
 /// </summary>
-internal sealed class BhopAbility : AbilityHandler
+internal sealed class BhopAbility(IGameScheduler scheduler) : AbilityHandler
 {
     public override string Id => "bhop";
     protected override AbilityKind Kind => AbilityKind.Passive;
@@ -141,11 +162,12 @@ internal sealed class BhopAbility : AbilityHandler
             AbilityConfigReader.GetLevelDouble(ability, "maxSpeed", 380), 260, 520);
         var steamId = jump.SteamId;
 
-        Server.NextFrame(() =>
+        scheduler.Schedule(0.04f, () =>
         {
-            if (GamePlayers.FindAlive(steamId) is not { } player || player.Pawn.AbsVelocity is not { } velocity)
+            if (GamePlayers.FindAlive(steamId) is not { } player)
                 return;
 
+            var velocity = player.Pawn.AbsVelocity ?? Vector3.Zero;
             var horizontal = MathF.Sqrt(velocity.X * velocity.X + velocity.Y * velocity.Y);
             if (horizontal < 20f || horizontal >= maxSpeed)
                 return;
