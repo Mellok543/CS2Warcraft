@@ -113,3 +113,50 @@ internal sealed class JumpBoostAbility : AbilityHandler
         });
     }
 }
+
+
+/// <summary>
+/// Passive bunny-hop momentum assist. Config: multiplier (horizontal momentum gain),
+/// maxSpeed (hard horizontal cap). The bonus is applied on every real jump event.
+/// </summary>
+internal sealed class BhopAbility : AbilityHandler
+{
+    public override string Id => "bhop";
+    protected override AbilityKind Kind => AbilityKind.Passive;
+    protected override string Description =>
+        "Бхоп: при каждом прыжке сохраняет разгон x{multiplier|1.04}, максимум {maxSpeed|380} u/s.";
+    protected override string DisplayName => "Бхоп";
+
+    protected override void Subscribe(IWarcraftEventBus events)
+        => Track(events.Subscribe<PlayerJumpEvent>(OnJump));
+
+    private void OnJump(PlayerJumpEvent jump)
+    {
+        if (GetUsable(jump.SteamId) is not { } ability)
+            return;
+
+        var multiplier = (float)Math.Clamp(
+            AbilityConfigReader.GetLevelDouble(ability, "multiplier", 1.04), 1.0, 1.25);
+        var maxSpeed = (float)Math.Clamp(
+            AbilityConfigReader.GetLevelDouble(ability, "maxSpeed", 380), 260, 520);
+        var steamId = jump.SteamId;
+
+        Server.NextFrame(() =>
+        {
+            if (GamePlayers.FindAlive(steamId) is not { } player || player.Pawn.AbsVelocity is not { } velocity)
+                return;
+
+            var horizontal = MathF.Sqrt(velocity.X * velocity.X + velocity.Y * velocity.Y);
+            if (horizontal < 20f || horizontal >= maxSpeed)
+                return;
+
+            var target = Math.Min(horizontal * multiplier, maxSpeed);
+            var scale = target / horizontal;
+
+            player.Pawn.Teleport(velocity: new Vector3(
+                velocity.X * scale,
+                velocity.Y * scale,
+                velocity.Z));
+        });
+    }
+}
