@@ -57,6 +57,19 @@
         ]
       },
       "conditions": {}
+    },
+    {
+      "id": "bonus_health",
+      "name": "Крепкая шкура",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "health": [
+          10,
+          20
+        ]
+      },
+      "conditions": {}
     }
   ],
   "ultimate": {
