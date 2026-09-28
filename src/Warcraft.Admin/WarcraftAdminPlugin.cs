@@ -249,8 +249,8 @@ public sealed class WarcraftAdminPlugin : BasePlugin
 
         if (_access.Has(steamId, 'k'))
         {
-            items.Add(Item("Кик", _ => DoKick(target, "Кик администратором")));
-            items.Add(Item($"Предупреждение ({_punishments.WarningCount(targetSteam)})", _ => DoWarn(target, "Предупреждение администратора")));
+            items.Add(Item("Кик", admin => DoKick(target, "Кик администратором", admin)));
+            items.Add(Item($"Предупреждение ({_punishments.WarningCount(targetSteam)})", admin => DoWarn(target, "Предупреждение администратора", admin)));
             items.Add(Item("Очистить предупреждения", _ => _punishments.ClearWarnings(targetSteam)));
         }
 
@@ -260,7 +260,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
                 if (_punishments.GetMute(targetSteam) is null)
                     _api.Menu.RequestOpenPage(MutePage, id);
                 else
-                    DoUnmute(targetSteam);
+                    DoUnmute(targetSteam, id);
             }));
 
         if (_access.Has(steamId, 'g'))
@@ -269,7 +269,10 @@ public sealed class WarcraftAdminPlugin : BasePlugin
                 if (_punishments.GetGag(targetSteam) is null)
                     _api.Menu.RequestOpenPage(GagPage, id);
                 else
+                {
                     _punishments.Ungag(targetSteam);
+                    BroadcastAdminAction(id, "снял gag с", target);
+                }
             }));
 
         if (_access.Has(steamId, 'f'))
@@ -850,7 +853,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         if (!Require(caller, command, 'k')) return;
         var target = ResolveSingleTarget(caller, command);
         if (target is null) return;
-        Kick(target, Rest(command, 2, "Кик администратором"));
+        DoKick(target, Rest(command, 2, "Кик администратором"), caller?.SteamID ?? 0);
     }
 
     private void OnWarnCommand(CCSPlayerController? caller, CommandInfo command)
@@ -858,8 +861,8 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         if (!Require(caller, command, 'k')) return;
         var target = ResolveSingleTarget(caller, command);
         if (target is null) return;
-        _punishments.Warn(target.SteamID, target.PlayerName, Rest(command, 2, "Предупреждение"), CallerIdentity(caller));
-        target.PrintToChat($" [WC] Вы получили предупреждение ({_punishments.WarningCount(target.SteamID)}/{_config.WarnKickThreshold}).");
+        DoWarn(target, Rest(command, 2, "Предупреждение"), caller?.SteamID ?? 0);
+        target.PrintToChat(" [WC] Вы получили предупреждение (" + _punishments.WarningCount(target.SteamID) + "/" + _config.WarnKickThreshold + ").");
         if (_config.WarnKickThreshold > 0 && _punishments.WarningCount(target.SteamID) >= _config.WarnKickThreshold)
             Kick(target, "Лимит предупреждений");
     }
@@ -892,7 +895,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         if (!Require(caller, command, 'm')) return;
         var target = ResolveSingleTarget(caller, command);
         if (target is not null)
-            DoUnmute(target.SteamID);
+            DoUnmute(target.SteamID, caller?.SteamID ?? 0);
     }
 
     private void OnGagCommand(CCSPlayerController? caller, CommandInfo command)
@@ -915,7 +918,10 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         if (!Require(caller, command, 'g')) return;
         var target = ResolveSingleTarget(caller, command);
         if (target is not null)
+        {
             _punishments.Ungag(target.SteamID);
+            BroadcastAdminAction(caller?.SteamID ?? 0, "снял gag с", target);
+        }
     }
 
     private void OnSlayCommand(CCSPlayerController? caller, CommandInfo command)
