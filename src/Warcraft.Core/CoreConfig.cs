@@ -8,6 +8,8 @@ internal sealed record CoreConfig
     public int KillXp { get; init; } = 25;
     public int HeadshotBonusXp { get; init; } = 10;
     public int KnifeKillBonusXp { get; init; } = 30;
+    public double ComboKillWindowSeconds { get; init; } = 8.0;
+    public int[] ComboKillBonusXp { get; init; } = [0, 10, 20, 35, 50];
     public int DeathPenaltyXp { get; init; } = 8;
     public int RoundLossPenaltyXp { get; init; } = 12;
     public int AssistXp { get; init; } = 10;
