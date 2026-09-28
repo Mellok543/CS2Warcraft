@@ -68,6 +68,19 @@
         ]
       },
       "conditions": {}
+    },
+    {
+      "id": "bonus_health",
+      "name": "Мясная туша",
+      "maxLevel": 2,
+      "unlockLevel": 4,
+      "config": {
+        "health": [
+          20,
+          40
+        ]
+      },
+      "conditions": {}
     }
   ]
 }
