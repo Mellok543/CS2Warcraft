@@ -112,6 +112,20 @@ internal sealed class WarcraftMenuService
 
     public void HandleButtonsChanged(CCSPlayerController player, PlayerButtons pressed, PlayerButtons released)
     {
+        // If CounterStrikeSharp reports observer button changes directly, keep the
+        // polling snapshot in sync so the same press isn't processed again on OnTick.
+        if (!player.PawnIsAlive)
+        {
+            try
+            {
+                _deadMenuButtons[player.Slot] = player.Buttons;
+            }
+            catch
+            {
+                // Observer pawn may be changing during the death transition.
+            }
+        }
+
         if (!_activeMenus.TryGetValue(player.Slot, out var state))
             return;
 
