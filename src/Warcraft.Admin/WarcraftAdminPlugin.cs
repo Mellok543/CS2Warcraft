@@ -494,15 +494,15 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             now,
             duration is null ? null : now.Add(duration.Value));
 
-        _ = AddAdminAsync(entry, command);
+        _ = AddAdminAsync(entry);
     }
 
-    private async Task AddAdminAsync(AdminPersistenceEntry entry, CommandInfo command)
+    private async Task AddAdminAsync(AdminPersistenceEntry entry)
     {
         var api = _api;
         if (api?.Persistence.HasProvider != true)
         {
-            ReplyLater(command, "[WC] База данных недоступна.");
+            PrintLater("[WC] База данных недоступна.");
             return;
         }
 
@@ -512,14 +512,14 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             Server.NextFrame(() =>
             {
                 _access.Upsert(entry);
-                command.ReplyToCommand(
+                Server.PrintToConsole(
                     $"[WC] Admin {entry.SteamId} сохранён. flags={entry.Flags}, immunity={entry.Immunity}, expires={FormatExpiry(entry.ExpiresAt)}");
             });
         }
         catch (Exception exception)
         {
             Logger.LogError(exception, "Failed to add admin {SteamId}.", entry.SteamId);
-            ReplyLater(command, "[WC] Ошибка записи администратора в БД.");
+            PrintLater("[WC] Ошибка записи администратора в БД.");
         }
     }
 
@@ -527,25 +527,25 @@ public sealed class WarcraftAdminPlugin : BasePlugin
     {
         if (caller is not null)
         {
-            command.ReplyToCommand("[WC] css_deladmin доступна только из server console/RCON.");
+            Server.PrintToConsole("[WC] css_deladmin доступна только из server console/RCON.");
             return;
         }
 
         if (command.ArgCount < 2 || !ulong.TryParse(command.GetArg(1), out var steamId) || steamId == 0)
         {
-            command.ReplyToCommand("Использование: css_deladmin <steamid64>");
+            Server.PrintToConsole("Использование: css_deladmin <steamid64>");
             return;
         }
 
-        _ = DeleteAdminAsync(steamId, command);
+        _ = DeleteAdminAsync(steamId);
     }
 
-    private async Task DeleteAdminAsync(ulong steamId, CommandInfo command)
+    private async Task DeleteAdminAsync(ulong steamId)
     {
         var api = _api;
         if (api?.Persistence.HasProvider != true)
         {
-            ReplyLater(command, "[WC] База данных недоступна.");
+            PrintLater("[WC] База данных недоступна.");
             return;
         }
 
@@ -555,13 +555,13 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             Server.NextFrame(() =>
             {
                 _access.Remove(steamId);
-                command.ReplyToCommand($"[WC] Admin {steamId} удалён.");
+                Server.PrintToConsole($"[WC] Admin {steamId} удалён.");
             });
         }
         catch (Exception exception)
         {
             Logger.LogError(exception, "Failed to delete admin {SteamId}.", steamId);
-            ReplyLater(command, "[WC] Ошибка удаления администратора из БД.");
+            PrintLater("[WC] Ошибка удаления администратора из БД.");
         }
     }
 
@@ -569,19 +569,19 @@ public sealed class WarcraftAdminPlugin : BasePlugin
     {
         if (caller is not null)
         {
-            command.ReplyToCommand("[WC] css_admins доступна только из server console/RCON.");
+            Server.PrintToConsole("[WC] css_admins доступна только из server console/RCON.");
             return;
         }
 
-        _ = ListAdminsAsync(command);
+        _ = ListAdminsAsync();
     }
 
-    private async Task ListAdminsAsync(CommandInfo command)
+    private async Task ListAdminsAsync()
     {
         var api = _api;
         if (api?.Persistence.HasProvider != true)
         {
-            ReplyLater(command, "[WC] База данных недоступна.");
+            PrintLater("[WC] База данных недоступна.");
             return;
         }
 
@@ -591,10 +591,10 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             Server.NextFrame(() =>
             {
                 _access.Replace(admins);
-                command.ReplyToCommand($"[WC] Администраторов: {admins.Count}");
+                Server.PrintToConsole($"[WC] Администраторов: {admins.Count}");
                 foreach (var admin in admins)
                 {
-                    command.ReplyToCommand(
+                    Server.PrintToConsole(
                         $"[WC] {admin.Name} ({admin.SteamId}) | flags={admin.Flags} | immunity={admin.Immunity} | expires={FormatExpiry(admin.ExpiresAt)}");
                 }
             });
@@ -602,7 +602,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         catch (Exception exception)
         {
             Logger.LogError(exception, "Failed to list admins.");
-            ReplyLater(command, "[WC] Ошибка чтения администраторов из БД.");
+            PrintLater("[WC] Ошибка чтения администраторов из БД.");
         }
     }
 
@@ -686,8 +686,10 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             ? "never"
             : expiresAt.Value.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss 'UTC'");
 
-    private static void ReplyLater(CommandInfo command, string text)
-        => Server.NextFrame(() => command.ReplyToCommand(text));
+    // These commands are server console only and finish after the command returned,
+    // so the reply goes straight to the server console instead of the stale CommandInfo.
+    private static void PrintLater(string text)
+        => Server.NextFrame(() => Server.PrintToConsole(text));
 
     // -------------------- punishments --------------------
 

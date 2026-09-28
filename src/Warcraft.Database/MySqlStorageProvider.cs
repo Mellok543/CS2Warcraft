@@ -432,7 +432,6 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
                 name = VALUES(name),
                 flags = VALUES(flags),
                 immunity = VALUES(immunity),
-                created_at = VALUES(created_at),
                 expires_at = VALUES(expires_at);
             """,
             connection);
