@@ -432,6 +432,20 @@ public sealed class WarcraftMenuPlugin : BasePlugin
             options.Add(new WarcraftHudMenuOption(AbilityStatusText.InfoLine(status), _ => { }, true, AbilityStatusText.State(status)));
 
         options.Add(new WarcraftHudMenuOption("Прокачка способностей", _ => OpenAbilityMenu(player)));
+        options.Add(new WarcraftHudMenuOption(
+            "Сбросить навыки расы",
+            _ =>
+            {
+                var result = api.Progress.ResetRaceAbilities(
+                    player.SteamID,
+                    race.Id,
+                    "player:respec");
+
+                player.PrintToChat(" [Warcraft] " + result.Message);
+                OpenCurrentRaceMenu(player);
+            },
+            progress.AbilityLevels.Values.All(level => level <= 0),
+            "Нет распределённых очков для сброса"));
         options.Add(new WarcraftHudMenuOption("← Назад", _ => OpenMainMenu(player)));
         menus.Open(player, race.Name.ToUpperInvariant(), $"УРОВЕНЬ {progress.Level}/{race.MaxLevel}", options);
     }
