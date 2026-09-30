@@ -37,6 +37,7 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         RegisterListener<Listeners.OnPlayerButtonsChanged>(_menus.HandleButtonsChanged);
         RegisterListener<Listeners.OnTick>(_menus.PollDeadPlayerButtons);
         RegisterListener<Listeners.OnClientDisconnect>(_menus.HandleClientDisconnect);
+        RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnectFull);
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
@@ -82,6 +83,43 @@ public sealed class WarcraftMenuPlugin : BasePlugin
         _api = null;
         _menus?.Stop();
         _menus = null;
+    }
+
+    private HookResult OnPlayerConnectFull(EventPlayerConnectFull @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (player is not { IsValid: true, IsBot: false })
+            return HookResult.Continue;
+
+        var steamId = player.SteamID;
+
+        // CS2 1.41.8.x clears the per-slot "text is set" state of custom_hud_layout
+        // when a player fully connects. Rebuild the entity after that reset has happened.
+        AddTimer(
+            1.5f,
+            () =>
+            {
+                if (_menus is null)
+                    return;
+
+                var connected = Utilities.GetPlayerFromSteamId(steamId);
+                if (connected is not { IsValid: true, IsBot: false })
+                    return;
+
+                if (!_menus.RebuildHud())
+                {
+                    Logger.LogWarning("Warcraft.Menu HUD rebuild failed after player reconnect.");
+                    return;
+                }
+
+                // Rebuilding a shared custom_hud_layout clears per-player state for everyone,
+                // so restore every connected player's progress HUD as well.
+                foreach (var loaded in _api?.Players.GetLoadedPlayers() ?? [])
+                    RefreshProgressHud(loaded.SteamId);
+            },
+            CounterStrikeSharp.API.Modules.Timers.TimerFlags.STOP_ON_MAPCHANGE);
+
+        return HookResult.Continue;
     }
 
     private void HandleOpenRequest(MenuOpenRequest request)
