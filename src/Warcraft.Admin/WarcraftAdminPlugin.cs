@@ -41,6 +41,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
     private readonly AdminAccess _access = new();
     private readonly PunishmentStore _punishments = new();
     private readonly Dictionary<ulong, ulong> _selectedTargets = [];
+    private readonly Dictionary<ulong, PendingXpInput> _pendingXpInputs = [];
     private double _nextPruneAt;
     private double _nextAdminRefreshAt;
     private bool _adminRefreshInFlight;
@@ -130,6 +131,7 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         }
 
         _selectedTargets.Clear();
+        _pendingXpInputs.Clear();
         _api = null;
     }
 
@@ -375,10 +377,13 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         var state = _api.Players.Get(captured.SteamID);
         var items = new List<MenuPageItemDescriptor>
         {
-            Item("+100 XP", admin => { _api.Progress.AddXp(captured.SteamID, 100, $"admin:{steamId}"); BroadcastAdminAction(admin, "выдал XP", captured, "+100"); }),
-            Item("+500 XP", admin => { _api.Progress.AddXp(captured.SteamID, 500, $"admin:{steamId}"); BroadcastAdminAction(admin, "выдал XP", captured, "+500"); }),
-            Item("+1000 XP", admin => { _api.Progress.AddXp(captured.SteamID, 1000, $"admin:{steamId}"); BroadcastAdminAction(admin, "выдал XP", captured, "+1000"); }),
-            Item("-100 XP", admin => { _api.Progress.AddXp(captured.SteamID, -100, $"admin:{steamId}"); BroadcastAdminAction(admin, "снял XP", captured, "-100"); }),
+            Item("Выдать произвольный XP", admin => BeginXpInput(admin, captured, give: true)),
+            Item("Забрать произвольный XP", admin => BeginXpInput(admin, captured, give: false)),
+            Item("+100 XP", admin => { _api.Progress.AddXpExact(captured.SteamID, 100, $"admin:{steamId}"); BroadcastAdminAction(admin, "выдал XP", captured, "+100"); }),
+            Item("+500 XP", admin => { _api.Progress.AddXpExact(captured.SteamID, 500, $"admin:{steamId}"); BroadcastAdminAction(admin, "выдал XP", captured, "+500"); }),
+            Item("+1000 XP", admin => { _api.Progress.AddXpExact(captured.SteamID, 1000, $"admin:{steamId}"); BroadcastAdminAction(admin, "выдал XP", captured, "+1000"); }),
+            Item("-100 XP", admin => { _api.Progress.AddXpExact(captured.SteamID, -100, $"admin:{steamId}"); BroadcastAdminAction(admin, "снял XP", captured, "-100"); }),
+            Item("Скрыть / показать в топе", admin => { _ = ToggleLeaderboardVisibilityAsync(admin, captured.SteamID); }),
             Item("+1 skill point", admin =>
             {
                 var current = _api.Players.Get(captured.SteamID);
@@ -419,6 +424,68 @@ public sealed class WarcraftAdminPlugin : BasePlugin
             $"{captured.PlayerName} • XP {state?.GlobalXp ?? 0}",
             items,
             _selectedTargets.ContainsKey(steamId) ? TargetPage : RootPage);
+    }
+
+    private void BeginXpInput(ulong adminSteamId, CCSPlayerController target, bool give)
+    {
+        _pendingXpInputs[adminSteamId] = new PendingXpInput(
+            target.SteamID,
+            target.PlayerName,
+            give);
+
+        var admin = Utilities.GetPlayerFromSteamId(adminSteamId);
+        if (admin is { IsValid: true })
+        {
+            admin.PrintToChat(
+                $" [WC] {(give ? "Введите количество XP для выдачи" : "Введите количество XP для снятия")} игроку {target.PlayerName}.");
+            admin.PrintToChat(" [WC] Напишите число в чат. Для отмены: отмена");
+        }
+    }
+
+    private async Task ToggleLeaderboardVisibilityAsync(ulong adminSteamId, ulong targetSteamId)
+    {
+        var api = _api;
+        if (api is null || !api.Persistence.HasProvider)
+            return;
+
+        try
+        {
+            var hidden = await api.Persistence.IsLeaderboardHiddenAsync(targetSteamId);
+            await api.Persistence.SetLeaderboardHiddenAsync(targetSteamId, !hidden);
+
+            Server.NextFrame(() =>
+            {
+                var admin = Utilities.GetPlayerFromSteamId(adminSteamId);
+                var target = Utilities.GetPlayerFromSteamId(targetSteamId);
+                if (admin is not { IsValid: true })
+                    return;
+
+                admin.PrintToChat(
+                    !hidden
+                        ? " [WC] Игрок скрыт из глобального топа."
+                        : " [WC] Игрок снова отображается в глобальном топе.");
+
+                if (target is { IsValid: true })
+                {
+                    BroadcastAdminAction(
+                        adminSteamId,
+                        !hidden ? "скрыл из топа" : "вернул в топ",
+                        target);
+                }
+
+                _api?.Menu.RequestOpenPage(WarcraftPage, adminSteamId);
+            });
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to toggle leaderboard visibility for {SteamId}.", targetSteamId);
+            Server.NextFrame(() =>
+            {
+                var admin = Utilities.GetPlayerFromSteamId(adminSteamId);
+                if (admin is { IsValid: true })
+                    admin.PrintToChat(" [WC] Не удалось изменить видимость игрока в топе.");
+            });
+        }
     }
 
     private MenuPageDescriptor? BuildServerPage(ulong steamId)
@@ -728,7 +795,10 @@ public sealed class WarcraftAdminPlugin : BasePlugin
     {
         var player = Utilities.GetPlayerFromSlot(slot);
         if (player is not null)
+        {
             _selectedTargets.Remove(player.SteamID);
+            _pendingXpInputs.Remove(player.SteamID);
+        }
     }
 
     private void OnTick()
@@ -757,14 +827,63 @@ public sealed class WarcraftAdminPlugin : BasePlugin
         if (!IsHuman(player))
             return HookResult.Continue;
 
-        if (_punishments.GetGag(player!.SteamID) is null)
+        var human = player!;
+        var text = command.ArgString.Trim().Trim('"');
+
+        if (_pendingXpInputs.TryGetValue(human.SteamID, out var pending))
+        {
+            if (text.Equals("отмена", StringComparison.OrdinalIgnoreCase) ||
+                text.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+            {
+                _pendingXpInputs.Remove(human.SteamID);
+                human.PrintToChat(" [WC] Ввод XP отменён.");
+                return HookResult.Handled;
+            }
+
+            if (!long.TryParse(text, out var amount) || amount <= 0)
+            {
+                human.PrintToChat(" [WC] Введите положительное целое число XP или 'отмена'.");
+                return HookResult.Handled;
+            }
+
+            var target = Utilities.GetPlayerFromSteamId(pending.TargetSteamId);
+            if (target is not { IsValid: true, IsBot: false } || _api is null)
+            {
+                _pendingXpInputs.Remove(human.SteamID);
+                human.PrintToChat(" [WC] Игрок больше не доступен.");
+                return HookResult.Handled;
+            }
+
+            var signedAmount = pending.Give ? amount : -amount;
+            var result = _api.Progress.AddXpExact(
+                pending.TargetSteamId,
+                signedAmount,
+                $"admin:{human.SteamID}");
+
+            _pendingXpInputs.Remove(human.SteamID);
+
+            if (!result.Success)
+            {
+                human.PrintToChat(" [WC] Не удалось изменить XP: " + result.Message);
+                return HookResult.Handled;
+            }
+
+            BroadcastAdminAction(
+                human.SteamID,
+                pending.Give ? "выдал XP" : "забрал XP у",
+                target,
+                (pending.Give ? "+" : "-") + amount);
+
+            return HookResult.Handled;
+        }
+
+        if (_punishments.GetGag(human.SteamID) is null)
             return HookResult.Continue;
 
-        var text = command.ArgString.Trim().Trim('"');
         if (text.StartsWith('!') || text.StartsWith('/'))
             return HookResult.Continue;
 
-        player.PrintToChat(" [WC] Вам запрещено писать в чат.");
+        human.PrintToChat(" [WC] Вам запрещено писать в чат.");
         return HookResult.Handled;
     }
 
@@ -1381,4 +1500,9 @@ public sealed class WarcraftAdminPlugin : BasePlugin
 
     private static bool IsHuman(CCSPlayerController? player)
         => player is { IsValid: true, IsBot: false } && player.SteamID != 0;
+    private readonly record struct PendingXpInput(
+        ulong TargetSteamId,
+        string TargetName,
+        bool Give);
+
 }
