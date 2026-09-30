@@ -521,7 +521,7 @@ public sealed class WarcraftMenuPlugin : BasePlugin
                 options.Add(new WarcraftHudMenuOption(
                     $"{index + 1}. {leader.Name} — {leader.TotalRaceLevels} ур. • {leader.GlobalXp} XP",
                     _ => { },
-                    true,
+                    false,
                     "Сумма уровней всех рас игрока"));
             }
 
