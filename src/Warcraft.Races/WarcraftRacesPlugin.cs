@@ -24,6 +24,8 @@ public sealed class WarcraftRacesPlugin : BasePlugin
     private FileSystemWatcher? _watcher;
     private Timer? _reloadTimer;
     private IDisposable? _reloadSubscription;
+    private IDisposable? _stateSubscription;
+    private IDisposable? _spawnSubscription;
     private readonly object _reloadSync = new();
     private bool _unloaded;
 
@@ -48,6 +50,13 @@ public sealed class WarcraftRacesPlugin : BasePlugin
 
         _reloadSubscription = _api.Events.Subscribe<RaceReloadRequestedEvent>(
             request => ReloadCatalog(request.RequestedBy));
+        _stateSubscription = _api.Events.Subscribe<PlayerStateChangedEvent>(
+            changed => UpdateScoreboardTag(changed.SteamId));
+        _spawnSubscription = _api.Events.Subscribe<PlayerSpawnEvent>(
+            spawned => UpdateScoreboardTag(spawned.SteamId));
+
+        foreach (var player in _api.Players.GetLoadedPlayers())
+            UpdateScoreboardTag(player.SteamId);
 
         StartWatcher();
 
@@ -78,10 +87,43 @@ public sealed class WarcraftRacesPlugin : BasePlugin
         }
 
         _reloadSubscription?.Dispose();
+        _stateSubscription?.Dispose();
+        _spawnSubscription?.Dispose();
         _reloadSubscription = null;
+        _stateSubscription = null;
+        _spawnSubscription = null;
+
+        foreach (var player in Utilities.GetPlayers())
+        {
+            if (player is { IsValid: true, IsBot: false } && player.SteamID != 0)
+            {
+                player.Clan = string.Empty;
+                Utilities.SetStateChanged(player, "CCSPlayerController", "m_szClan");
+            }
+        }
 
         _api?.Modules.Unregister("warcraft.races");
         _api = null;
+    }
+
+    private void UpdateScoreboardTag(ulong steamId)
+    {
+        var api = _api;
+        var player = Utilities.GetPlayerFromSteamId(steamId);
+        if (api is null || player is not { IsValid: true, IsBot: false })
+            return;
+
+        var state = api.Players.Get(steamId);
+        var tag = state?.ActiveRaceId is { } raceId
+            ? api.Races.Get(raceId)?.Name ?? raceId
+            : string.Empty;
+
+        // Clan is the native scoreboard tag column; keep names untouched.
+        if (player.Clan == tag)
+            return;
+
+        player.Clan = tag;
+        Utilities.SetStateChanged(player, "CCSPlayerController", "m_szClan");
     }
 
     private void StartWatcher()
