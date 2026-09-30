@@ -176,6 +176,23 @@ internal sealed class WarcraftMenuService
     public void HideProgress(CCSPlayerController player)
         => _renderer.HideProgress(player);
 
+    public bool RebuildHud()
+    {
+        if (!_renderer.Rebuild())
+            return false;
+
+        foreach (var state in _activeMenus.Values.ToArray())
+        {
+            if (!IsHuman(state.Player))
+                continue;
+
+            _renderer.Show(state.Player);
+            Render(state);
+        }
+
+        return true;
+    }
+
     public void HandleClientDisconnect(int playerSlot)
     {
         _activeMenus.Remove(playerSlot);
