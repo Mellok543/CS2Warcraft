@@ -20,12 +20,30 @@ internal sealed class ProgressionService(
         if (amount == 0)
             return new(false, "XP amount must not be zero.");
 
-        var player = players.GetRequired(steamId);
         var modifier = modifiers.GetCombined(steamId);
         var effectiveAmount = amount > 0
             ? checked((long)Math.Round(amount * modifier.XpMultiplier))
             : amount;
 
+        return ApplyXp(steamId, effectiveAmount, reason, modifier.BonusSkillPointsPerLevel);
+    }
+
+    public ProgressMutationResult AddXpExact(ulong steamId, long amount, string reason)
+    {
+        if (amount == 0)
+            return new(false, "XP amount must not be zero.");
+
+        var modifier = modifiers.GetCombined(steamId);
+        return ApplyXp(steamId, amount, reason, modifier.BonusSkillPointsPerLevel);
+    }
+
+    private ProgressMutationResult ApplyXp(
+        ulong steamId,
+        long effectiveAmount,
+        string reason,
+        int bonusSkillPointsPerLevel)
+    {
+        var player = players.GetRequired(steamId);
         var previousXp = player.GlobalXp;
         player.GlobalXp = Math.Max(0, player.GlobalXp + effectiveAmount);
 
@@ -52,7 +70,7 @@ internal sealed class ProgressionService(
 
             progress.Xp -= required;
             progress.Level++;
-            progress.SkillPoints += 1 + Math.Max(0, modifier.BonusSkillPointsPerLevel);
+            progress.SkillPoints += 1 + Math.Max(0, bonusSkillPointsPerLevel);
         }
 
         events.Publish(new PlayerStateChangedEvent(steamId, reason));
