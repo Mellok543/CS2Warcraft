@@ -53,9 +53,9 @@ internal static class CosmeticCatalog
     ];
 
     // clip_limit sits on head_0, c4 on spine_3 (upper back) of all agent models.
-    private static readonly CosmeticMount HatMount = new("clip_limit", 0f, 0f, 8f, 0f);
-    private static readonly CosmeticMount MaskMount = new("clip_limit", 8f, 0f, -6f, 0f);
-    private static readonly CosmeticMount BackpackMount = new("c4", -9f, 0f, -28f, 180f);
+    private static readonly CosmeticMount HatMount = new("clip_limit", 0f, 0f, 5f, 0f);
+    private static readonly CosmeticMount MaskMount = new("clip_limit", 9.5f, 0f, -6f, 0f);
+    private static readonly CosmeticMount BackpackMount = new("c4", -14f, 0f, -28f, 180f);
     private static readonly CosmeticMount PetMount = new("c4", -1f, 11f, -8f, 0f);
 
     public static CosmeticMount Mount(string slot) => slot switch
