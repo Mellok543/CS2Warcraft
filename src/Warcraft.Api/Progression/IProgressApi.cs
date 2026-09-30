@@ -9,6 +9,7 @@ public interface IProgressApi
     ProgressMutationResult GiveSkillPoints(ulong steamId, string raceId, int amount, string reason);
     ProgressMutationResult SetAbilityLevel(ulong steamId, string abilityId, int level, string reason);
     AbilityUpgradeResult UpgradeAbility(ulong steamId, string abilityId);
+    SkillResetResult ResetRaceAbilities(ulong steamId, string raceId, string reason);
     ProgressMutationResult ResetPlayer(ulong steamId, string reason);
 }
 
@@ -27,3 +28,9 @@ public sealed record AbilityUpgradeResult(
     int PreviousLevel,
     int CurrentLevel,
     int RemainingSkillPoints);
+
+public sealed record SkillResetResult(
+    bool Success,
+    string Message,
+    int RefundedPoints,
+    int CurrentSkillPoints);
