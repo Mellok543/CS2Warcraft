@@ -102,6 +102,17 @@ internal sealed class PersistenceCoordinator : IPersistenceApi
         CancellationToken cancellationToken = default)
         => GetProvider().DeleteAdminAsync(steamId, cancellationToken);
 
+    public ValueTask<bool> IsLeaderboardHiddenAsync(
+        ulong steamId,
+        CancellationToken cancellationToken = default)
+        => GetProvider().IsLeaderboardHiddenAsync(steamId, cancellationToken);
+
+    public ValueTask SetLeaderboardHiddenAsync(
+        ulong steamId,
+        bool hidden,
+        CancellationToken cancellationToken = default)
+        => GetProvider().SetLeaderboardHiddenAsync(steamId, hidden, cancellationToken);
+
     private IWarcraftStorageProvider GetProvider()
     {
         lock (_sync)
