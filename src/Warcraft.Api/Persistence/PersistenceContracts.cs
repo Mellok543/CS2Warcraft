@@ -31,6 +31,15 @@ public interface IPersistenceApi
     ValueTask DeleteAdminAsync(
         ulong steamId,
         CancellationToken cancellationToken = default);
+
+    ValueTask<bool> IsLeaderboardHiddenAsync(
+        ulong steamId,
+        CancellationToken cancellationToken = default);
+
+    ValueTask SetLeaderboardHiddenAsync(
+        ulong steamId,
+        bool hidden,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IWarcraftStorageProvider
@@ -61,6 +70,17 @@ public interface IWarcraftStorageProvider
 
     ValueTask DeleteAdminAsync(
         ulong steamId,
+        CancellationToken cancellationToken = default)
+        => ValueTask.CompletedTask;
+
+    ValueTask<bool> IsLeaderboardHiddenAsync(
+        ulong steamId,
+        CancellationToken cancellationToken = default)
+        => ValueTask.FromResult(false);
+
+    ValueTask SetLeaderboardHiddenAsync(
+        ulong steamId,
+        bool hidden,
         CancellationToken cancellationToken = default)
         => ValueTask.CompletedTask;
 }
