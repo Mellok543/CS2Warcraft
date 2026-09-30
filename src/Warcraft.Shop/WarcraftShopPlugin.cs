@@ -92,13 +92,19 @@ public sealed class WarcraftShopPlugin : BasePlugin
         if (_shop is null)
             return "Магазин недоступен.";
 
-        var loaded = new ShopCatalogLoader(_effects).Load();
+        var loaded = new ShopCatalogLoader(_effects).Load(ModuleDirectory);
         foreach (var error in loaded.Errors)
             Logger.LogError("Shop config error: {Error}", error);
 
         _shop.ReplaceItems(loaded.Items);
-        Logger.LogInformation("Warcraft shop loaded {Count} items.", loaded.Items.Count);
-        return "Загружено предметов: " + loaded.Items.Count + ", ошибок: " + loaded.Errors.Count + ".";
+        Logger.LogInformation(
+            "Warcraft shop loaded {Count} items from {Path}.",
+            loaded.Items.Count,
+            loaded.Path);
+
+        return "Загружено предметов: " + loaded.Items.Count +
+               ", ошибок: " + loaded.Errors.Count +
+               ". Файл: " + loaded.Path;
     }
 
     private void OnShopCommand(CCSPlayerController? player, CommandInfo command)
