@@ -198,6 +198,36 @@ internal sealed class ProgressionService(
             progress.SkillPoints);
     }
 
+    public SkillResetResult ResetRaceAbilities(ulong steamId, string raceId, string reason)
+    {
+        var race = races.Get(raceId);
+        if (race is null)
+            return new(false, "Раса не найдена.", 0, 0);
+
+        var player = players.GetRequired(steamId);
+        if (!player.Races.TryGetValue(race.Id, out var progress))
+            return new(false, "У этой расы ещё нет прогресса.", 0, 0);
+
+        var refunded = progress.AbilityLevels.Values.Sum(level => Math.Max(0, level));
+        if (refunded <= 0)
+            return new(false, "У этой расы нет распределённых очков навыков.", 0, progress.SkillPoints);
+
+        progress.AbilityLevels.Clear();
+        progress.SkillPoints += refunded;
+
+        // Active ability cooldowns from the previous build must not survive a full respec.
+        if (string.Equals(player.ActiveRaceId, race.Id, StringComparison.OrdinalIgnoreCase))
+            player.Cooldowns.Clear();
+
+        events.Publish(new PlayerStateChangedEvent(steamId, reason));
+
+        return new(
+            true,
+            $"Сброшено навыков: {refunded}. Очки возвращены.",
+            refunded,
+            progress.SkillPoints);
+    }
+
     public ProgressMutationResult ResetPlayer(ulong steamId, string reason)
     {
         var player = players.GetRequired(steamId);
