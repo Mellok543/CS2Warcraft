@@ -44,6 +44,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
                 global_xp BIGINT NOT NULL DEFAULT 0,
                 achievement_currency BIGINT NOT NULL DEFAULT 0,
                 active_race_id VARCHAR(64) NULL,
+                leaderboard_hidden TINYINT(1) NOT NULL DEFAULT 0,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (steam_id)
@@ -149,6 +150,13 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
             "wc_players",
             "achievement_currency",
             "ALTER TABLE wc_players ADD COLUMN achievement_currency BIGINT NOT NULL DEFAULT 0 AFTER global_xp;",
+            cancellationToken);
+
+        await EnsureColumnAsync(
+            connection,
+            "wc_players",
+            "leaderboard_hidden",
+            "ALTER TABLE wc_players ADD COLUMN leaderboard_hidden TINYINT(1) NOT NULL DEFAULT 0 AFTER active_race_id;",
             cancellationToken);
 
         await EnsureColumnAsync(
@@ -459,6 +467,38 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    public async ValueTask<bool> IsLeaderboardHiddenAsync(
+        ulong steamId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new MySqlCommand(
+            "SELECT leaderboard_hidden FROM wc_players WHERE steam_id = @steamId;",
+            connection);
+        command.Parameters.AddWithValue("@steamId", steamId);
+
+        var value = await command.ExecuteScalarAsync(cancellationToken);
+        return value is not null && value is not DBNull && Convert.ToBoolean(value);
+    }
+
+    public async ValueTask SetLeaderboardHiddenAsync(
+        ulong steamId,
+        bool hidden,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new MySqlCommand(
+            "UPDATE wc_players SET leaderboard_hidden = @hidden WHERE steam_id = @steamId;",
+            connection);
+        command.Parameters.AddWithValue("@hidden", hidden);
+        command.Parameters.AddWithValue("@steamId", steamId);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     public async ValueTask<IReadOnlyList<PlayerLeaderboardEntry>> LoadLevelLeaderboardAsync(
         int limit,
         CancellationToken cancellationToken = default)
@@ -475,6 +515,7 @@ internal sealed class MySqlStorageProvider : IWarcraftStorageProvider
                 COALESCE(SUM(r.level), 0) AS total_levels
             FROM wc_players p
             LEFT JOIN wc_race_progress r ON r.steam_id = p.steam_id
+            WHERE p.leaderboard_hidden = 0
             GROUP BY p.steam_id, p.name, p.global_xp
             ORDER BY total_levels DESC, p.global_xp DESC, p.name ASC
             LIMIT @limit;
