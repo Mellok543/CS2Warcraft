@@ -28,10 +28,12 @@ public sealed class WarcraftShopPlugin : BasePlugin
 
     public WarcraftShopPlugin()
     {
+        _bhop = new TemporaryBhopService((delay, action) =>
+            AddTimer(delay, action, CounterStrikeSharp.API.Modules.Timers.TimerFlags.STOP_ON_MAPCHANGE));
         _effects = ShopEffectRegistry.CreateDefault(_bhop);
     }
 
-    private readonly TemporaryBhopService _bhop = new();
+    private readonly TemporaryBhopService _bhop;
     private readonly ShopEffectRegistry _effects;
     private IWarcraftApi? _api;
     private ShopService? _shop;
