@@ -28,7 +28,7 @@ internal sealed record ShopFile
     public IReadOnlyList<ShopItemDefinition> Items { get; init; } = [];
 }
 
-internal sealed record ShopLoadResult(IReadOnlyList<ShopItemDefinition> Items, IReadOnlyList<string> Errors);
+internal sealed record ShopLoadResult(IReadOnlyList<ShopItemDefinition> Items, IReadOnlyList<string> Errors, string Path);
 
 /// <summary>Loads and validates configs/warcraft/shop.json. Invalid items are skipped.</summary>
 internal sealed class ShopCatalogLoader(ShopEffectRegistry effects)
@@ -57,19 +57,20 @@ internal sealed class ShopCatalogLoader(ShopEffectRegistry effects)
         File.Copy(source, ConfigPath, overwrite: false);
     }
 
-    public ShopLoadResult Load()
+    public ShopLoadResult Load(string moduleDirectory)
     {
-        if (!File.Exists(ConfigPath))
-            return new([], [$"{ConfigPath} not found."]);
+        var path = ResolveConfigPath(moduleDirectory);
+        if (!File.Exists(path))
+            return new([], [$"{path} not found."], path);
 
         ShopFile? file;
         try
         {
-            file = JsonSerializer.Deserialize<ShopFile>(File.ReadAllText(ConfigPath), Options);
+            file = JsonSerializer.Deserialize<ShopFile>(File.ReadAllText(path), Options);
         }
         catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException)
         {
-            return new([], [$"shop.json: {exception.Message}"]);
+            return new([], [$"shop.json ({path}): {exception.Message}"], path);
         }
 
         var items = new List<ShopItemDefinition>();
@@ -85,7 +86,22 @@ internal sealed class ShopCatalogLoader(ShopEffectRegistry effects)
                 errors.Add($"shop item '{item.Id}': {error}");
         }
 
-        return new(items, errors);
+        return new(items, errors, path);
+    }
+
+    public string ResolveConfigPath(string moduleDirectory)
+    {
+        var runtime = ConfigPath;
+        var packaged = Path.Combine(moduleDirectory, "defaults", "shop.json");
+
+        if (!File.Exists(runtime))
+            return packaged;
+        if (!File.Exists(packaged))
+            return runtime;
+
+        return File.GetLastWriteTimeUtc(packaged) > File.GetLastWriteTimeUtc(runtime)
+            ? packaged
+            : runtime;
     }
 
     private string? Validate(ShopItemDefinition item, HashSet<string> ids)
