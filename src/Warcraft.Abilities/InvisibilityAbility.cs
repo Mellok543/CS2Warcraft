@@ -7,7 +7,7 @@ namespace Warcraft.Abilities;
 /// <summary>
 /// Passive: makes the player model translucent while usable (e.g. only with a
 /// knife via conditions). Config: alpha (0 = invisible, 255 = normal).
-/// Held weapons stay visible.
+/// Player model and owned weapons use the same transparency.
 /// </summary>
 internal sealed class InvisibilityAbility : PawnAttributeAbility
 {
@@ -22,11 +22,30 @@ internal sealed class InvisibilityAbility : PawnAttributeAbility
         return alpha < PlayerRender.Opaque ? alpha : null;
     }
 
-    protected override void Apply(CCSPlayerPawn pawn, float value) => PlayerRender.SetAlpha(pawn, (int)value);
+    protected override void Apply(CCSPlayerPawn pawn, float value)
+    {
+        SetPlayerAndWeaponsAlpha(pawn, (int)value);
+    }
 
     protected override void Reset(CCSPlayerPawn pawn)
     {
         if (pawn.IsValid)
-            PlayerRender.SetAlpha(pawn, PlayerRender.Opaque);
+            SetPlayerAndWeaponsAlpha(pawn, PlayerRender.Opaque);
+    }
+
+    private static void SetPlayerAndWeaponsAlpha(CCSPlayerPawn pawn, int alpha)
+    {
+        PlayerRender.SetAlpha(pawn, alpha);
+
+        var weapons = pawn.WeaponServices?.MyWeapons;
+        if (weapons is null)
+            return;
+
+        foreach (var handle in weapons)
+        {
+            var weapon = handle.Value;
+            if (weapon is { IsValid: true })
+                PlayerRender.SetAlpha(weapon, alpha);
+        }
     }
 }
