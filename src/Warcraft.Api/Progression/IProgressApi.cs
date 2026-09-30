@@ -3,6 +3,7 @@ namespace Warcraft.Api.Progression;
 public interface IProgressApi
 {
     ProgressMutationResult AddXp(ulong steamId, long amount, string reason);
+    ProgressMutationResult AddXpExact(ulong steamId, long amount, string reason);
     long GetRequiredXpForLevel(int currentLevel);
     ProgressMutationResult SetRaceLevel(ulong steamId, string raceId, int level, string reason);
     ProgressMutationResult GiveSkillPoints(ulong steamId, string raceId, int amount, string reason);
