@@ -56,6 +56,23 @@ internal sealed class PanoramaMenuRenderer(
         return IsReady;
     }
 
+    public bool Rebuild()
+    {
+        try
+        {
+            if (_entity is { IsValid: true })
+                _entity.Remove();
+        }
+        catch (Exception exception)
+        {
+            log?.Invoke($"Warcraft.Menu: HUD rebuild cleanup skipped: {exception.Message}");
+        }
+
+        _entity = null;
+        Spawn();
+        return IsReady;
+    }
+
     public void Show(CCSPlayerController player)
     {
         if (!IsReady || !player.IsValid || player.IsBot)
