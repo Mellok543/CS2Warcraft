@@ -4,7 +4,7 @@ using Warcraft.Api.Events;
 
 namespace Warcraft.Shop.Effects;
 
-internal sealed class TemporaryBhopService
+internal sealed class TemporaryBhopService(Action<float, Action> schedule)
 {
     private readonly Dictionary<ulong, Boost> _boosts = [];
     private readonly Dictionary<ulong, double> _nextAt = [];
@@ -43,8 +43,9 @@ internal sealed class TemporaryBhopService
         var steamId = jumped.SteamId;
         _nextAt[steamId] = now + boost.CooldownSeconds;
 
-        // The engine applies the jump impulse this frame; scale the resulting velocity on the next one.
-        Server.NextFrame(() =>
+        // player_jump fires before CS2 has completely settled the jump velocity.
+        // Delay slightly so the engine impulse is already present before applying bhop.
+        schedule(0.04f, () =>
         {
             var player = Utilities.GetPlayerFromSteamId(steamId);
             var pawn = player?.PlayerPawn.Value;
@@ -57,14 +58,29 @@ internal sealed class TemporaryBhopService
             }
 
             var horizontal = MathF.Sqrt(velocity.X * velocity.X + velocity.Y * velocity.Y);
-            if (horizontal < 1f)
-                return;
+            var minimumSpeed = Math.Min(250f, (float)boost.MaxSpeed);
 
-            var target = Math.Min(horizontal * (float)boost.Multiplier, (float)boost.MaxSpeed);
-            var scale = target / horizontal;
+            float dirX;
+            float dirY;
+            if (horizontal >= 20f)
+            {
+                dirX = velocity.X / horizontal;
+                dirY = velocity.Y / horizontal;
+            }
+            else
+            {
+                var yaw = pawn.EyeAngles.Y * MathF.PI / 180f;
+                dirX = MathF.Cos(yaw);
+                dirY = MathF.Sin(yaw);
+            }
+
+            var target = Math.Min(
+                Math.Max(horizontal * (float)boost.Multiplier, minimumSpeed),
+                (float)boost.MaxSpeed);
+
             pawn.Teleport(velocity: new Vector3(
-                velocity.X * scale,
-                velocity.Y * scale,
+                dirX * target,
+                dirY * target,
                 velocity.Z));
         });
     }
