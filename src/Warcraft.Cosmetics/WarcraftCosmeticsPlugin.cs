@@ -273,10 +273,18 @@ public sealed class WarcraftCosmeticsPlugin : BasePlugin
             if (player is not { IsValid: true } || ViewedPawnIndex(player) is not { } viewed)
                 continue;
 
-            foreach (var attached in _props.Values)
+            foreach (var ((steamId, _), attached) in _props)
             {
-                if (attached.OwnerPawnIndex == viewed && attached.Prop.IsValid)
+                if (!attached.Prop.IsValid)
+                    continue;
+
+                // Hide cosmetics both from the owner's first-person view and from
+                // everyone else while the owner's invisibility ability is active.
+                if (attached.OwnerPawnIndex == viewed ||
+                    _api?.Abilities.GetUsableAbility(steamId, "invisibility") is not null)
+                {
                     info.TransmitEntities.Remove(attached.Prop);
+                }
             }
         }
     }
